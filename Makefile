@@ -30,7 +30,7 @@ include $(DEVKITPRO)/wut/share/wut_rules
 # TV_SPLASH is the image displayed during bootup on the TV, leave blank to use default rule
 # DRC_SPLASH is the image displayed during bootup on the DRC, leave blank to use default rule
 #-------------------------------------------------------------------------------
-TARGET		:=	boing
+TARGET		:=	sand
 BUILD		:=	build
 SOURCES		:=	source/common source/framework source/framework/physics source/game
 ROMFS		:=	source/assets
