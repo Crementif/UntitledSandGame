@@ -1,0 +1,506 @@
+#include "render.h"
+
+#include <coreinit/memdefaultheap.h>
+
+#include <gx2/clear.h>
+#include <gx2/draw.h>
+#include <gx2/mem.h>
+#include <gx2/registers.h>
+#include <gx2/utils.h>
+#include <gx2/event.h>
+#include <gx2/surface.h>
+#include <whb/gfx.h>
+
+#include <whb/file.h>
+#include <whb/sdcard.h>
+
+#include "window.h"
+
+#include "render_data.h"
+
+struct Vertex
+{
+    f32 pos[2];
+    f32 tex_coord[2];
+};
+
+struct GX2ShaderSet
+{
+    GX2FetchShader fetchShader;
+    GX2VertexShader vertexShader;
+    GX2PixelShader fragmentShader;
+
+    void Prepare()
+    {
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, fetchShader.program, fetchShader.size);
+    }
+
+    void Activate()
+    {
+        GX2SetFetchShader(&fetchShader);
+        GX2SetVertexShader(&vertexShader);
+        GX2SetPixelShader(&fragmentShader);
+    }
+};
+
+GX2Sampler sRenderBaseSampler1;
+GX2ShaderSet sRenderBaseShaders1;
+
+GX2ColorControlReg sRenderColorControl_noTransparency;
+GX2ColorControlReg sRenderColorControl_transparency;
+GX2BlendControlReg sRenderBlendReg_transparency;
+
+struct
+{
+  Vertex* base;
+  u32 currentWriteIndex;
+  u32 size;
+
+  Vertex* GetVertices(u32 n, u32& vertexBaseIndex)
+  {
+      vertexBaseIndex = currentWriteIndex;
+      if((currentWriteIndex + n) >= size)
+      {
+          currentWriteIndex = n;
+          vertexBaseIndex = 0;
+      }
+      else
+      {
+          currentWriteIndex += n;
+      }
+      return base + vertexBaseIndex;
+  }
+}sVtxRingbuffer;
+
+void _InitVtxRingbuffer()
+{
+    sVtxRingbuffer.size = 1 * 1024 * 1024 / sizeof(Vertex); // 1 MiB of vertex ringbuffer. Can hold roughly 43k vertices
+    sVtxRingbuffer.base = (Vertex*)MEMAllocFromDefaultHeapEx(1024 * 1024, 256);
+    sVtxRingbuffer.currentWriteIndex = 0;
+}
+
+void _InitBlendRegs()
+{
+    GX2InitColorControlReg(&sRenderColorControl_transparency, GX2_LOGIC_OP_COPY, 0x01, GX2_FALSE, GX2_TRUE);
+    GX2InitColorControlReg(&sRenderColorControl_noTransparency, GX2_LOGIC_OP_COPY, 0x00, GX2_FALSE, GX2_TRUE);
+    GX2InitBlendControlReg(&sRenderBlendReg_transparency,
+            GX2_RENDER_TARGET_0,
+            GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
+            GX2_FALSE, // no separate alpha blend
+            GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
+}
+
+void _InitBasicFetchShader()
+{
+    GX2AttribStream streams[2];
+    GX2AttribStream& pos_stream = streams[0];
+    pos_stream.location = 0;
+    pos_stream.buffer = 0;
+    pos_stream.offset = offsetof(Vertex, pos);
+    pos_stream.format = GX2_ATTRIB_FORMAT_FLOAT_32_32;
+    pos_stream.mask = GX2_SEL_MASK(GX2_SQ_SEL_X, GX2_SQ_SEL_Y, GX2_SQ_SEL_0, GX2_SQ_SEL_1);
+    pos_stream.endianSwap = GX2_ENDIAN_SWAP_DEFAULT;
+    pos_stream.type = GX2_ATTRIB_INDEX_PER_VERTEX;
+    pos_stream.aluDivisor = 0;
+
+    GX2AttribStream& tex_coord_stream = streams[1];
+    tex_coord_stream.location = 1;
+    tex_coord_stream.buffer = 0;
+    tex_coord_stream.offset = offsetof(Vertex, tex_coord);
+    tex_coord_stream.format = GX2_ATTRIB_FORMAT_FLOAT_32_32;
+    tex_coord_stream.mask = GX2_SEL_MASK(GX2_SQ_SEL_X, GX2_SQ_SEL_Y, GX2_SQ_SEL_0, GX2_SQ_SEL_1);
+    tex_coord_stream.endianSwap = GX2_ENDIAN_SWAP_DEFAULT;
+    tex_coord_stream.type = GX2_ATTRIB_INDEX_PER_VERTEX;
+    tex_coord_stream.aluDivisor = 0;
+
+    u32 triangle_FSH_size = GX2CalcFetchShaderSizeEx(2, GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
+    void* triangle_FSH_program = MEMAllocFromDefaultHeapEx(triangle_FSH_size, GX2_SHADER_PROGRAM_ALIGNMENT);
+    GX2InitFetchShaderEx(&sRenderBaseShaders1.fetchShader, (u8*)triangle_FSH_program, 2, streams, GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
+}
+
+void _InitBasicShaders()
+{
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, triangle_VSH.program, triangle_VSH.size);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, triangle_PSH.program, triangle_PSH.size);
+    sRenderBaseShaders1.vertexShader = triangle_VSH;
+    sRenderBaseShaders1.fragmentShader = triangle_PSH;
+}
+
+void _InitBasicRenderResources()
+{
+    _InitBasicFetchShader();
+    _InitBasicShaders();
+    _InitBlendRegs();
+    sRenderBaseShaders1.Prepare();
+
+    GX2InitSampler(&sRenderBaseSampler1,
+                   GX2_TEX_CLAMP_MODE_CLAMP,
+                   GX2_TEX_XY_FILTER_MODE_LINEAR);
+
+    GX2InitSamplerZMFilter(&sRenderBaseSampler1,
+                           GX2_TEX_Z_FILTER_MODE_NONE,
+                           GX2_TEX_MIP_FILTER_MODE_NONE);
+
+}
+
+void Render::Init()
+{
+    u32 fb_width, fb_height;
+    //WindowInit(1280, 720, &fb_width, &fb_height);
+    WindowInit(1920, 1080, &fb_width, &fb_height);
+    _InitVtxRingbuffer();
+    _InitBasicRenderResources();
+}
+
+void Render::Shutdown()
+{
+    WindowExit();
+}
+
+bool Render::IsRunning()
+{
+    return WindowIsRunning();
+}
+
+void Render::BeginFrame()
+{
+    GX2ClearColor(WindowGetColorBuffer(), 0.2f, 0.3f, 0.3f, 1.0f); // we could skip this if we were to overdraw the full screen
+    WindowMakeContextCurrent();
+}
+
+void Render::SwapBuffers()
+{
+    WindowSwapBuffers();
+}
+
+Vector2f sRenderCamUnfiltered{0.0, 0.0};
+Vector2f sRenderCamPosition{0.0, 0.0};
+Vector2f sRenderCamOffset{0.0, 0.0};
+
+void Render::SetCameraPosition(Vector2f pos)
+{
+    sRenderCamUnfiltered = pos;
+    sRenderCamPosition = pos;
+    sRenderCamPosition.x = (f32)(s32)sRenderCamPosition.x;
+    sRenderCamPosition.y = (f32)(s32)sRenderCamPosition.y;
+
+    sRenderCamOffset = sRenderCamPosition;
+
+    const f32 PIXEL_WIDTH = 1.0 / 1920.0 * 2.0;
+    const f32 PIXEL_HEIGHT = 1.0 / 1080.0 * 2.0;
+    sRenderCamOffset.x *= PIXEL_WIDTH;
+    sRenderCamOffset.y *= PIXEL_HEIGHT;
+}
+
+Vector2f Render::GetCameraPosition()
+{
+    return sRenderCamPosition;
+}
+
+Vector2f Render::GetUnfilteredCameraPosition()
+{
+    return sRenderCamUnfiltered;
+}
+
+bool sRenderTransparencyMode = false;
+
+void Render::BeginSpriteRendering()
+{
+    GX2SetShaderModeEx(GX2_SHADER_MODE_UNIFORM_REGISTER, 48, 64, 0, 0, 200, 192);
+    // setup GX2 state for sprite renderer
+    sRenderBaseShaders1.Activate();
+    // use the sprite vertex ringbuffer
+    GX2SetAttribBuffer(0, 1024 * 1024, sizeof(Vertex), sVtxRingbuffer.base);
+
+    sRenderTransparencyMode = false;
+    GX2SetBlendControlReg(&sRenderBlendReg_transparency);
+    GX2SetColorControlReg(&sRenderColorControl_noTransparency);
+}
+
+void Render::EndSpriteRendering()
+{
+
+}
+
+// quad
+const u16 s_idx_data[] = {
+        0, 1, 2, 2, 1, 3
+};
+
+template<bool TUseCamPos>
+u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight)
+{
+    const f32 PIXEL_WIDTH = 1.0 / 1920.0 * 2.0; // *2.0 is since window coordinates are -1.0 to 1.0
+    const f32 PIXEL_HEIGHT = 1.0 / 1080.0 * 2.0;
+
+    u32 baseVertex;
+    Vertex* vtx = sVtxRingbuffer.GetVertices(4, baseVertex);
+
+    f32 x1 = x * PIXEL_WIDTH - 1.0;
+    f32 y1 = 1.0 - y * PIXEL_HEIGHT;
+    if constexpr(TUseCamPos)
+    {
+        x1 -= sRenderCamOffset.x;
+        y1 += sRenderCamOffset.y;
+    }
+    f32 x2 = x1 + PIXEL_WIDTH * spriteWidth;
+    f32 y2 = y1 - PIXEL_HEIGHT * spriteHeight;
+
+
+    vtx[0].tex_coord[0] = 0.0f;
+    vtx[0].tex_coord[1] = 0.0f;
+    vtx[1].tex_coord[0] = 1.0f;
+    vtx[1].tex_coord[1] = 0.0f;
+    vtx[2].tex_coord[0] = 0.0f;
+    vtx[2].tex_coord[1] = 1.0f;
+    vtx[3].tex_coord[0] = 1.0f;
+    vtx[3].tex_coord[1] = 1.0f;
+
+    vtx[0].pos[0] = x1;
+    vtx[0].pos[1] = y1;
+    vtx[1].pos[0] = x2;
+    vtx[1].pos[1] = y1;
+    vtx[2].pos[0] = x1;
+    vtx[2].pos[1] = y2;
+    vtx[3].pos[0] = x2;
+    vtx[3].pos[1] = y2;
+
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, (void*)vtx, (sizeof(Vertex) * 4));
+
+    return baseVertex;
+}
+
+template<bool TUseCamPos>
+u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight, f32 cx, f32 cy, f32 cw, f32 ch)
+{
+    const f32 PIXEL_WIDTH = 1.0 / 1920.0 * 2.0; // *2.0 is since window coordinates are -1.0 to 1.0
+    const f32 PIXEL_HEIGHT = 1.0 / 1080.0 * 2.0;
+
+    u32 baseVertex;
+    Vertex* vtx = sVtxRingbuffer.GetVertices(4, baseVertex);
+
+    f32 x1 = x * PIXEL_WIDTH - 1.0;
+    f32 y1 = 1.0 - y * PIXEL_HEIGHT;
+    if constexpr(TUseCamPos)
+    {
+        x1 -= sRenderCamOffset.x;
+        y1 += sRenderCamOffset.y;
+    }
+    f32 x2 = x1 + PIXEL_WIDTH * cw*spriteWidth;
+    f32 y2 = y1 - PIXEL_HEIGHT * ch*spriteHeight;
+
+    vtx[0].tex_coord[0] = cx;
+    vtx[0].tex_coord[1] = cy;
+    vtx[1].tex_coord[0] = cx + cw;
+    vtx[1].tex_coord[1] = cy;
+    vtx[2].tex_coord[0] = cx;
+    vtx[2].tex_coord[1] = cy + ch;
+    vtx[3].tex_coord[0] = cx + cw;
+    vtx[3].tex_coord[1] = cy + ch;
+
+    vtx[0].pos[0] = x1;
+    vtx[0].pos[1] = y1;
+    vtx[1].pos[0] = x2;
+    vtx[1].pos[1] = y1;
+    vtx[2].pos[0] = x1;
+    vtx[2].pos[1] = y2;
+    vtx[3].pos[0] = x2;
+    vtx[3].pos[1] = y2;
+
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, (void*)vtx, (sizeof(Vertex) * 4));
+
+    return baseVertex;
+}
+
+void Render::RenderSprite(Sprite* sprite, s32 x, s32 y)
+{
+    GX2Texture* tex = sprite->GetTexture();
+    u32 baseVertex = _SetupSpriteVertexData<true>((f32)x, (f32)y, (f32)tex->surface.width, (f32)tex->surface.height);
+
+    if(sRenderTransparencyMode != sprite->m_hasTransparency)
+    {
+        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
+        sRenderTransparencyMode = sprite->m_hasTransparency;
+    }
+
+    GX2SetPixelTexture(tex, 0);
+    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+
+    GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
+}
+
+// same as RenderSprite but camera position is ignored and it renders a subrect of the sprite
+void Render::RenderSpritePortionScreenRelative(Sprite* sprite, s32 x, s32 y, u32 cx, u32 cy, u32 cw, u32 ch)
+{
+    GX2Texture* tex = sprite->GetTexture();
+    u32 baseVertex = _SetupSpriteVertexData<false>((f32)x, (f32)y, (f32)tex->surface.width, (f32)tex->surface.height, (f32)cx/tex->surface.width, (f32)cy/tex->surface.height, (f32)cw/tex->surface.width, (f32)ch/tex->surface.height);
+
+    if(sRenderTransparencyMode != sprite->m_hasTransparency)
+    {
+        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
+        sRenderTransparencyMode = sprite->m_hasTransparency;
+    }
+
+    GX2SetPixelTexture(tex, 0);
+    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+
+    GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
+}
+
+// same as RenderSprite but camera position is ignored
+void Render::RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y)
+{
+    GX2Texture* tex = sprite->GetTexture();
+    u32 baseVertex = _SetupSpriteVertexData<false>((f32)x, (f32)y, (f32)tex->surface.width, (f32)tex->surface.height);
+
+    if(sRenderTransparencyMode != sprite->m_hasTransparency)
+    {
+        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
+        sRenderTransparencyMode = sprite->m_hasTransparency;
+    }
+
+    GX2SetPixelTexture(tex, 0);
+    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+
+    GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
+}
+
+GX2Texture* LoadFromTGA(u8* data, u32 length);
+
+Sprite::Sprite(const char* path, bool hasTransparency) : m_hasTransparency(hasTransparency)
+{
+    std::ifstream fs((std::string("romfs:/") + path).c_str(), std::ios::in | std::ios::binary);
+    if(!fs.is_open())
+        CriticalErrorHandler("Failed to open file %s\n", path);
+    std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
+    m_tex = LoadFromTGA((u8*)data.data(), data.size());
+    if (!m_tex) CriticalErrorHandler("Invalid TGA data");
+}
+
+struct TGA_HEADER
+{
+    u8  identsize;          // size of ID field that follows 18 byte header (0 usually)
+    u8  colourmaptype;      // type of colour map 0=none, 1=has palette
+    u8  imagetype;          // type of image 0=none,1=indexed,2=rgb,3=grey,+8=rle packed
+
+    u8 colourmapstart[2];     // first colour map entry in palette
+    u8 colourmaplength[2];    // number of colours in palette
+    u8  colourmapbits;      // number of bits per palette entry 15,16,24,32
+
+    u16 xstart;             // image x origin
+    u16 ystart;             // image y origin
+    u16 width;              // image width in pixels
+    u16 height;             // image height in pixels
+    u8  bits;               // image bits per pixel 8,16,24,32
+    u8  descriptor;         // image descriptor bits (vh flip bits)
+};
+
+static_assert(sizeof(TGA_HEADER) == 18);
+
+void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u32 numMips, GX2SurfaceFormat surfaceFormat, GX2SurfaceDim surfaceDim, GX2TileMode tileMode)
+{
+    texturePtr->surface.dim = surfaceDim;
+    texturePtr->surface.width = width;
+    texturePtr->surface.height = height;
+    texturePtr->surface.depth = depth;
+    texturePtr->surface.mipLevels = numMips;
+    texturePtr->surface.format = surfaceFormat;
+    texturePtr->surface.aa = GX2_AA_MODE1X;
+    texturePtr->surface.use = GX2_SURFACE_USE_TEXTURE;
+    texturePtr->surface.dim = surfaceDim;
+    texturePtr->surface.tileMode = tileMode;
+    texturePtr->surface.swizzle = 0;
+    texturePtr->viewFirstMip = 0;
+    texturePtr->viewNumMips = numMips;
+    texturePtr->viewFirstSlice = 0;
+    texturePtr->viewNumSlices = depth;
+    texturePtr->compMap = 0x0010203;
+    GX2CalcSurfaceSizeAndAlignment(&texturePtr->surface);
+    GX2InitTextureRegs(texturePtr);
+}
+
+// quick and dirty TGA loader. Not very safe
+GX2Texture* LoadFromTGA(u8* data, u32 length)
+{
+    TGA_HEADER* tgaHeader = (TGA_HEADER*)data;
+
+    u32 width = _swapU16(tgaHeader->width);
+    u32 height = _swapU16(tgaHeader->height);
+
+    GX2Texture* texture = (GX2Texture*)MEMAllocFromDefaultHeap(sizeof(GX2Texture));
+
+    memset(texture, 0, sizeof(GX2Texture));
+
+    _GX2InitTexture(texture, width, height, 1, 1, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8, GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_LINEAR_ALIGNED);
+    if(texture->surface.imageSize == 0)
+    {
+        CriticalErrorHandler("Failed to init texture during TGA load");
+        return nullptr;
+    }
+    // OSReport("Tex format: %04x Tilemode: %04x TGARes %d/%d SurfSize: 0x%x\n", (u32)texture->surface.format, (u32)texture->surface.tileMode, width, height, texture->surface.imageSize);
+
+    texture->surface.image = MEMAllocFromDefaultHeapEx(texture->surface.imageSize, texture->surface.alignment);
+
+    for(u32 y=0; y<height; y++)
+    {
+        u32* tga_bgra_data = (u32*)(data+sizeof(TGA_HEADER)) + ((height - y - 1) * width);
+        u32* out_data = (u32*)texture->surface.image + (y * texture->surface.pitch);
+        for(u32 x=0; x<width; x++)
+        {
+            u32 c = *tga_bgra_data;
+            *out_data = ((c & 0x00FF00FF)) | ((c & 0xFF000000) >> 16) | ((c & 0x0000FF00) << 16);
+            tga_bgra_data++;
+            out_data++;
+        }
+    }
+
+    // todo - create texture with optimal tile format and use GX2CopySurface to convert from linear to tiled format
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_TEXTURE, texture->surface.image, texture->surface.imageSize);
+   return texture;
+}
+
+Sprite* Render::sBigFontTextureBlack = nullptr;
+Sprite* Render::sBigFontTextureWhite = nullptr;
+Sprite* Render::sSmallFontTextureBlack = nullptr;
+Sprite* Render::sSmallFontTextureWhite = nullptr;
+
+void Render::RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* text, ...) {
+    if (sBigFontTextureBlack == nullptr) {
+        sBigFontTextureBlack = new Sprite("font/source-code-pro-black.tga", true);
+        sBigFontTextureWhite = new Sprite("font/source-code-pro-white.tga", true);
+        sSmallFontTextureBlack = new Sprite("font/source-code-pro-small-black.tga", true);
+        sSmallFontTextureWhite = new Sprite("font/source-code-pro-small-white.tga", true);
+    }
+
+    va_list args;
+    char maxTextBuffer[1920/14];
+    va_start(args, text);
+    vsnprintf(maxTextBuffer, sizeof(maxTextBuffer), text, args);
+    va_end (args);
+
+    Sprite* spriteUsed = nullptr;
+    if (blackLevel != 0x00 && textSize != 0) {
+        spriteUsed = sBigFontTextureBlack;
+    }
+    else if (blackLevel != 0x00 && textSize == 0) {
+        spriteUsed = sSmallFontTextureBlack;
+    }
+    else if (blackLevel == 0x00 && textSize != 0) {
+        spriteUsed = sBigFontTextureWhite;
+    }
+    else if (blackLevel == 0x00 && textSize == 0) {
+        spriteUsed = sSmallFontTextureWhite;
+    }
+
+    uint32_t effectiveCharacterWidth = (textSize == 0 ? 14 : 26);
+    uint32_t characterSize = (textSize == 0 ? 32 : 64);
+    uint32_t textureDimensions = (textSize == 0 ? 512 : 1024);
+    for (uint32_t i=0; i<strlen(maxTextBuffer); i++) {
+        if (maxTextBuffer[i] == '\0') break;
+        u32 letter = (u32)maxTextBuffer[i];
+        letter -= 32;
+        uint32_t bitmapX = (letter) % (textureDimensions/characterSize);
+        uint32_t bitmapY = (letter) / (textureDimensions/characterSize);
+        RenderSpritePortionScreenRelative(spriteUsed, x+(i*effectiveCharacterWidth), y, bitmapX*characterSize, bitmapY*characterSize, characterSize, characterSize);
+    }
+}

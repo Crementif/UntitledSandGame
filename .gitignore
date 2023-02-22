@@ -30,3 +30,19 @@
 *.exe
 *.out
 *.app
+*.elf
+*.rpx
+*.wuhb
+
+# Build folder
+build/
+
+# Tools folder
+/cemu/*
+!/cemu/.gitkeep
+/tools/**
+/tools/**/.gitkeep
+
+# Assets folder
+/source/assets/font/*
+!/source/assets/font/*.tga
