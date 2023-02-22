@@ -1,22 +1,17 @@
 #include "../common/common.h"
 #include "GameSceneIngame.h"
 #include "Object.h"
-#include "PachinkoBall.h"
-#include "PachinkoEmitter.h"
-#include "ObstacleBeam.h"
-#include "ObstacleCircle.h"
-#include "BallBucket.h"
-#include "Splitter.h"
-#include "SpeedBoost.h"
+
+
 #include "../framework/navigation.h"
 #include "../framework/physics/physics.h"
 
 
 GameSceneIngame::GameSceneIngame()
 {
-    new PachinkoEmitter(256.0f+128.0f, 0.0f);
+    //new PachinkoEmitter(256.0f+128.0f, 0.0f);
 
-    new BallBucket(256.0f * 3.0f + 128.0f, 256.0f * 3.0f + 128.0f);
+    //new BallBucket(256.0f * 3.0f + 128.0f, 256.0f * 3.0f + 128.0f);
 }
 
 GameSceneIngame::~GameSceneIngame()
@@ -32,6 +27,7 @@ void GameSceneIngame::DrawBackground()
 
     // todo - we'll have a bounded world with unlockable regions? Show different background tiles based on the area
 
+    /*
     s32 bgTileOffsetX = (camX-255) / 256;
     s32 bgTileOffsetY = (camY-255) / 256;
 
@@ -41,7 +37,7 @@ void GameSceneIngame::DrawBackground()
         {
             Render::RenderSprite(&m_bgSpriteA, (bgTileOffsetX + x) * 256, (bgTileOffsetY + y) * 256);
         }
-    }
+    }*/
 }
 
 // return screen rect of hotbar area
@@ -85,6 +81,7 @@ void GameSceneIngame::DrawMenu()
     }
 
     // resources hud
+    /*
     constexpr uint32_t maxPaddingLabel = ((strlen("PaddingBux 4294967295")+1)*14);
     constexpr uint32_t maxPaddingScore = ((strlen("4294967295")+1)*14);
     Render::RenderText(1920-maxPaddingLabel, 20, 0, 0xFF, "GrayBux");
@@ -95,6 +92,7 @@ void GameSceneIngame::DrawMenu()
     Render::RenderText(1920-maxPaddingScore, 60, 0, 0xFF, "%u", this->greenCurrency);
     Render::RenderText(1920-maxPaddingLabel, 80, 0, 0xFF, "RedBux");
     Render::RenderText(1920-maxPaddingScore, 80, 0, 0xFF, "%u", this->redCurrency);
+     */
 }
 
 void GameSceneIngame::Draw()
@@ -142,6 +140,7 @@ AABB GameSceneIngame::GetDeleteAreaBounds()
 void GameSceneIngame::StartTouch(Vector2f screenPos)
 {
     AABB menuScreenRect = GameSceneIngame::GetHotbarPosition();
+    /*
     if(menuScreenRect.Contains(screenPos))
     {
         // check which item
@@ -203,7 +202,7 @@ void GameSceneIngame::StartTouch(Vector2f screenPos)
                 return;
             }
         }
-    }
+    }*/
 
     m_startTouchPosition = screenPos;
     m_startCameraPosition = Render::GetCameraPosition();
