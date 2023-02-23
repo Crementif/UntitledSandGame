@@ -312,10 +312,10 @@ u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight, f32 
     return baseVertex;
 }
 
-void Render::RenderSprite(Sprite* sprite, s32 x, s32 y)
+void Render::RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight)
 {
     GX2Texture* tex = sprite->GetTexture();
-    u32 baseVertex = _SetupSpriteVertexData<true>((f32)x, (f32)y, (f32)tex->surface.width, (f32)tex->surface.height);
+    u32 baseVertex = _SetupSpriteVertexData<true>((f32)x, (f32)y, (f32)pxWidth, (f32)pxHeight);
 
     if(sRenderTransparencyMode != sprite->m_hasTransparency)
     {
@@ -327,6 +327,12 @@ void Render::RenderSprite(Sprite* sprite, s32 x, s32 y)
     GX2SetPixelSampler(&sRenderBaseSampler1, 0);
 
     GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
+}
+
+void Render::RenderSprite(Sprite* sprite, s32 x, s32 y)
+{
+    GX2Texture* tex = sprite->GetTexture();
+    RenderSprite(sprite, x, y, tex->surface.width, tex->surface.height);
 }
 
 // same as RenderSprite but camera position is ignored and it renders a subrect of the sprite
@@ -366,6 +372,7 @@ void Render::RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y)
 }
 
 GX2Texture* LoadFromTGA(u8* data, u32 length);
+GX2Texture* _InitSpriteTexture(u32 width, u32 height);
 
 Sprite::Sprite(const char* path, bool hasTransparency) : m_hasTransparency(hasTransparency)
 {
@@ -375,6 +382,26 @@ Sprite::Sprite(const char* path, bool hasTransparency) : m_hasTransparency(hasTr
     std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
     m_tex = LoadFromTGA((u8*)data.data(), data.size());
     if (!m_tex) CriticalErrorHandler("Invalid TGA data");
+}
+
+Sprite::Sprite(u32 width, u32 height, bool hasTransparency) : m_hasTransparency(hasTransparency)
+{
+    m_tex = _InitSpriteTexture(width, height);
+    if (!m_tex) CriticalErrorHandler("Invalid TGA data");
+}
+
+void Sprite::SetPixel(u32 x, u32 y, u32 color)
+{
+    u8* p = (u8*)m_tex->surface.image + (x + y * m_tex->surface.width) * 4;
+    p[0] = (u8)(color>>24);
+    p[1] = (u8)(color>>16);
+    p[2] = (u8)(color>>8);
+    p[3] = (u8)(color>>0);
+}
+
+void Sprite::FlushCache()
+{
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, m_tex->surface.image, m_tex->surface.imageSize);
 }
 
 struct TGA_HEADER
@@ -419,6 +446,26 @@ void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u
     GX2InitTextureRegs(texturePtr);
 }
 
+GX2Texture* _InitSpriteTexture(u32 width, u32 height)
+{
+    GX2Texture* texture = (GX2Texture*)MEMAllocFromDefaultHeap(sizeof(GX2Texture));
+    memset(texture, 0, sizeof(GX2Texture));
+    _GX2InitTexture(texture, width, height, 1, 1, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8, GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_LINEAR_ALIGNED);
+    if(texture->surface.imageSize == 0)
+    {
+        CriticalErrorHandler("Failed to init texture");
+        return nullptr;
+    }
+    // OSReport("Tex format: %04x Tilemode: %04x TGARes %d/%d SurfSize: 0x%x\n", (u32)texture->surface.format, (u32)texture->surface.tileMode, width, height, texture->surface.imageSize);
+    texture->surface.image = MEMAllocFromDefaultHeapEx(texture->surface.imageSize, texture->surface.alignment);
+    if(!texture->surface.image)
+    {
+        CriticalErrorHandler("Out of memory for sprite creation");
+        return nullptr;
+    }
+    return texture;
+}
+
 // quick and dirty TGA loader. Not very safe
 GX2Texture* LoadFromTGA(u8* data, u32 length)
 {
@@ -427,20 +474,7 @@ GX2Texture* LoadFromTGA(u8* data, u32 length)
     u32 width = _swapU16(tgaHeader->width);
     u32 height = _swapU16(tgaHeader->height);
 
-    GX2Texture* texture = (GX2Texture*)MEMAllocFromDefaultHeap(sizeof(GX2Texture));
-
-    memset(texture, 0, sizeof(GX2Texture));
-
-    _GX2InitTexture(texture, width, height, 1, 1, GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8, GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_LINEAR_ALIGNED);
-    if(texture->surface.imageSize == 0)
-    {
-        CriticalErrorHandler("Failed to init texture during TGA load");
-        return nullptr;
-    }
-    // OSReport("Tex format: %04x Tilemode: %04x TGARes %d/%d SurfSize: 0x%x\n", (u32)texture->surface.format, (u32)texture->surface.tileMode, width, height, texture->surface.imageSize);
-
-    texture->surface.image = MEMAllocFromDefaultHeapEx(texture->surface.imageSize, texture->surface.alignment);
-
+    GX2Texture* texture = _InitSpriteTexture(width, height);
     for(u32 y=0; y<height; y++)
     {
         u32* tga_bgra_data = (u32*)(data+sizeof(TGA_HEADER)) + ((height - y - 1) * width);

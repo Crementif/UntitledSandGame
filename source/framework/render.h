@@ -6,7 +6,11 @@ class Sprite
     friend class Render;
 public:
     Sprite(const char* path, bool hasTransparency = false);
+    Sprite(u32 width, u32 height, bool hasTransparency); // create sprite with uninitialized pixels
     struct GX2Texture* GetTexture() { return m_tex; }
+
+    void SetPixel(u32 x, u32 y, u32 color);
+    void FlushCache();
 
 private:
     struct GX2Texture* m_tex;
@@ -28,6 +32,7 @@ public:
     static void EndSpriteRendering();
 
     static void RenderSprite(Sprite* sprite, s32 x, s32 y);
+    static void RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight);
     static void RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y);
     static void RenderSpritePortionScreenRelative(Sprite*, s32, s32, u32, u32, u32, u32);
 

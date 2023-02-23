@@ -40,6 +40,8 @@ private:
 
     Sprite m_bgSpriteA{"/tex/background_tile_a.tga"};
 
+    class Map* m_map;
+
     // hotbar / menu graphics
     Sprite m_menuBackdrop{"/tex/menu_backdrop.tga", true};
     Sprite m_menuItemBeamHorizontalShort{"/tex/menu_beam.tga", true};

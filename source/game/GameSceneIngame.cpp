@@ -1,7 +1,7 @@
 #include "../common/common.h"
 #include "GameSceneIngame.h"
 #include "Object.h"
-
+#include "Map.h"
 
 #include "../framework/navigation.h"
 #include "../framework/physics/physics.h"
@@ -12,6 +12,8 @@ GameSceneIngame::GameSceneIngame()
     //new PachinkoEmitter(256.0f+128.0f, 0.0f);
 
     //new BallBucket(256.0f * 3.0f + 128.0f, 256.0f * 3.0f + 128.0f);
+
+    m_map = new Map();
 }
 
 GameSceneIngame::~GameSceneIngame()
@@ -105,6 +107,9 @@ void GameSceneIngame::Draw()
     Render::BeginSpriteRendering();
 
     DrawBackground();
+
+    m_map->Update();
+    m_map->Draw();
 
     if(m_isDragMode)
     {
