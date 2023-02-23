@@ -11,6 +11,9 @@
 #define DRAW_LAYER_6    (1<<6)
 #define DRAW_LAYER_7    (1<<7)
 
+// draw layer helper aliases
+#define DRAW_LAYER_PLAYERS  (4)
+
 // the common base class for all 2D objects
 class Object
 {

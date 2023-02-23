@@ -16,13 +16,8 @@ MAP_PIXEL_TYPE _GeneratePixelAtWorldPos(s32 x, s32 y)
     return MAP_PIXEL_TYPE::AIR;
 }
 
-MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u8* tgaPixel)
+MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c)
 {
-    u32 c = 0;
-    c |= ((u32)tgaPixel[0] << 16);
-    c |= ((u32)tgaPixel[1] << 8);
-    c |= ((u32)tgaPixel[2] << 0);
-
     if(c == 0x7F3300)
         return MAP_PIXEL_TYPE::SOIL;
     if(c == 0xFFD800)
@@ -31,7 +26,7 @@ MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u8* tgaPixel)
     return MAP_PIXEL_TYPE::AIR;
 }
 
-MapCell::MapCell(u32 cellX, u32 cellY) : m_cellX(cellX), m_cellY(cellY), m_posX(cellX * MAP_CELL_WIDTH), m_posY(cellY * MAP_CELL_HEIGHT)
+MapCell::MapCell(Map* map, u32 cellX, u32 cellY) : m_cellX(cellX), m_cellY(cellY), m_posX(cellX * MAP_CELL_WIDTH), m_posY(cellY * MAP_CELL_HEIGHT), m_map(map)
 {
     /*
     s32 py = m_posY;
@@ -63,8 +58,17 @@ void MapCell::LoadCellFromTGA(class TGALoader& tgaLoader)
         u8* tgaPixelIn = tgaLoader.GetData() + (py * tgaLoader.GetWidth() + m_posX) * 3;
         for (s32 x = 0; x < MAP_CELL_WIDTH; x++)
         {
-            pOut->SetPixel(_GetPixelTypeFromTGAColor(tgaPixelIn));
+            u32 c = 0;
+            c |= ((u32)tgaPixelIn[0] << 16);
+            c |= ((u32)tgaPixelIn[1] << 8);
+            c |= ((u32)tgaPixelIn[2] << 0);
 
+            pOut->SetPixel(_GetPixelTypeFromTGAColor(c));
+
+            if(c == 0xFF00DC)
+            {
+                m_map->m_playerSpawnpoints.emplace_back(m_posX + x, py);
+            }
 
             tgaPixelIn += 3;
             pOut++;
@@ -72,6 +76,11 @@ void MapCell::LoadCellFromTGA(class TGALoader& tgaLoader)
         }
         py++;
     }
+}
+
+PixelType& MapCell::GetPixelFromCellCoords(s32 x, s32 y)
+{
+    return m_pixelArray[x + y*MAP_CELL_WIDTH];
 }
 
 void MapCell::UpdateCell()
@@ -144,7 +153,7 @@ void Map::Init(uint32_t width, uint32_t height)
     {
         for(u32 x=0; x<m_cellsX; x++)
         {
-            m_cells.emplace_back(x, y);
+            m_cells.emplace_back(this, x, y);
         }
     }
     //GenerateTerrain();
@@ -183,6 +192,35 @@ void Map::GenerateTerrain()
     //}
 }
 
+static_assert(MAP_CELL_WIDTH == 64); // hardcoded in GetPixel()
+static_assert(MAP_CELL_HEIGHT == 64);
+
+PixelType& Map::GetPixel(s32 x, s32 y)
+{
+    s32 cellX = x >> 6;
+    s32 relX = x & 0x3F;
+    s32 cellY = y >> 6;
+    s32 relY = y & 0x3F;
+    if((cellX < 0 || cellX >= (s32)m_cellsX) ||
+       (cellY < 0 || cellY >= (s32)m_cellsY))
+    {
+        CriticalErrorHandler("Map::GetPixel - x/y out of range");
+    }
+    return m_cells[cellX + cellY * m_cellsX].GetPixelFromCellCoords(relX, relY);
+}
+
+// can be optimized, probably more efficient than reading pixels individually
+void Map::GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut)
+{
+    for(s32 iy=0; iy<height; iy++)
+    {
+        for(s32 ix=0; ix<width; ix++)
+        {
+            rectOut[ix + iy * width] = GetPixel(x + ix, y + iy).IsSolid();
+        }
+    }
+}
+
 void Map::Update()
 {
     // limit to active cells?
@@ -205,4 +243,17 @@ void Map::Draw()
             m_cells[x + y * m_cellsX].DrawCell();
         }
     }
+}
+
+Map* s_currentMap{nullptr};
+
+// objects are tied to whichever map is active
+void SetCurrentMap(Map* newMap)
+{
+    s_currentMap = newMap;
+}
+
+Map* GetCurrentMap()
+{
+    return s_currentMap;
 }

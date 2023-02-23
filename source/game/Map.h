@@ -4,7 +4,7 @@
 
 #pragma once
 
-#define MAP_PIXEL_ZOOM  (4) // one world pixel will translate to this many screen pixels
+#define MAP_PIXEL_ZOOM  (3) // one world pixel will translate to this many screen pixels
 
 #define MAP_CELL_WIDTH  (64)
 #define MAP_CELL_HEIGHT  (64)
@@ -35,10 +35,16 @@ union PixelType
 
     }
 
-    MAP_PIXEL_TYPE GetPixelType()
+    MAP_PIXEL_TYPE GetPixelType() const
     {
         // todo - if LSB not set
         return (MAP_PIXEL_TYPE)(pixelType >> 1);
+    }
+
+    // collision applies
+    bool IsSolid() const
+    {
+        return GetPixelType() != MAP_PIXEL_TYPE::AIR;
     }
 
     uint32_t pixelType; // LSB set
@@ -51,7 +57,7 @@ static_assert(sizeof(PixelType) == 4);
 class MapCell
 {
 public:
-    MapCell(u32 cellX, u32 cellY);
+    MapCell(class Map* map, u32 cellX, u32 cellY);
     void LoadCellFromTGA(class TGALoader& tgaLoader);
 
     void UpdateCell();
@@ -59,23 +65,35 @@ public:
 
     void RefreshCellTexture();
 
+    PixelType& GetPixelFromCellCoords(s32 x, s32 y);
+
 private:
     PixelType m_pixelArray[MAP_CELL_WIDTH * MAP_CELL_HEIGHT];
     u32 m_cellX;
     u32 m_cellY;
     u32 m_posX;
     u32 m_posY;
+    class Map* m_map;
     class Sprite* m_cellSprite{nullptr};
 };
 
 class Map
 {
+    friend class MapCell;
 public:
     Map(const char* filename);
     ~Map();
 
     void Update();
     void Draw();
+
+    const std::vector<Vector2i>& GetPlayerSpawnpoints()
+    {
+        return m_playerSpawnpoints;
+    }
+
+    PixelType& GetPixel(s32 x, s32 y);
+    void GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut);
 
 private:
     void Init(uint32_t width, uint32_t height);
@@ -85,5 +103,9 @@ private:
     u32 m_cellsX;
     u32 m_cellsY;
     std::vector<MapCell> m_cells;
+
+    std::vector<Vector2i> m_playerSpawnpoints;
 };
 
+void SetCurrentMap(Map* newMap);
+Map* GetCurrentMap();

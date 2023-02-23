@@ -2,6 +2,7 @@
 #include "GameSceneIngame.h"
 #include "Object.h"
 #include "Map.h"
+#include "Player.h"
 
 #include "../framework/navigation.h"
 #include "../framework/physics/physics.h"
@@ -14,6 +15,16 @@ GameSceneIngame::GameSceneIngame()
     //new BallBucket(256.0f * 3.0f + 128.0f, 256.0f * 3.0f + 128.0f);
 
     m_map = new Map("level0.tga");
+    SetCurrentMap(m_map);
+
+    const std::vector<Vector2i> spawnpoints = m_map->GetPlayerSpawnpoints();
+    if(spawnpoints.empty())
+        CriticalErrorHandler("Level does not have any spawnpoints");
+
+    Vector2i spawnpos = spawnpoints[rand()%spawnpoints.size()]; // non-deterministic for now
+
+    m_selfPlayer = new Player((f32)spawnpos.x, (f32)spawnpos.y);
+    m_prevCamPos = Render::GetCameraPosition();
 }
 
 GameSceneIngame::~GameSceneIngame()
@@ -97,8 +108,17 @@ void GameSceneIngame::DrawMenu()
      */
 }
 
+void GameSceneIngame::UpdateCamera()
+{
+    Vector2f newCameraPosition = m_selfPlayer->GetPosition();
+    m_prevCamPos = newCameraPosition;
+    Render::SetCameraPosition(newCameraPosition);
+}
+
 void GameSceneIngame::Draw()
 {
+    UpdateCamera();
+
     gPhysicsMgr.Update(1.0f / 60.0f);
     Object::DoUpdates(1.0f / 60.0f);
 
@@ -212,6 +232,7 @@ void GameSceneIngame::UpdateTouch(Vector2f screenPos)
 {
     if(m_isScrolling)
     {
+        /*
         AABB cameraBounds = GetWorldBounds();
         cameraBounds.scale.x -= 1920.0;
         if(cameraBounds.scale.x < 0)
@@ -226,6 +247,7 @@ void GameSceneIngame::UpdateTouch(Vector2f screenPos)
         newCameraPosition = newCameraPosition * 0.2f + Render::GetUnfilteredCameraPosition() * 0.8f;
 
         Render::SetCameraPosition(newCameraPosition);
+         */
     }
     else if(m_isDragMode)
     {

@@ -101,6 +101,14 @@ struct Vector2f
     f32 y;
 };
 
+struct Vector2i
+{
+    Vector2i(s32 x, s32 y) : x(x), y(y) {}
+
+    s32 x;
+    s32 y;
+};
+
 struct AABB
 {
     AABB(Vector2f pos, Vector2f scale) : pos(pos), scale(scale) {}
@@ -110,6 +118,12 @@ struct AABB
     {
         return point.x >= pos.x && point.x < (pos.x + scale.x) &&
                 point.y >= pos.y && point.y < (pos.y + scale.y);
+    }
+
+    bool Intersects(const AABB& other) const
+    {
+        return (pos.x < (other.pos.x + other.scale.x) && (pos.x + scale.x) >= (other.pos.x)) &&
+                (pos.y < (other.pos.y + other.scale.y) && (pos.y + scale.y) >= (other.pos.y));
     }
 
     Vector2f GetCenter() const

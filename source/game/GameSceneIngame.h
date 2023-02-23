@@ -27,6 +27,8 @@ private:
     AABB GetHotbarButtonPosition(u32 buttonIndex);
     void DrawMenu();
 
+    void UpdateCamera();
+
     AABB GetWorldBounds();
     AABB GetDeleteAreaBounds();
 
@@ -39,6 +41,10 @@ private:
     Sprite m_bgSpriteA{"/tex/background_tile_a.tga"};
 
     class Map* m_map;
+
+    // player
+    class Player* m_selfPlayer;
+    Vector2f m_prevCamPos;
 
     // hotbar / menu graphics
     Sprite m_menuBackdrop{"/tex/button_backdrop.tga", true};

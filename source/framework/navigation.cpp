@@ -194,3 +194,23 @@ bool pressedStart() {
 bool pressedBack() {
     return vpadButtonPressed(VPAD_BUTTON_B) || kpadButtonPressed(WPAD_BUTTON_B);
 }
+
+Vector2f getLeftStick() {
+    return {vpadBuffer->leftStick.x, vpadBuffer->leftStick.y};
+}
+
+ButtonState s_buttonState{};
+
+void _UpdateButtonState(ButtonState::ButtonInfo& buttonInfo, bool newState)
+{
+    buttonInfo.changedState = buttonInfo.isDown != newState;
+    buttonInfo.isDown = newState;
+}
+
+ButtonState& GetButtonState() {
+    // update with current state
+    _UpdateButtonState(s_buttonState.buttonA, (vpadBuffer->hold&VPAD_BUTTON_A) != 0);
+    _UpdateButtonState(s_buttonState.buttonB, (vpadBuffer->hold&VPAD_BUTTON_B) != 0);
+    _UpdateButtonState(s_buttonState.buttonStart, (vpadBuffer->hold&VPAD_BUTTON_PLUS) != 0);
+    return s_buttonState;
+}
