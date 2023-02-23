@@ -43,3 +43,12 @@
 
 [[noreturn]]
 void CriticalErrorHandler(const char* msg, ...);
+
+inline std::vector<u8> LoadFileToMem(const std::string path)
+{
+    std::ifstream fs((std::string("romfs:/") + path).c_str(), std::ios::in | std::ios::binary);
+    if(!fs.is_open())
+        CriticalErrorHandler("Failed to open file %s\n", path.c_str());
+    std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
+    return data;
+}

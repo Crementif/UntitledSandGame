@@ -19,6 +19,7 @@ enum class MAP_PIXEL_TYPE
 {
     AIR = 0,
     SAND = 1,
+    SOIL = 2,
 };
 
 union PixelType
@@ -51,6 +52,7 @@ class MapCell
 {
 public:
     MapCell(u32 cellX, u32 cellY);
+    void LoadCellFromTGA(class TGALoader& tgaLoader);
 
     void UpdateCell();
     void DrawCell();
@@ -69,13 +71,15 @@ private:
 class Map
 {
 public:
-    Map();
+    Map(const char* filename);
     ~Map();
 
     void Update();
     void Draw();
 
 private:
+    void Init(uint32_t width, uint32_t height);
+
     void GenerateTerrain();
 
     u32 m_cellsX;

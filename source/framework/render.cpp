@@ -17,6 +17,7 @@
 #include "window.h"
 
 #include "render_data.h"
+#include "../framework/fileformat/TGAFile.h"
 
 struct Vertex
 {
@@ -403,24 +404,6 @@ void Sprite::FlushCache()
 {
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, m_tex->surface.image, m_tex->surface.imageSize);
 }
-
-struct TGA_HEADER
-{
-    u8  identsize;          // size of ID field that follows 18 byte header (0 usually)
-    u8  colourmaptype;      // type of colour map 0=none, 1=has palette
-    u8  imagetype;          // type of image 0=none,1=indexed,2=rgb,3=grey,+8=rle packed
-
-    u8 colourmapstart[2];     // first colour map entry in palette
-    u8 colourmaplength[2];    // number of colours in palette
-    u8  colourmapbits;      // number of bits per palette entry 15,16,24,32
-
-    u16 xstart;             // image x origin
-    u16 ystart;             // image y origin
-    u16 width;              // image width in pixels
-    u16 height;             // image height in pixels
-    u8  bits;               // image bits per pixel 8,16,24,32
-    u8  descriptor;         // image descriptor bits (vh flip bits)
-};
 
 static_assert(sizeof(TGA_HEADER) == 18);
 

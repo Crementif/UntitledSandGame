@@ -13,7 +13,7 @@ GameSceneIngame::GameSceneIngame()
 
     //new BallBucket(256.0f * 3.0f + 128.0f, 256.0f * 3.0f + 128.0f);
 
-    m_map = new Map();
+    m_map = new Map("level0.tga");
 }
 
 GameSceneIngame::~GameSceneIngame()

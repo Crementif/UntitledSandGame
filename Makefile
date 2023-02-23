@@ -32,7 +32,7 @@ include $(DEVKITPRO)/wut/share/wut_rules
 #-------------------------------------------------------------------------------
 TARGET		:=	sand
 BUILD		:=	build
-SOURCES		:=	source/common source/framework source/framework/physics source/framework/noise source/game
+SOURCES		:=	source/common source/framework source/framework/physics source/framework/noise source/framework/fileformat source/game
 ROMFS		:=	source/assets
 DATA		:=	data
 INCLUDES	:=	include

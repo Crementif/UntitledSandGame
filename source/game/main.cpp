@@ -18,7 +18,6 @@ void SwitchToGameScene(GameScene* newGameScene)
 int main()
 {
     WHBLogCafeInit();
-    WHBLogUdpInit();
     romfsInit();
     initializeInputs();
 
