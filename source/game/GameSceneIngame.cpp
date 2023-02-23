@@ -8,7 +8,7 @@
 #include "../framework/physics/physics.h"
 
 
-GameSceneIngame::GameSceneIngame()
+GameSceneIngame::GameSceneIngame(std::unique_ptr<RelayClient> mp_client, std::unique_ptr<RelayServer> mp_server): m_server(std::move(mp_server)), m_client(std::move(mp_client))
 {
     //new PachinkoEmitter(256.0f+128.0f, 0.0f);
 

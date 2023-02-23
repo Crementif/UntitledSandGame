@@ -21,3 +21,4 @@ struct ButtonState
 };
 
 ButtonState& GetButtonState();
+bool pressedStart();

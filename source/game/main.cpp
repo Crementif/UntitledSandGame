@@ -52,7 +52,10 @@ int main()
         Render::SwapBuffers();
 
         if (currGameScene != GameScene::sActiveScene)
+        {
             delete currGameScene;
+            currGameScene = nullptr;
+        }
     }
 
     Render::Shutdown();

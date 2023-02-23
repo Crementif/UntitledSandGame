@@ -7,6 +7,8 @@
 #include <array>
 #include <unordered_map>
 #include <string>
+#include <locale>
+#include <codecvt>
 #include <algorithm>
 #include <memory>
 

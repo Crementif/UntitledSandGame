@@ -1,14 +1,15 @@
 #pragma once
 #include "GameScene.h"
+#include "TextButton.h"
 #include "../framework/render.h"
 #include "../framework/physics/physics.h"
-#include "TextButton.h"
+#include "../framework/multiplayer.h"
 
 enum class MenuState {
     NORMAL,
-    WAIT_FOR_CLIENTS,
-    WAIT_FOR_SERVER,
-    WAIT_FOR_SERVER_CONNECTING
+    WAIT_FOR_INPUT,
+    WAIT_FOR_CONNECTION,
+    WAIT_FOR_GAME
 };
 
 class GameSceneMenu : public GameScene {
@@ -16,8 +17,8 @@ public:
     GameSceneMenu();
     ~GameSceneMenu() override;
 
-    void Draw() override;
     void HandleInput() override;
+    void Draw() override;
 
 private:
     void DrawBackground();
@@ -31,4 +32,7 @@ private:
     FSClient* m_fsClient;
 
     MenuState m_state = MenuState::NORMAL;
+
+    std::unique_ptr<RelayServer> mp_server;
+    std::unique_ptr<RelayClient> mp_client;
 };

@@ -2,6 +2,7 @@
 #include "GameScene.h"
 #include "../framework/render.h"
 #include "../framework/physics/physics.h"
+#include "../framework/multiplayer.h"
 
 enum BUILDTYPE
 {
@@ -15,7 +16,7 @@ enum BUILDTYPE
 class GameSceneIngame : public GameScene
 {
 public:
-    GameSceneIngame();
+    explicit GameSceneIngame(std::unique_ptr<RelayClient> mp_client = nullptr, std::unique_ptr<RelayServer> mp_server = nullptr);
     ~GameSceneIngame() override;
 
     void Draw() override;
@@ -45,6 +46,10 @@ private:
     // player
     class Player* m_selfPlayer;
     Vector2f m_prevCamPos;
+
+    // multiplayer
+    std::unique_ptr<RelayServer> m_server;
+    std::unique_ptr<RelayClient> m_client;
 
     // hotbar / menu graphics
     Sprite m_menuBackdrop{"/tex/button_backdrop.tga", true};

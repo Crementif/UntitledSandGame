@@ -48,28 +48,49 @@ void GameSceneMenu::HandleInput() {
         nn::swkbd::CalcSubThreadFont();
     }
 
+    // Client-specific states
     bool pressedOkButton = false;
-    if (m_state == MenuState::WAIT_FOR_SERVER && nn::swkbd::IsDecideOkButton(&pressedOkButton)) {
+    if (m_state == MenuState::WAIT_FOR_INPUT && nn::swkbd::IsDecideOkButton(&pressedOkButton)) {
         nn::swkbd::DisappearInputForm();
-        m_state = MenuState::WAIT_FOR_SERVER_CONNECTING;
+        m_state = MenuState::WAIT_FOR_CONNECTION;
 
-        // todo: do something with this ip address
-        const char16_t *str = nn::swkbd::GetInputFormString();
+        auto ipAddress = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(nn::swkbd::GetInputFormString());
+        mp_client = std::make_unique<RelayClient>();
+        mp_client->ConnectTo(ipAddress);
     }
     bool pressedCancelButton = false;
-    if (m_state == MenuState::WAIT_FOR_SERVER && nn::swkbd::IsDecideCancelButton(&pressedCancelButton)) {
+    if (m_state == MenuState::WAIT_FOR_INPUT && nn::swkbd::IsDecideCancelButton(&pressedCancelButton)) {
         nn::swkbd::DisappearInputForm();
         m_state = MenuState::NORMAL;
     }
+
+    // Server states
+    if (m_state == MenuState::WAIT_FOR_CONNECTION && this->mp_server) {
+        mp_server->AcceptConnections();
+    }
+    if (m_state == MenuState::WAIT_FOR_GAME && this->mp_server && pressedStart()) {
+        GameScene::ChangeTo(new GameSceneIngame(std::move(mp_client), std::move(mp_server)));
+    }
+
+    // Client and server states
+    if (m_state == MenuState::WAIT_FOR_CONNECTION && this->mp_client->IsConnected()) {
+        m_state = MenuState::WAIT_FOR_GAME;
+    }
+
 
     if (isTouchValid && m_state == MenuState::NORMAL)
     {
         if (m_sandbox_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY}))
             GameScene::ChangeTo(new GameSceneIngame());
-        else if (m_host_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY}))
-            this->m_state = MenuState::WAIT_FOR_CLIENTS;
+        else if (m_host_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
+            this->m_state = MenuState::WAIT_FOR_CONNECTION;
+
+            this->mp_server = std::make_unique<RelayServer>();
+            this->mp_client = std::make_unique<RelayClient>();
+            this->mp_client->ConnectTo("127.0.0.1");
+        }
         else if (m_join_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
-            this->m_state = MenuState::WAIT_FOR_SERVER;
+            this->m_state = MenuState::WAIT_FOR_INPUT;
 
             nn::swkbd::AppearArg appearArg = {};
             appearArg.keyboardArg.configArg.keyboardMode = nn::swkbd::KeyboardMode::Numpad;
@@ -93,11 +114,17 @@ void GameSceneMenu::DrawButtons() {
 void GameSceneMenu::Draw() {
     this->DrawBackground();
     this->DrawButtons();
-    if (this->m_state == MenuState::WAIT_FOR_CLIENTS) {
-        const u32 stringWidth = strlen("Waiting for other players...")*16;
-        Render::RenderText(1920-stringWidth-20, 1080-80, 0, 0x00, "Waiting for other players...");
+    if (this->m_state == MenuState::WAIT_FOR_GAME && this->mp_server) {
+        u32 joinedPlayers = this->mp_server->GetConnectedPlayers();
+        std::string joinedPlayersText = "Press START to start match with "+std::to_string(joinedPlayers)+" players...";
+        const u32 stringWidth = joinedPlayersText.size()*16;
+        Render::RenderText(1920-stringWidth-20, 1080-80, 0, 0x00, joinedPlayersText.c_str());
     }
-    else if (this->m_state == MenuState::WAIT_FOR_SERVER_CONNECTING) {
+    else if (this->m_state == MenuState::WAIT_FOR_GAME) {
+        const u32 stringWidth = strlen("Waiting for game to start...")*16;
+        Render::RenderText(1920-stringWidth-20, 1080-80, 0, 0x00, "Waiting for game to start...");
+    }
+    else if (this->m_state == MenuState::WAIT_FOR_CONNECTION) {
         const u32 stringWidth = strlen("Connecting to server...")*16;
         Render::RenderText(1920-stringWidth-20, 1080-80, 0, 0x00, "Connecting to server...");
     }
