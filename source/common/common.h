@@ -8,6 +8,7 @@
 #include <unordered_map>
 #include <string>
 #include <algorithm>
+#include <memory>
 
 #include <coreinit/memdefaultheap.h>
 #include <coreinit/memfrmheap.h>
@@ -36,6 +37,10 @@
 #include <coreinit/cache.h>
 #include <coreinit/thread.h>
 #include <coreinit/time.h>
+
+#include <coreinit/filesystem.h>
+#include <coreinit/memdefaultheap.h>
+#include <nn/swkbd.h>
 
 #include <romfs-wiiu.h>
 

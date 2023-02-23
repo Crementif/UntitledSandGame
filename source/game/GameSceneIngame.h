@@ -21,8 +21,6 @@ public:
     void Draw() override;
     void HandleInput() override;
 
-    Vector2f GetCameraPosition();
-
 private:
     void DrawBackground();
     AABB GetHotbarPosition();
@@ -43,7 +41,7 @@ private:
     class Map* m_map;
 
     // hotbar / menu graphics
-    Sprite m_menuBackdrop{"/tex/menu_backdrop.tga", true};
+    Sprite m_menuBackdrop{"/tex/button_backdrop.tga", true};
     Sprite m_menuItemBeamHorizontalShort{"/tex/menu_beam.tga", true};
     Sprite m_menuItemBeamVerticalLong{"/tex/menu_beam_2.tga", true};
     Sprite m_menuItemSplitter{"/tex/menu_splitter.tga", true};

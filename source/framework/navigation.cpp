@@ -61,6 +61,16 @@ void vpadGetTouchInfo(bool& isTouchValid, s32& screenX, s32& screenY) {
     screenY = calibratedTP.y;
 }
 
+void vpadUpdateSWKBD() {
+    nn::swkbd::ControllerInfo controllerInfo;
+    controllerInfo.vpad = vpadBuffer;
+    controllerInfo.kpad[0] = KPADControllers[0].connected ? &KPADControllers[0].status : nullptr;
+    controllerInfo.kpad[1] = KPADControllers[1].connected ? &KPADControllers[1].status : nullptr;
+    controllerInfo.kpad[2] = KPADControllers[2].connected ? &KPADControllers[2].status : nullptr;
+    controllerInfo.kpad[3] = KPADControllers[3].connected ? &KPADControllers[3].status : nullptr;
+    nn::swkbd::Calc(controllerInfo);
+}
+
 // Check whether the Gamepad is pressing the specified button
 bool vpadButtonPressed(VPADButtons button) {
     if (vpadError == VPAD_READ_SUCCESS) {

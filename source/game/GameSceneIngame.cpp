@@ -100,11 +100,7 @@ void GameSceneIngame::DrawMenu()
 void GameSceneIngame::Draw()
 {
     gPhysicsMgr.Update(1.0f / 60.0f);
-
     Object::DoUpdates(1.0f / 60.0f);
-
-    Render::BeginFrame();
-    Render::BeginSpriteRendering();
 
     DrawBackground();
 
@@ -125,8 +121,6 @@ void GameSceneIngame::Draw()
 
     Object::DoDraws();
     DrawMenu();
-
-    Render::EndSpriteRendering();
 
     m_gameTime += 1.0/60.0;
 }

@@ -1,19 +1,14 @@
 #include "../common/common.h"
 //#include <nsysnet/_socket.h>
 #include "GameScene.h"
+#include "GameSceneMenu.h"
 #include "GameSceneIngame.h"
+#include "Object.h"
 #include "../framework/render.h"
 #include "../framework/navigation.h"
 #include "../framework/audio.h"
 
-GameScene* sActiveGameScene{nullptr};
-
-void SwitchToGameScene(GameScene* newGameScene)
-{
-    if (sActiveGameScene)
-        delete sActiveGameScene;
-    sActiveGameScene = newGameScene;
-}
+GameScene* GameScene::sActiveScene = nullptr;
 
 int main()
 {
@@ -36,18 +31,28 @@ int main()
             FALSE  // ^^^^^^^^^^^^^^^^^^^^^^
     );
 
-    SwitchToGameScene(new GameSceneIngame());
+    GameScene::ChangeTo(new GameSceneMenu());
 
+    GameScene* currGameScene = nullptr;
     while (Render::IsRunning())
     {
+        if (currGameScene != GameScene::sActiveScene)
+            currGameScene = GameScene::sActiveScene;
+
         updateInputs();
         AudioManager::GetInstance().ProcessAudio();
-        if (sActiveGameScene)
-        {
-            sActiveGameScene->HandleInput();
-            sActiveGameScene->Draw();
-        }
+
+        Render::BeginFrame();
+        Render::BeginSpriteRendering();
+
+        currGameScene->HandleInput();
+        currGameScene->Draw();
+
+        Render::EndSpriteRendering();
         Render::SwapBuffers();
+
+        if (currGameScene != GameScene::sActiveScene)
+            delete currGameScene;
     }
 
     Render::Shutdown();
