@@ -119,6 +119,8 @@ void GameSceneIngame::UpdateCamera()
 
 void GameSceneIngame::Draw()
 {
+    m_map->SimulateTick();
+
     UpdateCamera();
 
     gPhysicsMgr.Update(1.0f / 60.0f);

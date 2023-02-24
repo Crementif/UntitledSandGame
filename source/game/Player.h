@@ -19,7 +19,7 @@ public:
 
     Vector2f GetPosition() override;
 
-    void SlidePlayerPos(const Vector2f& newPos); // move player to new position, take collisions into account
+    bool SlidePlayerPos(const Vector2f& newPos); // move player to new position, take collisions into account
     bool DoesPlayerCollideAtPos(f32 posX, f32 posY);
 private:
     AABB CalcAABB(f32 posX, f32 posY);

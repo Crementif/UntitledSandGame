@@ -70,6 +70,39 @@ Vector2f Player::GetPosition()
 void Player::HandleLocalPlayerControl()
 {
     Vector2f leftStick = getLeftStick();
+    ButtonState& buttonState = GetButtonState();
+
+    // jumping
+    if(m_isTouchingGround && buttonState.buttonA.changedState && buttonState.buttonA.isDown)
+    {
+        Vector2f slightlyAbove = m_pos;
+        slightlyAbove.y -= 1.5f;
+        if(DoesPlayerCollideAtPos(m_pos.x, m_pos.y) && !DoesPlayerCollideAtPos(slightlyAbove.x, slightlyAbove.y))
+            m_pos = slightlyAbove;
+        m_speed.y = -1.5f;
+        m_isTouchingGround = false;
+        // player might be slightly stuck in the ground so move him up by a tiny bit?
+    }
+    if(!m_isTouchingGround)
+    {
+        // air movement
+        if(leftStick.x < -0.1f)
+        {
+            if(m_speed.x > -1.0)
+                m_speed.x -= 0.2f;
+        }
+        else if(leftStick.x > 0.1f)
+        {
+            if(m_speed.x < 1.0)
+                m_speed.x += 0.2f;
+        }
+    }
+    else
+    {
+        // ground movement
+        // todo
+    }
+
 }
 
 // "down" is +y
@@ -85,20 +118,26 @@ void Player::Update(float timestep)
     s32 piy = (s32)(m_pos.y + 0.5f);
 
     // apply gravity
-    m_speed.y += 0.1f;
+    if(!m_isTouchingGround)
+        m_speed.y += 0.16f;
 
     Vector2f newPos = m_pos + m_speed;
-    SlidePlayerPos(newPos);
+    if( !SlidePlayerPos(newPos) )
+    {
+        m_speed = m_speed * 0.5f; // collision happened, so slow down movement
+        // hacky way to detect partial down movement as touching the ground?
+    }
 
     // if we are moving down then check if ground touching flag needs to be set
     if(!m_isTouchingGround && m_speed.y >= 0.0001f)
     {
-        if(DoesPlayerCollideAtPos(m_pos.x, m_pos.y + 0.3f))
+        if(DoesPlayerCollideAtPos(m_pos.x, m_pos.y + 0.6f))
             m_isTouchingGround = true;
     }
     else if(m_isTouchingGround)
     {
         // if m_isTouchingGround is set then make sure the player "sticks" to the ground
+        m_speed.x *= 0.5f;
     }
 
     //if(!map->GetPixel(pix, piy).IsSolid())
@@ -110,15 +149,16 @@ void Player::Update(float timestep)
 }
 
 // move player to new position, stop at collisions
-void Player::SlidePlayerPos(const Vector2f& newPos)
+bool Player::SlidePlayerPos(const Vector2f& newPos)
 {
     // try moving full range first
     if(!DoesPlayerCollideAtPos(newPos.x, newPos.y))
     {
-        //UpdatePosition(Vector2f(newPos.x, newPos.y));
-        //return;
+        UpdatePosition(Vector2f(newPos.x, newPos.y));
+        return true;
     }
     // use binary search to find the distance we can actually move
+    /*
     Vector2f moveVec = newPos - m_pos;
     Vector2f tryMoveVec = moveVec * 0.5f;
     bool hasClosestTarget = false;
@@ -141,8 +181,9 @@ void Player::SlidePlayerPos(const Vector2f& newPos)
     {
         UpdatePosition(closestTarget);
     }
+     */
 
-
+    return false; // only partial move possible
 }
 
 bool Player::DoesPlayerCollideAtPos(f32 posX, f32 posY)

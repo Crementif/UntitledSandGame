@@ -9,12 +9,6 @@
 #define MAP_CELL_WIDTH  (64)
 #define MAP_CELL_HEIGHT  (64)
 
-struct ActivePixel
-{
-    uint16_t x;
-    uint16_t y;
-};
-
 enum class MAP_PIXEL_TYPE
 {
     AIR = 0,
@@ -30,10 +24,11 @@ union PixelType
         pixelType |= ((u32)type << 1);
     }
 
+    /*
     void SetDynamicPixel(ActivePixel* activePixel)
     {
 
-    }
+    }*/
 
     MAP_PIXEL_TYPE GetPixelType() const
     {
@@ -48,11 +43,10 @@ union PixelType
     }
 
     uint32_t pixelType; // LSB set
-    ActivePixel* pixelPtr; // LSB not set
+    //ActivePixel* pixelPtr; // LSB not set
 };
 
 static_assert(sizeof(PixelType) == 4);
-
 
 class MapCell
 {
@@ -95,6 +89,17 @@ public:
     PixelType& GetPixel(s32 x, s32 y);
     void GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut);
 
+    void SetPixelSpriteColor(s32 x, s32 y);
+
+    void SimulateTick();
+
+    void SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y);
+
+    u32 GetRNGNumber()
+    {
+        return m_rng.GetNext();
+    }
+
 private:
     void Init(uint32_t width, uint32_t height);
 
@@ -105,6 +110,10 @@ private:
     std::vector<MapCell> m_cells;
 
     std::vector<Vector2i> m_playerSpawnpoints;
+
+    class ActivePixelCollection* m_activePixels{nullptr};
+
+    LCGRng m_rng;
 };
 
 void SetCurrentMap(Map* newMap);

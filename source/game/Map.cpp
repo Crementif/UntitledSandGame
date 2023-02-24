@@ -1,4 +1,5 @@
 #include "Map.h"
+#include "MapPixels.h"
 #include "../framework/render.h"
 
 #include "../framework/fileformat/TGAFile.h"
@@ -95,6 +96,7 @@ void MapCell::DrawCell()
         m_cellSprite = new Sprite(MAP_CELL_WIDTH, MAP_CELL_HEIGHT, false);
         RefreshCellTexture();
     }
+    RefreshCellTexture();
     Render::RenderSprite(m_cellSprite, m_posX * MAP_PIXEL_ZOOM, m_posY * MAP_PIXEL_ZOOM, MAP_CELL_WIDTH * MAP_PIXEL_ZOOM, MAP_CELL_HEIGHT * MAP_PIXEL_ZOOM);
 }
 
@@ -146,6 +148,7 @@ void MapCell::RefreshCellTexture()
 void Map::Init(uint32_t width, uint32_t height)
 {
     perlinNoise_init();
+    m_activePixels = new ActivePixelCollection();
     m_cellsX = (width+MAP_CELL_WIDTH-1) / MAP_CELL_WIDTH;
     m_cellsY = (height+MAP_CELL_HEIGHT-1) / MAP_CELL_HEIGHT;
     m_cells.clear();
@@ -179,7 +182,7 @@ Map::Map(const char* filename)
 
 Map::~Map()
 {
-
+    delete m_activePixels;
 }
 
 void Map::GenerateTerrain()
