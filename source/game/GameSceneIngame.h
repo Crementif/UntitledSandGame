@@ -2,7 +2,7 @@
 #include "GameScene.h"
 #include "../framework/render.h"
 #include "../framework/physics/physics.h"
-#include "../framework/multiplayer.h"
+#include "../framework/multiplayer/multiplayer.h"
 
 enum BUILDTYPE
 {

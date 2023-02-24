@@ -1,12 +1,17 @@
 #pragma once
-#include "../common/common.h"
+#include "../../common/common.h"
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+enum class GameActionType {
+    GameStart,
+    PlayerInfo
+};
+
 struct GameAction {
     u32 packetSize;
-    int32_t originPlayer;
+    u32 originPlayer;
 };
 
 
