@@ -95,6 +95,7 @@ void MapCell::UpdateCell()
 void MapCell::DrawCell()
 {
     //RefreshCellTexture();
+    m_cellSprite->FlushCache();
     Render::RenderSprite(m_cellSprite, m_posX * MAP_PIXEL_ZOOM, m_posY * MAP_PIXEL_ZOOM, MAP_CELL_WIDTH * MAP_PIXEL_ZOOM, MAP_CELL_HEIGHT * MAP_PIXEL_ZOOM);
 }
 
