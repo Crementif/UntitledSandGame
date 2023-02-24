@@ -40,9 +40,18 @@ s32 inline _swapS32(s32 v)
     return ((v>>24)&0xff) | ((v<<8)&0xff0000) | ((v>>8)&0xff00) | ((v<<24)&0xff000000);
 }
 
+struct Vector2i
+{
+    Vector2i(s32 x, s32 y) : x(x), y(y) {}
+
+    s32 x;
+    s32 y;
+};
+
 struct Vector2f
 {
     Vector2f() : x(0.0f), y(0.0f) {}
+    Vector2f(const Vector2i& intVec) : x(intVec.x), y(intVec.y) {}
     Vector2f(f32 x, f32 y) : x(x), y(y) {}
 
     Vector2f operator-(const Vector2f& rhs) const
@@ -98,16 +107,12 @@ struct Vector2f
         return this->x * rhs.x + this->y * rhs.y;
     }
 
+    static Vector2f FromAngle(float radians) {
+        return Vector2f{cosf(radians), sinf(radians)};
+    }
+
     f32 x;
     f32 y;
-};
-
-struct Vector2i
-{
-    Vector2i(s32 x, s32 y) : x(x), y(y) {}
-
-    s32 x;
-    s32 y;
 };
 
 struct AABB

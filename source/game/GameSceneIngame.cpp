@@ -6,6 +6,7 @@
 
 #include "../framework/navigation.h"
 #include "../framework/physics/physics.h"
+#include "Particle.h"
 
 
 GameSceneIngame::GameSceneIngame(std::unique_ptr<RelayClient> mp_client, std::unique_ptr<RelayServer> mp_server): m_server(std::move(mp_server)), m_client(std::move(mp_client))
@@ -25,11 +26,12 @@ GameSceneIngame::GameSceneIngame(std::unique_ptr<RelayClient> mp_client, std::un
 
     m_selfPlayer = new Player((f32)spawnpos.x, (f32)spawnpos.y);
     m_prevCamPos = Render::GetCameraPosition();
+
+    new Particle(std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(spawnpos), 8, 2.0f, 40, 0.0f);
 }
 
 GameSceneIngame::~GameSceneIngame()
 {
-
 }
 
 void GameSceneIngame::DrawBackground()
