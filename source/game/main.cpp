@@ -56,6 +56,9 @@ int main()
             delete currGameScene;
             currGameScene = nullptr;
         }
+
+        if (GameScene::sActiveScene == nullptr)
+            break;
     }
 
     Render::Shutdown();
