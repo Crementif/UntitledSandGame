@@ -50,6 +50,7 @@ static_assert(sizeof(PixelType) == 4);
 
 class MapCell
 {
+    friend class Map;
 public:
     MapCell(class Map* map, u32 cellX, u32 cellY);
     void LoadCellFromTGA(class TGALoader& tgaLoader);
@@ -86,10 +87,10 @@ public:
         return m_playerSpawnpoints;
     }
 
+    void SetPixelColor(s32 x, s32 y, u32 c);
+
     PixelType& GetPixel(s32 x, s32 y);
     void GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut);
-
-    void SetPixelSpriteColor(s32 x, s32 y);
 
     void SimulateTick();
 

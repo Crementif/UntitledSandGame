@@ -4,6 +4,8 @@
 
 #include <coreinit/debug.h>
 
+u32 _GetColorFromPixelType(PixelType& pixelType);
+
 template<MAP_PIXEL_TYPE TMaterial>
 class ActivePixel
 {
@@ -15,12 +17,17 @@ public:
 
     void RemoveFromWorld(Map* map)
     {
-        map->GetPixel(x, y).SetPixel(MAP_PIXEL_TYPE::AIR);
+        PixelType& pt = map->GetPixel(x, y);
+        pt.SetPixel(MAP_PIXEL_TYPE::AIR);
+        map->SetPixelColor(x, y, 0x00000000);
     }
 
     void IntegrateIntoWorld(Map* map)
     {
-        map->GetPixel(x, y).SetPixel(TMaterial);
+        PixelType& pt = map->GetPixel(x, y);
+        pt.SetPixel(TMaterial);
+        // update pixel color
+        map->SetPixelColor(x, y, _GetColorFromPixelType(pt));
     }
 
     void ChangeParticleXY(Map* map, s32 x, s32 y)

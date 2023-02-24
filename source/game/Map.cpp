@@ -29,6 +29,8 @@ MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c)
 
 MapCell::MapCell(Map* map, u32 cellX, u32 cellY) : m_cellX(cellX), m_cellY(cellY), m_posX(cellX * MAP_CELL_WIDTH), m_posY(cellY * MAP_CELL_HEIGHT), m_map(map)
 {
+    m_cellSprite = new Sprite(MAP_CELL_WIDTH, MAP_CELL_HEIGHT, false);
+
     /*
     s32 py = m_posY;
     PixelType* pOut = m_pixelArray;
@@ -77,6 +79,7 @@ void MapCell::LoadCellFromTGA(class TGALoader& tgaLoader)
         }
         py++;
     }
+    RefreshCellTexture();
 }
 
 PixelType& MapCell::GetPixelFromCellCoords(s32 x, s32 y)
@@ -91,12 +94,7 @@ void MapCell::UpdateCell()
 
 void MapCell::DrawCell()
 {
-    if(!m_cellSprite)
-    {
-        m_cellSprite = new Sprite(MAP_CELL_WIDTH, MAP_CELL_HEIGHT, false);
-        RefreshCellTexture();
-    }
-    RefreshCellTexture();
+    //RefreshCellTexture();
     Render::RenderSprite(m_cellSprite, m_posX * MAP_PIXEL_ZOOM, m_posY * MAP_PIXEL_ZOOM, MAP_CELL_WIDTH * MAP_PIXEL_ZOOM, MAP_CELL_HEIGHT * MAP_PIXEL_ZOOM);
 }
 
@@ -184,6 +182,16 @@ Map::~Map()
 {
     delete m_activePixels;
 }
+
+void Map::SetPixelColor(s32 x, s32 y, u32 c)
+{
+    s32 cellX = x >> 6;
+    s32 relX = x & 0x3F;
+    s32 cellY = y >> 6;
+    s32 relY = y & 0x3F;
+    m_cells[cellX + cellY * m_cellsX].m_cellSprite->SetPixel(relX, relY, c);
+}
+
 
 void Map::GenerateTerrain()
 {
