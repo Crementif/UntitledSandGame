@@ -66,7 +66,7 @@ void GameSceneMenu::HandleInput() {
 
     // Server states
     if (m_state == MenuState::WAIT_FOR_CONNECTION && this->mp_server) {
-        mp_server->AcceptConnections();
+        this->mp_server->GetConnectedPlayers();
     }
     if (m_state == MenuState::WAIT_FOR_GAME && this->mp_server && pressedStart()) {
         GameScene::ChangeTo(new GameSceneIngame(std::move(mp_client), std::move(mp_server)));
@@ -86,6 +86,7 @@ void GameSceneMenu::HandleInput() {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
 
             this->mp_server = std::make_unique<RelayServer>();
+            this->mp_server->AcceptConnections();
             this->mp_client = std::make_unique<RelayClient>();
             this->mp_client->ConnectTo("127.0.0.1");
         }

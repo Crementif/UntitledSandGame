@@ -46,19 +46,28 @@ u32 RelayServer::GetConnectedPlayers() {
 };
 
 bool RelayClient::ConnectTo(std::string_view address) {
-    if ((conn_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) return false;
+    if ((conn_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) return false;
     if (setsockopt(conn_socket, SOL_SOCKET, SO_REUSEADDR | SO_NONBLOCK, &sockOptionEnable, sizeof(sockOptionEnable)) < 0) return false;
 
     destination_addr.sin_family = AF_INET;
     destination_addr.sin_port = htons(8890);
     if (inet_aton(address.data(), &destination_addr.sin_addr) <= 0) return false;
+
+    if (connect(conn_socket, (struct sockaddr *)&destination_addr, sizeof(destination_addr)) < 0) {
+        if (errno == EINPROGRESS || errno == EWOULDBLOCK || errno == EAGAIN) {
+            return false;
+        }
+        return false;
+    }
+    WHBLogPrintf("Connecting to %s", address.data());
     return true;
 };
 
-bool RelayClient::IsConnected() {
-    if (connect(conn_socket, (struct sockaddr *)&destination_addr, sizeof(destination_addr)) < 0 && errno == EINPROGRESS)
-        return false;
-    return true;
+bool RelayClient::IsConnected() const {
+    struct sockaddr_in addr = {};
+    socklen_t addrLength = sizeof(addr);
+    bool ret = getpeername(conn_socket, (struct sockaddr*)&addr, &addrLength) == 0;
+    return ret;
 }
 
 RelayClient::~RelayClient() {

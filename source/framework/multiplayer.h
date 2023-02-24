@@ -34,7 +34,7 @@ public:
     ~RelayClient();
 
     bool ConnectTo(std::string_view address);
-    bool IsConnected();
+    bool IsConnected() const;
 private:
     struct sockaddr_in destination_addr{};
     int conn_socket{};
