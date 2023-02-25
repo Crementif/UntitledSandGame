@@ -17,6 +17,7 @@
 #include <coreinit/memexpheap.h>
 #include <coreinit/filesystem.h>
 #include <coreinit/debug.h>
+#include <coreinit/dynload.h>
 
 #include <gx2/clear.h>
 #include <gx2/draw.h>
@@ -24,6 +25,7 @@
 #include <gx2/registers.h>
 #include <gx2/utils.h>
 #include <gx2/event.h>
+#include <gx2/shaders.h>
 
 #include <whb/file.h>
 #include <whb/gfx.h>

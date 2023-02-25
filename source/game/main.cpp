@@ -7,6 +7,7 @@
 #include "../framework/render.h"
 #include "../framework/navigation.h"
 #include "../framework/audio.h"
+#include "../framework/compiler.h"
 
 GameScene* GameScene::sActiveScene = nullptr;
 
@@ -17,6 +18,7 @@ int main()
     initializeInputs();
 
     Render::Init();
+    GLSL_Init();
 
     // set polygon mode
     GX2SetPolygonControl(
@@ -61,6 +63,7 @@ int main()
             break;
     }
 
+    GLSL_Shutdown();
     Render::Shutdown();
 
     WHBLogCafeDeinit();

@@ -50,10 +50,4 @@ private:
 
     // misc
     f32 m_gameTime{};
-
-    // money
-    uint32_t grayCurrency = 1000;
-    uint32_t blueCurrency = 14;
-    uint32_t greenCurrency = 0;
-    uint32_t redCurrency = 256;
 };
