@@ -108,6 +108,7 @@ void GameSceneMenu::HandleInput() {
             appearArg.keyboardArg.configArg.okString = u"Connect";
             appearArg.keyboardArg.configArg.showWordSuggestions = false;
             appearArg.keyboardArg.configArg.languageType = nn::swkbd::LanguageType::English;
+            appearArg.inputFormArg.initialText = u"127.0.0.1";
             appearArg.inputFormArg.hintText = u"Type IP address";
             if (!nn::swkbd::AppearInputForm(appearArg))
                 OSFatal("nn::swkbd::AppearInputForm failed");
