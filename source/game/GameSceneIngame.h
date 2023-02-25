@@ -32,7 +32,7 @@ private:
 
     AABB GetWorldBounds();
 
-    Sprite m_testSprite{"/tex/cross.tga", true};
+    Sprite m_heartSprite{"/tex/heart.tga", true};
 
     Sprite m_bgSpriteA{"/tex/background_tile_a.tga"};
 

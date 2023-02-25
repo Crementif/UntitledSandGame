@@ -13,10 +13,6 @@
 
 GameSceneIngame::GameSceneIngame(class GameClient* client, class GameServer* server) : m_server(server), m_client(client)
 {
-    //new PachinkoEmitter(256.0f+128.0f, 0.0f);
-
-    //new BallBucket(256.0f * 3.0f + 128.0f, 256.0f * 3.0f + 128.0f);
-
     m_map = new Map("level0.tga");
     SetCurrentMap(m_map);
 
@@ -39,9 +35,14 @@ GameSceneIngame::~GameSceneIngame()
 std::vector<std::string> g_debugStrings;
 
 void GameSceneIngame::DrawHUD() {
+    static u32 heartsAnimationTicks = 0;
+    heartsAnimationTicks++;
+    if (heartsAnimationTicks >= 15)
+        heartsAnimationTicks = 0;
     for (u32 i=0; i<m_selfPlayer->GetPlayerHealth(); i++) {
-        Render::RenderSpriteScreenRelative(&m_testSprite, 20+(i*(m_testSprite.GetWidth()+20)), 20);
+        Render::RenderSpritePortionScreenRelative(&m_heartSprite, 20+(i*(m_heartSprite.GetWidth()+20)), 20, 0, 64*(heartsAnimationTicks/5), 64, 64);
     }
+
     for (u32 i=0; i<g_debugStrings.size(); i++) {
         Render::RenderText(20, 100+(i*16), 0, 0x00, g_debugStrings[i].c_str());
     }
