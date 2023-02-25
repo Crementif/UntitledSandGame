@@ -1,6 +1,6 @@
 #pragma once
 #include "../framework/multiplayer/multiplayer.h"
-#include "NetActions.h"
+#include "NetCommon.h"
 
 class GameServer
 {
@@ -23,6 +23,9 @@ public:
     }
 
 private:
+    void ProcessPacket(u32 playerId, u8 opcode, PacketParser& pp);
+    bool ProcessPacket_Movement(u32 playerId, PacketParser& pp);
+
     RelayServer* m_server;
     bool m_gameStarted{false};
     u32 m_levelId;

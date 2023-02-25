@@ -76,7 +76,7 @@ class Map
 {
     friend class MapCell;
 public:
-    Map(const char* filename);
+    Map(const char* filename, u32 rngSeed);
     ~Map();
 
     void Update();

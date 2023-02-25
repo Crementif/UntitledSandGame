@@ -13,23 +13,81 @@
 
 GameSceneIngame::GameSceneIngame(class GameClient* client, class GameServer* server) : m_server(server), m_client(client)
 {
-    m_map = new Map("level0.tga");
+    u32 levelId;
+    u32 rngSeed;
+    if(client)
+    {
+        levelId = client->GetGameSessionInfo().levelId;
+        rngSeed = client->GetGameSessionInfo().rngSeed;
+    }
+    else
+    {
+        // sandbox mode
+        levelId = 0;
+        rngSeed = 123;
+    }
+
+    char levelFilename[32];
+    sprintf(levelFilename, "level%u.tga", levelId);
+    m_map = new Map(levelFilename, rngSeed);
     SetCurrentMap(m_map);
+
+    //new Particle(std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(spawnpos), 8, 2.0f, 40, 0.0f);
+
+    SpawnPlayers();
+    m_prevCamPos = Render::GetCameraPosition();
+}
+
+GameSceneIngame::~GameSceneIngame()
+{
+}
+
+void GameSceneIngame::SpawnPlayers()
+{
+    m_idToPlayer.clear();
+    m_selfPlayer = nullptr;
 
     const std::vector<Vector2i> spawnpoints = m_map->GetPlayerSpawnpoints();
     if(spawnpoints.empty())
         CriticalErrorHandler("Level does not have any spawnpoints");
 
-    Vector2i spawnpos = spawnpoints[rand()%spawnpoints.size()]; // non-deterministic for now
+    if(!m_client)
+    {
+        // sandbox mode
+        OSReport("[GameSceneIngame::SpawnPlayers] Sandbox mode\n");
+        size_t spawnIdx = m_map->GetRNGNumber() % spawnpoints.size();
+        Vector2i playerSpawnPos = spawnpoints[spawnIdx];
+        m_selfPlayer = new Player((f32)playerSpawnPos.x, (f32)playerSpawnPos.y);
+        return;
+    }
+    OSReport("[GameSceneIngame::SpawnPlayers] Spawning %d players...\n", (int)m_client->GetGameSessionInfo().playerIds.size());
+    PlayerID ourPlayerId = m_client->GetGameSessionInfo().ourPlayerId;
+    // spawn players
+    std::vector<Vector2i> availSpawnpoints = spawnpoints;
+    m_selfPlayer = nullptr;
+    OSReport("Our player id: %08x\n", ourPlayerId);
 
-    m_selfPlayer = new Player((f32)spawnpos.x, (f32)spawnpos.y);
-    m_prevCamPos = Render::GetCameraPosition();
-
-    new Particle(std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(spawnpos), 8, 2.0f, 40, 0.0f);
-}
-
-GameSceneIngame::~GameSceneIngame()
-{
+    for(PlayerID playerId : m_client->GetGameSessionInfo().playerIds)
+    {
+        if(availSpawnpoints.empty())
+        {
+            OSReport("Ran out of spawnpoints. Reusing already assigned locations");
+            availSpawnpoints = spawnpoints;
+        }
+        // get random spawn position according to player id
+        size_t spawnIdx = m_map->GetRNGNumber() % availSpawnpoints.size();
+        Vector2i playerSpawnPos = availSpawnpoints[spawnIdx];
+        availSpawnpoints.erase(availSpawnpoints.begin() + spawnIdx);
+        // spawn player
+        OSReport("Spawning player %08x at %d/%d\n", playerId, playerSpawnPos.x, playerSpawnPos.y);
+        Player* player = new Player((f32)playerSpawnPos.x, (f32)playerSpawnPos.y);
+        m_idToPlayer.try_emplace(playerId, player);
+        // is it us?
+        if(playerId == ourPlayerId)
+            m_selfPlayer = player;
+    }
+    if(!m_selfPlayer)
+        CriticalErrorHandler("Game started without self-player");
 }
 
 std::vector<std::string> g_debugStrings;
@@ -76,11 +134,40 @@ void GameSceneIngame::UpdateCamera()
     Render::SetCameraPosition(newCameraPosition);
 }
 
-void GameSceneIngame::Draw()
+void GameSceneIngame::UpdateMultiplayer()
 {
     if(m_server)
         m_server->Update();
+    if(!m_client)
+        return;
+    m_client->Update();
+    // process received events
+    std::vector<GameClient::EventMovement> eventMovement = m_client->GetAndClearMovementEvents();
+    for(auto& event : eventMovement)
+    {
+        Player* player = m_idToPlayer[event.playerId];
+        player->SyncMovement(event.pos, event.speed);
+    }
+    // player started jumping
 
+    // send movement state
+    u32 elapsedTicks = OSGetTick() - m_lastMovementBroadcast;
+    if(elapsedTicks > OSMillisecondsToTicks(180))
+    {
+        // also sent this immediately when the player is starting a jump?
+        Vector2f pos = m_selfPlayer->GetPosition();
+        Vector2f speed = m_selfPlayer->GetSpeed();
+        m_client->SendMovement(pos, speed);
+        m_lastMovementBroadcast = OSGetTick();
+    }
+
+}
+
+void GameSceneIngame::Draw()
+{
+    UpdateMultiplayer();
+
+    m_selfPlayer->HandleLocalPlayerControl();
     m_map->SimulateTick();
 
     UpdateCamera();

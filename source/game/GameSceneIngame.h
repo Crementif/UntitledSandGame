@@ -3,6 +3,9 @@
 #include "../framework/render.h"
 #include "../framework/physics/physics.h"
 #include "../framework/multiplayer/multiplayer.h"
+#include "NetCommon.h"
+
+#include <unordered_map>
 
 enum BUILDTYPE
 {
@@ -25,10 +28,13 @@ public:
     void HandleInput() override;
 
 private:
+    void SpawnPlayers();
+
     void DrawBackground();
     void DrawHUD();
 
     void UpdateCamera();
+    void UpdateMultiplayer();
 
     AABB GetWorldBounds();
 
@@ -41,10 +47,12 @@ private:
     // player
     class Player* m_selfPlayer;
     Vector2f m_prevCamPos;
+    std::unordered_map<PlayerID, class Player*> m_idToPlayer;
 
     // multiplayer
     class GameServer* m_server{nullptr};
     class GameClient* m_client{nullptr};
+    u32 m_lastMovementBroadcast{};
 
     // touch scrolling
     bool m_isScrolling{false};

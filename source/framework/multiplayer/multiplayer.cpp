@@ -38,7 +38,7 @@ u32 RelayServer::HandleConnectingPlayers() {
         }
 
         int sockOptionEnable = 1;
-        if (setsockopt(receiving_socket, SOL_SOCKET, SO_NONBLOCK, &sockOptionEnable, sizeof(sockOptionEnable)) < 0)
+        if (setsockopt(newClient.socket, SOL_SOCKET, SO_NONBLOCK, &sockOptionEnable, sizeof(sockOptionEnable)) < 0)
             continue;
 
         newClient.playerId = m_playerIdGen;
@@ -48,6 +48,49 @@ u32 RelayServer::HandleConnectingPlayers() {
 
     return this->clients.size();
 };
+
+void RelayServer::Update()
+{
+    // check for incoming packets
+    // todo - its probably faster if we use select here? But non-blocking recv should be fine for our purposes
+    // recvBuffer
+    for(auto& client : clients)
+    {
+        // make sure there is always space in the receive buffer
+        u32 minExpectedBufferSize = client.recvIndex + 256;
+        if(minExpectedBufferSize > client.recvBuffer.size())
+            client.recvBuffer.resize(minExpectedBufferSize);
+        // receive as many bytes as fit into the buffer
+        u32 remainingBufferBytes = client.recvBuffer.size() - client.recvIndex;
+        int r = recv(client.socket, client.recvBuffer.data() + client.recvIndex, remainingBufferBytes, 0);
+        if(r <= 0)
+            continue;
+        OSReport("RelayServer::Update r %d\n", r);
+        client.recvIndex += (u32)r;
+        // process as many whole packets as available
+        while( true ) {
+            if (client.recvIndex < 3)
+                break;
+            u32 packetSize = 0;
+            packetSize |= ((u32)client.recvBuffer[1] << 8);
+            packetSize |= ((u32)client.recvBuffer[2] << 0);
+            packetSize += 3;
+            if (client.recvIndex < packetSize)
+                break;
+            // process packet
+            if (cb_PacketHandler)
+            {
+                u8 opcode = client.recvBuffer[0];
+                PacketParser pp(client.recvBuffer.data() + 3, packetSize - 3);
+                cb_PacketHandler(m_customParam, client.playerId, opcode, pp);
+            }
+            // shift data
+            client.recvBuffer.erase(client.recvBuffer.begin(), client.recvBuffer.begin() + packetSize);
+            client.recvIndex -= packetSize;
+        }
+    }
+
+}
 
 void RelayServer::SendToAll(PacketBuilder& pb)
 {
@@ -79,6 +122,22 @@ void RelayServer::SendToPlayerId(PacketBuilder& pb, u32 playerId)
         }
     }
 }
+
+void RelayServer::SendToAllExceptPlayerId(PacketBuilder& pb, u32 playerId)
+{
+    pb.Finalize();
+    const std::vector<u8>& data = pb.GetData();
+    for(auto& it : clients)
+    {
+        if(it.playerId != playerId)
+        {
+            OSReport("[Server] Send %d bytes to player %08x\n", (int)pb.GetData().size(), playerId);
+            send(it.socket, data.data(), data.size(), 0);
+            return;
+        }
+    }
+}
+
 
 bool RelayClient::ConnectTo(std::string_view address)
 {
@@ -146,7 +205,7 @@ void RelayClient::Update()
             cb_PacketHandler(m_customParam, opcode, pp);
         }
         // shift data
-        m_recvBuffer.erase(m_recvBuffer.begin(), m_recvBuffer.begin() + m_recvIndex);
+        m_recvBuffer.erase(m_recvBuffer.begin(), m_recvBuffer.begin() + packetSize);
         m_recvIndex -= packetSize;
     }
 }

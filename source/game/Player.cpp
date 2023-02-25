@@ -51,6 +51,13 @@ void Player::UpdatePosition(const Vector2f& newPos)
     m_aabb = CalcAABB(m_pos.x, m_pos.y);
 }
 
+void Player::SyncMovement(Vector2f pos, Vector2f speed)
+{
+    m_pos = pos;
+    m_speed = speed;
+    m_isTouchingGround = false; // calculating this properly requires more sophisticated logic
+}
+
 void Player::Draw(u32 layerIndex)
 {
     //if(layerIndex != DRAW_LAYER_PLAYERS)
@@ -110,7 +117,6 @@ void Player::HandleLocalPlayerControl()
 // top left corner of the level is 0/0
 void Player::Update(float timestep)
 {
-    HandleLocalPlayerControl();
     Map* map = GetCurrentMap();
 
     // get pos as pixel integer coordinates

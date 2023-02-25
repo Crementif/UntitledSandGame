@@ -161,8 +161,9 @@ void Map::Init(uint32_t width, uint32_t height)
     //GenerateTerrain();
 }
 
-Map::Map(const char* filename)
+Map::Map(const char* filename, u32 rngSeed)
 {
+    m_rng.SetSeed(rngSeed);
     OSReport("Level load - Phase 1\n");
     auto mapData = LoadFileToMem(std::string("level/").append(filename));
     if(mapData.empty())
