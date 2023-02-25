@@ -36,9 +36,14 @@ GameSceneIngame::~GameSceneIngame()
 {
 }
 
+std::vector<std::string> g_debugStrings;
+
 void GameSceneIngame::DrawHUD() {
     for (u32 i=0; i<m_selfPlayer->GetPlayerHealth(); i++) {
         Render::RenderSpriteScreenRelative(&m_testSprite, 20+(i*(m_testSprite.GetWidth()+20)), 20);
+    }
+    for (u32 i=0; i<g_debugStrings.size(); i++) {
+        Render::RenderText(20, 100+(i*16), 0, 0x00, g_debugStrings[i].c_str());
     }
 }
 
