@@ -24,10 +24,10 @@ private:
     void DrawBackground();
     void DrawButtons();
 
+    Map* m_map;
     TextButton* m_sandbox_btn;
     TextButton* m_host_btn;
     TextButton* m_join_btn;
-    TextButton* m_exit_btn;
 
     FSClient* m_fsClient;
 

@@ -8,10 +8,12 @@
 #include "GameClient.h"
 
 GameSceneMenu::GameSceneMenu() {
-    m_sandbox_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+000, 500, 80}, "Sandbox");
-    m_host_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+100, 500, 80}, "Host");
-    m_join_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+200, 500, 80}, "Join");
-    m_exit_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+300, 500, 80}, "Exit");
+    m_map = new Map("menu.tga", 1337);
+    SetCurrentMap(m_map);
+
+    m_sandbox_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
+    m_host_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, "Host");
+    m_join_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, "Join");
 
     m_fsClient = (FSClient*)MEMAllocFromDefaultHeap(sizeof(FSClient));
     FSAddClient(m_fsClient, FS_ERROR_FLAG_NONE);
@@ -28,17 +30,15 @@ GameSceneMenu::GameSceneMenu() {
 }
 
 GameSceneMenu::~GameSceneMenu() {
+    delete m_map;
+
     delete m_sandbox_btn;
     delete m_host_btn;
     delete m_join_btn;
-    delete m_exit_btn;
 
     delete m_fsClient;
 }
 
-void GameSceneMenu::DrawBackground() {
-    // Render something
-}
 
 void GameSceneMenu::HandleInput() {
     bool isTouchValid = false;
@@ -113,9 +113,19 @@ void GameSceneMenu::HandleInput() {
             if (!nn::swkbd::AppearInputForm(appearArg))
                 OSFatal("nn::swkbd::AppearInputForm failed");
         }
-        else if (m_exit_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY}))
-            GameScene::ChangeTo(nullptr);
     }
+}
+
+void GameSceneMenu::DrawBackground() {
+    if ((m_map->GetRNGNumber()&0x7) < 1)
+        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 430, 0);
+
+    if ((m_map->GetRNGNumber()&0x7) < 1)
+        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 260, 0);
+
+    m_map->SimulateTick();
+    m_map->Draw();
+    m_map->Update(); // map objects are always independent of the world simulation?
 }
 
 void GameSceneMenu::DrawButtons() {

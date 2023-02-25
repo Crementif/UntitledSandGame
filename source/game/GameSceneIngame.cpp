@@ -24,7 +24,7 @@ GameSceneIngame::GameSceneIngame(class GameClient* client, class GameServer* ser
     {
         // sandbox mode
         levelId = 0;
-        rngSeed = 123;
+        rngSeed = 1337;
     }
 
     char levelFilename[32];
@@ -202,6 +202,12 @@ void GameSceneIngame::HandleInput()
 void GameSceneIngame::RunDeterministicSimulationStep()
 {
     double startTime = GetMillisecondTimestamp();
+
+    if ((m_map->GetRNGNumber()&0x7) < 3)
+        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 200, 155);
+
+    if ((m_map->GetRNGNumber()&0x7) < 3)
+        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 700, 210);
 
     m_map->SimulateTick();
     m_map->Update(); // map objects are always independent of the world simulation?

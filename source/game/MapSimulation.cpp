@@ -26,13 +26,6 @@ void SimulateMaterial(Map* map, std::vector<T>& pixels)
 
 void Map::SimulateTick()
 {
-    if((GetRNGNumber()&0x7) < 3)
-        SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 200, 155);
-
-    if((GetRNGNumber()&0x7) < 3)
-        SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 700, 210);
-
-    g_debugStrings.emplace_back("Sand Particles: " + std::to_string(m_activePixels->sandPixels.size()));
-
     SimulateMaterial(GetCurrentMap(), m_activePixels->sandPixels);
+    g_debugStrings.emplace_back("Sand Particles: " + std::to_string(m_activePixels->sandPixels.size()));
 }
