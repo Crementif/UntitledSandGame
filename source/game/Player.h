@@ -17,6 +17,7 @@ public:
     s32 GetPlayerWidth() const;
     s32 GetPlayerHeight() const;
 
+    u32 GetPlayerHealth() const { return m_health; };
     Vector2f GetPosition() override;
 
     bool SlidePlayerPos(const Vector2f& newPos); // move player to new position, take collisions into account
@@ -29,4 +30,6 @@ private:
     Vector2f m_pos;
     Vector2f m_speed{};
     bool m_isTouchingGround{};
+
+    u32 m_health = 3;
 };

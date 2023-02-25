@@ -12,6 +12,8 @@ public:
     void SetPixel(u32 x, u32 y, u32 color);
     void FlushCache();
 
+    s32 GetWidth() const { return m_width; }
+    s32 GetHeight() const { return m_height; }
 private:
     struct GX2Texture* m_tex;
     s32 m_width;
@@ -34,6 +36,7 @@ public:
     static void RenderSprite(Sprite* sprite, s32 x, s32 y);
     static void RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight);
     static void RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y);
+    static void RenderSpriteScreenRelative(Sprite *sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight);
     static void RenderSpritePortionScreenRelative(Sprite*, s32, s32, u32, u32, u32, u32);
 
     static void SetCameraPosition(Vector2f pos);

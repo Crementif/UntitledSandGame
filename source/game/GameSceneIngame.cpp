@@ -36,6 +36,12 @@ GameSceneIngame::~GameSceneIngame()
 {
 }
 
+void GameSceneIngame::DrawHUD() {
+    for (u32 i=0; i<m_selfPlayer->GetPlayerHealth(); i++) {
+        Render::RenderSpriteScreenRelative(&m_testSprite, 20+(i*(m_testSprite.GetWidth()+20)), 20);
+    }
+}
+
 void GameSceneIngame::DrawBackground()
 {
     Vector2f camPos = Render::GetCameraPosition();
@@ -82,6 +88,7 @@ void GameSceneIngame::Draw()
     m_map->Draw();
 
     Object::DoDraws();
+    DrawHUD();
 
     m_gameTime += 1.0/60.0;
 }

@@ -372,6 +372,23 @@ void Render::RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y)
     GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
 }
 
+void Render::RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight)
+{
+    GX2Texture* tex = sprite->GetTexture();
+    u32 baseVertex = _SetupSpriteVertexData<false>((f32)x, (f32)y, (f32)pxWidth, (f32)pxHeight);
+
+    if(sRenderTransparencyMode != sprite->m_hasTransparency)
+    {
+        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
+        sRenderTransparencyMode = sprite->m_hasTransparency;
+    }
+
+    GX2SetPixelTexture(tex, 0);
+    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+
+    GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
+}
+
 GX2Texture* LoadFromTGA(u8* data, u32 length);
 GX2Texture* _InitSpriteTexture(u32 width, u32 height);
 
@@ -383,12 +400,16 @@ Sprite::Sprite(const char* path, bool hasTransparency) : m_hasTransparency(hasTr
     std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
     m_tex = LoadFromTGA((u8*)data.data(), data.size());
     if (!m_tex) CriticalErrorHandler("Invalid TGA data");
+    m_width = (s32)m_tex->surface.width;
+    m_height = (s32)m_tex->surface.height;
 }
 
 Sprite::Sprite(u32 width, u32 height, bool hasTransparency) : m_hasTransparency(hasTransparency)
 {
     m_tex = _InitSpriteTexture(width, height);
     if (!m_tex) CriticalErrorHandler("Invalid TGA data");
+    m_width = (s32)m_tex->surface.width;
+    m_height = (s32)m_tex->surface.height;
 }
 
 void Sprite::SetPixel(u32 x, u32 y, u32 color)
