@@ -28,6 +28,8 @@ public:
     void HandleInput() override;
 
 private:
+    void RunDeterministicSimulationStep();
+
     void SpawnPlayers();
 
     void DrawBackground();

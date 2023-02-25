@@ -11,6 +11,7 @@
 #include <codecvt>
 #include <algorithm>
 #include <memory>
+#include <chrono>
 
 #include <coreinit/memdefaultheap.h>
 #include <coreinit/memfrmheap.h>
@@ -18,6 +19,7 @@
 #include <coreinit/filesystem.h>
 #include <coreinit/debug.h>
 #include <coreinit/dynload.h>
+#include <coreinit/time.h>
 
 #include <gx2/clear.h>
 #include <gx2/draw.h>
@@ -60,4 +62,10 @@ inline std::vector<u8> LoadFileToMem(const std::string path)
         CriticalErrorHandler("Failed to open file %s\n", path.c_str());
     std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
     return data;
+}
+
+inline double GetMillisecondTimestamp()
+{
+    double microSec = (double)(OSTicksToMicroseconds(OSGetTick()));
+    return microSec / 1000.0;
 }

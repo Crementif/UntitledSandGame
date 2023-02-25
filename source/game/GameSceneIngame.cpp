@@ -168,7 +168,8 @@ void GameSceneIngame::Draw()
     UpdateMultiplayer();
 
     m_selfPlayer->HandleLocalPlayerControl();
-    m_map->SimulateTick();
+
+    RunDeterministicSimulationStep();
 
     UpdateCamera();
 
@@ -177,7 +178,6 @@ void GameSceneIngame::Draw()
 
     DrawBackground();
 
-    m_map->Update();
     m_map->Draw();
 
     Object::DoDraws();
@@ -194,4 +194,17 @@ AABB GameSceneIngame::GetWorldBounds()
 
 void GameSceneIngame::HandleInput()
 {
+}
+
+void GameSceneIngame::RunDeterministicSimulationStep()
+{
+    double startTime = GetMillisecondTimestamp();
+
+    m_map->SimulateTick();
+    m_map->Update(); // map objects are always independent of the world simulation?
+
+    double dur = GetMillisecondTimestamp() - startTime;
+    char buf[128];
+    sprintf(buf, "Simulation time: %.4lfms", dur);
+    g_debugStrings.push_back(buf);
 }
