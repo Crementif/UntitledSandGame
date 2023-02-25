@@ -16,7 +16,7 @@ enum BUILDTYPE
 class GameSceneIngame : public GameScene
 {
 public:
-    explicit GameSceneIngame(std::unique_ptr<RelayClient> mp_client = nullptr, std::unique_ptr<RelayServer> mp_server = nullptr);
+    explicit GameSceneIngame(class GameClient* client = nullptr, class GameServer* server = nullptr);
     ~GameSceneIngame() override;
 
     void Draw() override;
@@ -41,8 +41,8 @@ private:
     Vector2f m_prevCamPos;
 
     // multiplayer
-    std::unique_ptr<RelayServer> m_server;
-    std::unique_ptr<RelayClient> m_client;
+    class GameServer* m_server{nullptr};
+    class GameClient* m_client{nullptr};
 
     // touch scrolling
     bool m_isScrolling{false};

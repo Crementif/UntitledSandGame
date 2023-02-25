@@ -33,6 +33,8 @@ private:
 
     MenuState m_state = MenuState::NORMAL;
 
-    std::unique_ptr<RelayServer> mp_server;
-    std::unique_ptr<RelayClient> mp_client;
+    class GameServer* m_gameServer{nullptr};
+    class GameClient* m_gameClient{nullptr};
+
+    bool m_startPacketSent{false};
 };

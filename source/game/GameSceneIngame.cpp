@@ -8,9 +8,15 @@
 #include "../framework/physics/physics.h"
 #include "Particle.h"
 
+#include "GameServer.h"
+#include "GameClient.h"
 
-GameSceneIngame::GameSceneIngame(std::unique_ptr<RelayClient> mp_client, std::unique_ptr<RelayServer> mp_server): m_server(std::move(mp_server)), m_client(std::move(mp_client))
+GameSceneIngame::GameSceneIngame(class GameClient* client, class GameServer* server) : m_server(server), m_client(client)
 {
+    //new PachinkoEmitter(256.0f+128.0f, 0.0f);
+
+    //new BallBucket(256.0f * 3.0f + 128.0f, 256.0f * 3.0f + 128.0f);
+
     m_map = new Map("level0.tga");
     SetCurrentMap(m_map);
 
@@ -51,11 +57,6 @@ void GameSceneIngame::DrawBackground()
     }*/
 }
 
-void GameSceneIngame::DrawHUD()
-{
-    // draw hearts
-}
-
 void GameSceneIngame::UpdateCamera()
 {
     Vector2f newCameraPosition = m_selfPlayer->GetPosition();
@@ -65,6 +66,9 @@ void GameSceneIngame::UpdateCamera()
 
 void GameSceneIngame::Draw()
 {
+    if(m_server)
+        m_server->Update();
+
     m_map->SimulateTick();
 
     UpdateCamera();
@@ -78,7 +82,6 @@ void GameSceneIngame::Draw()
     m_map->Draw();
 
     Object::DoDraws();
-    DrawHUD();
 
     m_gameTime += 1.0/60.0;
 }

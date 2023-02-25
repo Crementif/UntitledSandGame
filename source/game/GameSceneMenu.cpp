@@ -4,6 +4,8 @@
 
 #include "../framework/navigation.h"
 #include "GameSceneIngame.h"
+#include "GameServer.h"
+#include "GameClient.h"
 
 GameSceneMenu::GameSceneMenu() {
     m_sandbox_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+000, 500, 80}, "Sandbox");
@@ -48,6 +50,16 @@ void GameSceneMenu::HandleInput() {
         nn::swkbd::CalcSubThreadFont();
     }
 
+    if(m_gameServer)
+        m_gameServer->Update();
+    if(m_gameClient)
+    {
+        m_gameClient->Update();
+        if(m_gameClient->GetGameState() == GameClient::GAME_STATE::STATE_INGAME)
+            GameScene::ChangeTo(new GameSceneIngame(m_gameClient, m_gameServer));
+    }
+
+
     // Client-specific states
     bool pressedOkButton = false;
     if (m_state == MenuState::WAIT_FOR_INPUT && nn::swkbd::IsDecideOkButton(&pressedOkButton)) {
@@ -55,8 +67,7 @@ void GameSceneMenu::HandleInput() {
         m_state = MenuState::WAIT_FOR_CONNECTION;
 
         auto ipAddress = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(nn::swkbd::GetInputFormString());
-        mp_client = std::make_unique<RelayClient>();
-        mp_client->ConnectTo(ipAddress);
+        m_gameClient = new GameClient(ipAddress);
     }
     bool pressedCancelButton = false;
     if (m_state == MenuState::WAIT_FOR_INPUT && nn::swkbd::IsDecideCancelButton(&pressedCancelButton)) {
@@ -65,15 +76,15 @@ void GameSceneMenu::HandleInput() {
     }
 
     // Server states
-    if (m_state == MenuState::WAIT_FOR_CONNECTION && this->mp_server) {
-        this->mp_server->GetConnectedPlayers();
-    }
-    if (m_state == MenuState::WAIT_FOR_GAME && this->mp_server && pressedStart()) {
-        GameScene::ChangeTo(new GameSceneIngame(std::move(mp_client), std::move(mp_server)));
+    if (m_state == MenuState::WAIT_FOR_GAME && m_gameServer && pressedStart() && !this->m_startPacketSent) {
+        // tell server to start game
+        this->m_startPacketSent = true;
+        m_gameServer->StartGame();
+        //GameScene::ChangeTo(new GameSceneIngame(m_gameClient, m_gameServer)); -> The client controls this
     }
 
     // Client and server states
-    if (m_state == MenuState::WAIT_FOR_CONNECTION && this->mp_client->IsConnected()) {
+    if (m_state == MenuState::WAIT_FOR_CONNECTION && m_gameClient->IsConnected()) {
         m_state = MenuState::WAIT_FOR_GAME;
     }
 
@@ -85,10 +96,8 @@ void GameSceneMenu::HandleInput() {
         else if (m_host_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
 
-            this->mp_server = std::make_unique<RelayServer>();
-            this->mp_server->AcceptConnections();
-            this->mp_client = std::make_unique<RelayClient>();
-            this->mp_client->ConnectTo("127.0.0.1");
+            this->m_gameServer = new GameServer();
+            this->m_gameClient = new GameClient("127.0.0.1");
         }
         else if (m_join_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
             this->m_state = MenuState::WAIT_FOR_INPUT;
@@ -115,8 +124,8 @@ void GameSceneMenu::DrawButtons() {
 void GameSceneMenu::Draw() {
     this->DrawBackground();
     this->DrawButtons();
-    if (this->m_state == MenuState::WAIT_FOR_GAME && this->mp_server) {
-        u32 joinedPlayers = this->mp_server->GetConnectedPlayers();
+    if (this->m_state == MenuState::WAIT_FOR_GAME && this->m_gameServer) {
+        u32 joinedPlayers = this->m_gameServer->GetPlayerCount();
         std::string joinedPlayersText = "Press START to start match with "+std::to_string(joinedPlayers)+" players...";
         const u32 stringWidth = joinedPlayersText.size()*16;
         Render::RenderText(1920-stringWidth-20, 1080-80, 0, 0x00, joinedPlayersText.c_str());
