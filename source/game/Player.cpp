@@ -3,6 +3,7 @@
 #include "Map.h"
 
 #include "../framework/navigation.h"
+#include "Landmine.h"
 
 #include <coreinit/debug.h>
 
@@ -78,6 +79,16 @@ void Player::HandleLocalPlayerControl()
 {
     Vector2f leftStick = getLeftStick();
     ButtonState& buttonState = GetButtonState();
+
+
+    // bomb placing (temporary)
+    if (buttonState.buttonB.changedState && buttonState.buttonB.isDown) {
+        Vector2f slightlyAbove = m_pos;
+        slightlyAbove.y -= 60.0f;
+        Landmine* newLandmine = new Landmine(slightlyAbove.x, slightlyAbove.y);
+        //newLandmine->AddVelocity(0.5f, -1.0f);
+    }
+
 
     // jumping
     if(m_isTouchingGround && buttonState.buttonA.changedState && buttonState.buttonA.isDown)

@@ -1,16 +1,19 @@
 #include "../common/common.h"
-//#include <nsysnet/_socket.h>
 #include "GameScene.h"
 #include "GameSceneMenu.h"
 #include "GameSceneIngame.h"
 #include "Object.h"
+#include "Landmine.h"
+#include "TextButton.h"
+
 #include "../framework/render.h"
 #include "../framework/navigation.h"
 #include "../framework/audio.h"
 #include "../framework/compiler.h"
 
 GameScene* GameScene::sActiveScene = nullptr;
-
+Sprite* TextButton::s_buttonBackdrop = nullptr;
+Sprite* Landmine::s_landmineSprite = nullptr;
 #include <chrono>
 
 int main()
@@ -21,6 +24,9 @@ int main()
 
     Render::Init();
     GLSL_Init();
+
+    TextButton::s_buttonBackdrop = new Sprite("/tex/button_backdrop.tga", true);
+    Landmine::s_landmineSprite = new Sprite("/tex/landmine.tga", true);
 
     // set polygon mode
     GX2SetPolygonControl(

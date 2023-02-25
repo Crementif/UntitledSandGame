@@ -336,6 +336,24 @@ void Render::RenderSprite(Sprite* sprite, s32 x, s32 y)
     RenderSprite(sprite, x, y, tex->surface.width, tex->surface.height);
 }
 
+void Render::RenderSpritePortion(Sprite* sprite, s32 x, s32 y, u32 cx, u32 cy, u32 cw, u32 ch)
+{
+    GX2Texture* tex = sprite->GetTexture();
+    u32 baseVertex = _SetupSpriteVertexData<true>((f32)x, (f32)y, (f32)tex->surface.width, (f32)tex->surface.height, (f32)cx/tex->surface.width, (f32)cy/tex->surface.height, (f32)cw/tex->surface.width, (f32)ch/tex->surface.height);
+
+    if(sRenderTransparencyMode != sprite->m_hasTransparency)
+    {
+        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
+        sRenderTransparencyMode = sprite->m_hasTransparency;
+    }
+
+    GX2SetPixelTexture(tex, 0);
+    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+
+    GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
+}
+
+
 // same as RenderSprite but camera position is ignored and it renders a subrect of the sprite
 void Render::RenderSpritePortionScreenRelative(Sprite* sprite, s32 x, s32 y, u32 cx, u32 cy, u32 cw, u32 ch)
 {

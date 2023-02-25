@@ -1,13 +1,13 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <fstream>
 #include <vector>
 #include <span>
 #include <algorithm>
 #include <ranges>
 
-#include <math.h>
+#include <cmath>
 
 using u64 = uint64_t;
 using u32 = uint32_t;
@@ -132,9 +132,20 @@ struct AABB
                 (pos.y < (other.pos.y + other.scale.y) && (pos.y + scale.y) >= (other.pos.y));
     }
 
-    Vector2f GetCenter() const
-    {
+    Vector2f GetCenter() const {
         return {pos.x + scale.x * 0.5f, pos.y + scale.y * 0.5f};
+    }
+    Vector2f GetTopLeft() const {
+        return pos;
+    }
+    Vector2f GetTopRight() const {
+        return {pos.x + scale.x, pos.y};
+    }
+    Vector2f GetBottomLeft() const {
+        return {pos.x, pos.y + scale.y};
+    }
+    Vector2f GetBottomRight() const {
+        return {pos.x + scale.x, pos.y + scale.y};
     }
 
     // move origin of aabb by vector

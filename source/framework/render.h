@@ -35,6 +35,7 @@ public:
 
     static void RenderSprite(Sprite* sprite, s32 x, s32 y);
     static void RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight);
+    static void RenderSpritePortion(Sprite *sprite, s32 x, s32 y, u32 cx, u32 cy, u32 cw, u32 ch);
     static void RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y);
     static void RenderSpriteScreenRelative(Sprite *sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight);
     static void RenderSpritePortionScreenRelative(Sprite*, s32, s32, u32, u32, u32, u32);
