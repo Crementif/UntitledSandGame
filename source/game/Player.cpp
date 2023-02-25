@@ -29,12 +29,12 @@ Player::~Player()
 // width/height in world pixels
 s32 Player::GetPlayerWidth() const
 {
-    return 12;
+    return 16;
 }
 
 s32 Player::GetPlayerHeight() const
 {
-    return 20;
+    return 16;
 }
 
 
@@ -107,7 +107,16 @@ void Player::HandleLocalPlayerControl()
     else
     {
         // ground movement
-        // todo
+        if(leftStick.x < -0.1f)
+        {
+            if(m_speed.x > -0.4)
+                m_speed.x -= 0.15f;
+        }
+        else if(leftStick.x > 0.1f)
+        {
+            if(m_speed.x < 0.4)
+                m_speed.x += 0.15f;
+        }
     }
 
 }
@@ -143,7 +152,44 @@ void Player::Update(float timestep)
     else if(m_isTouchingGround)
     {
         // if m_isTouchingGround is set then make sure the player "sticks" to the ground
-        m_speed.x *= 0.5f;
+        m_speed.x *= 0.90f;
+        m_speed.y = 0.0f;
+
+        bool isTouchingGround = false;
+        f32 groundHeight;
+        bool isStuckInGround, isFloatingInAir;
+        if( FindAdjustedGroundHeight(m_pos.x, m_pos.y, groundHeight, isStuckInGround, isFloatingInAir) )
+        {
+            m_pos.y = groundHeight;
+            isTouchingGround = true;
+        }
+        else if(isFloatingInAir)
+        {
+            // back to falling mode
+            m_isTouchingGround = false;
+        }
+
+        if(m_isTouchingGround && isTouchingGround)
+        {
+            // left/ride sliding and walking
+            f32 walkedPosX = m_pos.x + m_speed.x;
+            if(FindAdjustedGroundHeight(walkedPosX, m_pos.y, groundHeight, isStuckInGround, isFloatingInAir))
+            {
+                m_pos.x = walkedPosX;
+                m_pos.y = groundHeight;
+            }
+
+        }
+
+        //m_speed.x *= 0.5f;
+        /*if(DoesPlayerCollideAtPos(m_pos.x, m_pos.y))
+        {
+            // move the player a little bit up if that would move them out of the ground
+            m_pos.x
+            if(DoesPlayerCollideAtPos(m_pos.x, m_pos.y))
+                m_pos.y -= 1.0f;
+        }*/
+
     }
 
     //if(!map->GetPixel(pix, piy).IsSolid())
@@ -164,7 +210,6 @@ bool Player::SlidePlayerPos(const Vector2f& newPos)
         return true;
     }
     // use binary search to find the distance we can actually move
-    /*
     Vector2f moveVec = newPos - m_pos;
     Vector2f tryMoveVec = moveVec * 0.5f;
     bool hasClosestTarget = false;
@@ -187,7 +232,6 @@ bool Player::SlidePlayerPos(const Vector2f& newPos)
     {
         UpdatePosition(closestTarget);
     }
-     */
 
     return false; // only partial move possible
 }
@@ -199,10 +243,10 @@ bool Player::DoesPlayerCollideAtPos(f32 posX, f32 posY)
     AABB playerAABB = Player::CalcAABB(posX, posY);
     // we need to do geometry-perfect collisions with the pixels
     // so instead of treating pixels as infinitely small points, we treat them as actual solid rectangles
-    s32 px1 = (s32)m_pos.x - 1.0f;
-    s32 px2 = (s32)m_pos.x + 1.0f + 0.5f;
-    s32 py1 = (s32)m_pos.y - 1.0f;
-    s32 py2 = (s32)m_pos.y + 1.0f + 0.5f;
+    s32 px1 = (s32)m_pos.x - 4.0f;
+    s32 px2 = (s32)m_pos.x + 4.0f + 0.5f;
+    s32 py1 = (s32)m_pos.y - 4.0f;
+    s32 py2 = (s32)m_pos.y + 4.0f + 0.5f;
     for(s32 py=py1; py<=py2; py++)
     {
         for(s32 px=px1; px<=px2; px++)
@@ -222,5 +266,35 @@ bool Player::DoesPlayerCollideAtPos(f32 posX, f32 posY)
         return true;
         */
 
+    return false;
+}
+
+// find the actual player y position based on the current surrounding terrain
+// only seeks within a very small y variance, otherwise we assume player is stuck or floating in the air
+bool Player::FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, bool& isStuckInGround, bool& isFloatingInAir)
+{
+    isStuckInGround = false;
+    isFloatingInAir = false;
+    posY = floor(posY);
+    f32 testedPosY;
+    // free fall check
+    if(!DoesPlayerCollideAtPos(posX, posY + 2.1f))
+    {
+        isFloatingInAir = true;
+        return false;
+    }
+    // check for heights that we can clip to
+    bool collidesAtAllPoints = false;
+    for(f32 bias=2.0f; bias >= -2.1f; bias -= 1.0f)
+    {
+        testedPosY = posY + bias;
+        if(!DoesPlayerCollideAtPos(posX, testedPosY))
+        {
+            groundHeight = testedPosY;
+            return true;
+        }
+    }
+    // all collision checks are true so we are stuck inside the ground
+    isStuckInGround = true;
     return false;
 }

@@ -26,6 +26,8 @@ public:
     bool DoesPlayerCollideAtPos(f32 posX, f32 posY);
 
     void HandleLocalPlayerControl();
+
+    bool FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, bool& isStuckInGround, bool& isFloatingInAir);
 private:
     AABB CalcAABB(f32 posX, f32 posY);
 
