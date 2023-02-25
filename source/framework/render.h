@@ -9,13 +9,17 @@ public:
     Sprite(u32 width, u32 height, bool hasTransparency); // create sprite with uninitialized pixels
     struct GX2Texture* GetTexture() { return m_tex; }
 
+    void SetupSampler(bool useLinearFiltering);
+
     void SetPixel(u32 x, u32 y, u32 color);
     void FlushCache();
 
     s32 GetWidth() const { return m_width; }
     s32 GetHeight() const { return m_height; }
 private:
+
     struct GX2Texture* m_tex;
+    struct GX2Sampler* m_sampler;
     s32 m_width;
     s32 m_height;
     bool m_hasTransparency;

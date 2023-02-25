@@ -1,8 +1,7 @@
-#include "./../common/types.h"
-
-#include "../framework/noise/noise.h"
-
 #pragma once
+
+#include "./../common/types.h"
+#include "../framework/noise/noise.h"
 
 #define MAP_PIXEL_ZOOM  (3) // one world pixel will translate to this many screen pixels
 

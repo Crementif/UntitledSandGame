@@ -44,7 +44,8 @@ struct GX2ShaderSet
     }
 };
 
-GX2Sampler sRenderBaseSampler1;
+GX2Sampler sRenderBaseSampler1_linear;
+GX2Sampler sRenderBaseSampler1_nearest;
 GX2ShaderSet sRenderBaseShaders1;
 
 GX2ColorControlReg sRenderColorControl_noTransparency;
@@ -134,14 +135,13 @@ void _InitBasicRenderResources()
     _InitBlendRegs();
     sRenderBaseShaders1.Prepare();
 
-    GX2InitSampler(&sRenderBaseSampler1,
-                   GX2_TEX_CLAMP_MODE_CLAMP,
-                   GX2_TEX_XY_FILTER_MODE_LINEAR);
+    // init linear sampler
+    GX2InitSampler(&sRenderBaseSampler1_linear, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
+    GX2InitSamplerZMFilter(&sRenderBaseSampler1_linear, GX2_TEX_Z_FILTER_MODE_NONE, GX2_TEX_MIP_FILTER_MODE_NONE);
 
-    GX2InitSamplerZMFilter(&sRenderBaseSampler1,
-                           GX2_TEX_Z_FILTER_MODE_NONE,
-                           GX2_TEX_MIP_FILTER_MODE_NONE);
-
+    // init nearest sampler
+    GX2InitSampler(&sRenderBaseSampler1_nearest, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_POINT);
+    GX2InitSamplerZMFilter(&sRenderBaseSampler1_nearest, GX2_TEX_Z_FILTER_MODE_NONE, GX2_TEX_MIP_FILTER_MODE_NONE);
 }
 
 void Render::Init()
@@ -325,7 +325,7 @@ void Render::RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeigh
     }
 
     GX2SetPixelTexture(tex, 0);
-    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+    GX2SetPixelSampler(sprite->m_sampler, 0);
 
     GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
 }
@@ -348,7 +348,7 @@ void Render::RenderSpritePortion(Sprite* sprite, s32 x, s32 y, u32 cx, u32 cy, u
     }
 
     GX2SetPixelTexture(tex, 0);
-    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+    GX2SetPixelSampler(sprite->m_sampler, 0);
 
     GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
 }
@@ -367,7 +367,7 @@ void Render::RenderSpritePortionScreenRelative(Sprite* sprite, s32 x, s32 y, u32
     }
 
     GX2SetPixelTexture(tex, 0);
-    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+    GX2SetPixelSampler(sprite->m_sampler, 0);
 
     GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
 }
@@ -385,7 +385,7 @@ void Render::RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y)
     }
 
     GX2SetPixelTexture(tex, 0);
-    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+    GX2SetPixelSampler(sprite->m_sampler, 0);
 
     GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
 }
@@ -402,7 +402,7 @@ void Render::RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y, s32 pxWidt
     }
 
     GX2SetPixelTexture(tex, 0);
-    GX2SetPixelSampler(&sRenderBaseSampler1, 0);
+    GX2SetPixelSampler(sprite->m_sampler, 0);
 
     GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
 }
@@ -420,6 +420,7 @@ Sprite::Sprite(const char* path, bool hasTransparency) : m_hasTransparency(hasTr
     if (!m_tex) CriticalErrorHandler("Invalid TGA data");
     m_width = (s32)m_tex->surface.width;
     m_height = (s32)m_tex->surface.height;
+    SetupSampler(true);
 }
 
 Sprite::Sprite(u32 width, u32 height, bool hasTransparency) : m_hasTransparency(hasTransparency)
@@ -428,6 +429,15 @@ Sprite::Sprite(u32 width, u32 height, bool hasTransparency) : m_hasTransparency(
     if (!m_tex) CriticalErrorHandler("Invalid TGA data");
     m_width = (s32)m_tex->surface.width;
     m_height = (s32)m_tex->surface.height;
+    SetupSampler(true);
+}
+
+void Sprite::SetupSampler(bool useLinearFiltering)
+{
+    if(useLinearFiltering)
+        m_sampler = &sRenderBaseSampler1_linear;
+    else
+        m_sampler = &sRenderBaseSampler1_nearest;
 }
 
 void Sprite::SetPixel(u32 x, u32 y, u32 color)

@@ -30,6 +30,7 @@ MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c)
 MapCell::MapCell(Map* map, u32 cellX, u32 cellY) : m_cellX(cellX), m_cellY(cellY), m_posX(cellX * MAP_CELL_WIDTH), m_posY(cellY * MAP_CELL_HEIGHT), m_map(map)
 {
     m_cellSprite = new Sprite(MAP_CELL_WIDTH, MAP_CELL_HEIGHT, false);
+    m_cellSprite->SetupSampler(false);
 
     /*
     s32 py = m_posY;
@@ -164,6 +165,7 @@ void Map::Init(uint32_t width, uint32_t height)
 Map::Map(const char* filename, u32 rngSeed)
 {
     m_rng.SetSeed(rngSeed);
+    double startTime = GetMillisecondTimestamp();
     OSReport("Level load - Phase 1\n");
     auto mapData = LoadFileToMem(std::string("level/").append(filename));
     if(mapData.empty())
@@ -178,6 +180,8 @@ Map::Map(const char* filename, u32 rngSeed)
     for(auto& it : m_cells)
         it.LoadCellFromTGA(tgaLoader);
     OSReport("Level load - Finished\n");
+    double dur = GetMillisecondTimestamp() - startTime;
+    OSReport("Level loaded in %.04fms", dur);
 }
 
 Map::~Map()

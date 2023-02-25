@@ -129,7 +129,10 @@ void GameSceneIngame::DrawBackground()
 
 void GameSceneIngame::UpdateCamera()
 {
-    Vector2f newCameraPosition = m_selfPlayer->GetPosition();
+    Vector2f newCameraPosition = m_selfPlayer->GetPosition() * MAP_PIXEL_ZOOM;
+    // center on player
+    newCameraPosition = newCameraPosition - Vector2f(1920.0f, 1080.0f) * 0.5f;
+    newCameraPosition = newCameraPosition * 0.75f + m_prevCamPos * 0.25f;
     m_prevCamPos = newCameraPosition;
     Render::SetCameraPosition(newCameraPosition);
 }
