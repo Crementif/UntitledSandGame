@@ -15,7 +15,6 @@ GameClient::GameClient(std::string_view address)
 
 GameClient::~GameClient()
 {
-
 }
 
 void GameClient::Update()

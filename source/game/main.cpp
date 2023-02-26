@@ -12,8 +12,10 @@
 #include "../framework/compiler.h"
 
 GameScene* GameScene::sActiveScene = nullptr;
+
 Sprite* TextButton::s_buttonBackdrop = nullptr;
 Sprite* Landmine::s_landmineSprite = nullptr;
+
 #include <chrono>
 
 int main()

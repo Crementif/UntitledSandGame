@@ -1,6 +1,7 @@
 #pragma once
 #include "GameScene.h"
 #include "TextButton.h"
+#include "Map.h"
 #include "../framework/render.h"
 #include "../framework/physics/physics.h"
 #include "../framework/multiplayer/multiplayer.h"

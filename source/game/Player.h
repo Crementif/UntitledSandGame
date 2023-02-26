@@ -3,11 +3,11 @@
 #include "../common/types.h"
 #include "Object.h"
 
-class Player : public Object
+class Player: public Object
 {
 public:
-    Player(u32 playerId, f32 posX, f32 posY);
-    ~Player();
+    Player(GameScene* parent, u32 playerId, f32 posX, f32 posY);
+    ~Player() override;
 
     void Draw(u32 layerIndex) override;
     void Update(float timestep) override;

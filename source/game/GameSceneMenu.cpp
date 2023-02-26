@@ -11,9 +11,9 @@ GameSceneMenu::GameSceneMenu(): GameScene() {
     m_map = new Map("menu.tga", 1337);
     SetCurrentMap(m_map);
 
-    m_sandbox_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
-    m_host_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, "Host");
-    m_join_btn = new TextButton(AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, "Join");
+    m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
+    m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, "Host");
+    m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, "Join");
 
     m_fsClient = (FSClient*)MEMAllocFromDefaultHeap(sizeof(FSClient));
     FSAddClient(m_fsClient, FS_ERROR_FLAG_NONE);
@@ -36,7 +36,7 @@ GameSceneMenu::~GameSceneMenu() {
     delete m_host_btn;
     delete m_join_btn;
 
-    delete m_fsClient;
+    MEMFreeToDefaultHeap(m_fsClient);
 }
 
 
@@ -135,7 +135,7 @@ void GameSceneMenu::DrawBackground() {
 }
 
 void GameSceneMenu::DrawButtons() {
-    Object::DoDraws();
+    this->DoDraws();
 }
 
 void GameSceneMenu::Draw() {

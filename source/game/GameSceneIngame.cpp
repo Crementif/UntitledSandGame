@@ -154,13 +154,13 @@ void GameSceneIngame::Draw()
     UpdateCamera();
 
     gPhysicsMgr.Update(1.0f / 60.0f);
-    Object::DoUpdates(1.0f / 60.0f);
+    DoUpdates(1.0f / 60.0f);
 
     DrawBackground();
 
     m_map->Draw();
 
-    Object::DoDraws();
+    DoDraws();
     DrawHUD();
 
     m_gameTime += 1.0/60.0;

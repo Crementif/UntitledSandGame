@@ -6,7 +6,7 @@
 
 class Particle: public Object {
 public:
-    Particle(std::unique_ptr<Sprite> sprite, Vector2f pos, u32 rays, f32 distance, u32 lifetimeSteps, float randomness) : Object(AABB(pos, Vector2f(1, 1)), true, DRAW_LAYER_1), m_distance(distance), m_maxSteps(lifetimeSteps), m_sprite(std::move(sprite)) {
+    Particle(GameScene* parent, std::unique_ptr<Sprite> sprite, Vector2f pos, u32 rays, f32 distance, u32 lifetimeSteps, float randomness) : Object(parent, AABB(pos, Vector2f(1, 1)), true, DRAW_LAYER_1), m_distance(distance), m_maxSteps(lifetimeSteps), m_sprite(std::move(sprite)) {
         for (u32 i = 0; i < rays; i++) {
             f32 angle = (f32)i * (M_TWOPI) / (f32)rays;
             if (randomness > 0.0f) {
@@ -26,7 +26,7 @@ private:
         if (m_currStep < m_maxSteps)
             m_currStep++;
         else
-            Object::QueueForDeletion(this);
+            m_parent->QueueUnregisterObject(this);
     };
     Vector2f GetPosition() override {
         return m_aabb.GetCenter();

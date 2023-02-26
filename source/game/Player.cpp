@@ -10,7 +10,7 @@
 Sprite* s_sprite_default{nullptr};
 Sprite* s_sprite_debug_touch{nullptr};
 
-Player::Player(u32 playerId, f32 posX, f32 posY) : Object(CalcAABB(posX, posY), true, DRAW_LAYER_PLAYERS), m_playerId(playerId)
+Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(parent, CalcAABB(posX, posY), true, DRAW_LAYER_PLAYERS), m_playerId(playerId)
 {
     Vector2f playerPos = Vector2f(posX, posY - GetPlayerHeight());
     UpdatePosition(playerPos);
@@ -24,7 +24,6 @@ Player::Player(u32 playerId, f32 posX, f32 posY) : Object(CalcAABB(posX, posY), 
 
 Player::~Player()
 {
-
 }
 
 // width/height in world pixels
@@ -85,7 +84,7 @@ void Player::HandleLocalPlayerControl()
     if (buttonState.buttonB.changedState && buttonState.buttonB.isDown) {
         Vector2f slightlyAbove = m_pos;
         slightlyAbove.y -= 60.0f;
-        Landmine* newLandmine = new Landmine(m_playerId, slightlyAbove.x, slightlyAbove.y);
+        Landmine* newLandmine = new Landmine(this->m_parent, m_playerId, slightlyAbove.x, slightlyAbove.y);
         //newLandmine->AddVelocity(0.5f, -1.0f);
     }
 

@@ -1,66 +1,74 @@
 #include "Object.h"
+#include "Map.h"
 
-std::vector<Object*> sAllObjects;
-std::vector<Object*> sObjectsToUpdate;
-std::unordered_set<Object*> sObjectDeletionQueue;
-
-std::vector<Object*> sDrawLayer[Object::NUM_DRAW_LAYERS];
-
-Object::Object(const AABB& boundingBox, bool requiresUpdating, u32 drawLayerMask) : m_aabb(boundingBox), m_drawLayerMask(drawLayerMask)
+Object::Object(class GameScene* parent, const AABB& boundingBox, bool requiresUpdating, u32 drawLayerMask): m_parent(parent), m_aabb(boundingBox), m_requiresUpdating(requiresUpdating), m_drawLayerMask(drawLayerMask)
 {
-    sAllObjects.emplace_back(this);
-    if (requiresUpdating)
-        sObjectsToUpdate.emplace_back(this);
-    for(u32 i=0; i<NUM_DRAW_LAYERS; i++)
-    {
-        if((m_drawLayerMask&(1<<i)) == 0)
-            continue;
-        sDrawLayer[i].emplace_back(this);
-    }
+    m_parent->RegisterObject(this);
 }
 
 Object::~Object()
 {
-    sAllObjects.erase(std::find(sAllObjects.begin(), sAllObjects.end(), this));
-    auto it = std::find(sObjectsToUpdate.begin(), sObjectsToUpdate.end(), this);
-    if (it != sObjectsToUpdate.end())
-        sObjectsToUpdate.erase(it);
-    for(u32 i=0; i<NUM_DRAW_LAYERS; i++)
-    {
-        if((m_drawLayerMask&(1<<i)) == 0)
+    m_parent->UnregisterObject(this);
+}
+
+PhysicsObject::PhysicsObject(struct GameScene *parent, const AABB &bbox, u32 drawLayerMask) : Object(parent, bbox, true, drawLayerMask) {
+}
+
+void PhysicsObject::SetVelocity(float x, float y) {
+    m_velocity = Vector2f(x, y);
+}
+
+void PhysicsObject::AddVelocity(float x, float y) {
+    m_velocity.x += x;
+    m_velocity.y += y;
+}
+
+bool PhysicsObject::DoesCornerCollide(Vector2f cornerPos) {
+    Map* map = GetCurrentMap();
+
+    // todo: loss of precision, since the position of a corner could be overlapping multiple pixels
+    return map->GetPixel((s32)cornerPos.x, (s32)cornerPos.y).IsCollideWithObjects();
+}
+
+bool PhysicsObject::DoesAABBCollide(AABB &aabb) {
+    // check if any of the corners of the bbox collide with the map
+    if (DoesCornerCollide(aabb.GetTopLeft()) ||
+        DoesCornerCollide(aabb.GetTopRight()) ||
+        DoesCornerCollide(aabb.GetBottomLeft()) ||
+        DoesCornerCollide(aabb.GetBottomRight())) {
+        return true;
+    }
+    return false;
+}
+
+void PhysicsObject::SimulatePhysics() {
+    AABB newPos = m_aabb + m_velocity;
+    // Try moving the entire distance first
+    if (!DoesAABBCollide(newPos)) {
+        m_aabb = newPos;
+        return;
+    }
+
+    // use binary search to find the distance we can actually move
+    Vector2f moveVec = newPos.pos - m_aabb.pos;
+    Vector2f tryMoveVec = moveVec * 0.5f;
+    bool hasClosestTarget = false;
+    AABB closestTarget = {0, 0, 0,0};
+    for (s32 t=0; t<5; t++) {
+        AABB tmpTarget = newPos + tryMoveVec;
+        if (!DoesAABBCollide(tmpTarget)) {
+            hasClosestTarget = true;
+            closestTarget = tmpTarget;
+            // try moving further
+            tryMoveVec = tryMoveVec + tryMoveVec * 0.5f;
             continue;
-        auto it = std::find(sDrawLayer[i].begin(), sDrawLayer[i].end(), this);
-        if (it != sDrawLayer[i].end())
-            sDrawLayer[i].erase(it);
+        }
+        // try a shorter distance
+        tryMoveVec = tryMoveVec * 0.5f;
     }
-}
-
-void Object::DoUpdates(float timestep)
-{
-    // iterate by index instead of by iterator as the update functions may modify the object list
-    for(size_t i=0; i<sObjectsToUpdate.size(); i++)
-        sObjectsToUpdate[i]->Update(timestep);
-
-    for(auto& it : sObjectDeletionQueue)
-        delete it;
-    sObjectDeletionQueue.clear();
-}
-
-void Object::DoDraws()
-{
-    for(u32 i=0; i<NUM_DRAW_LAYERS; i++)
-    {
-        for(auto& it : sDrawLayer[i])
-            it->Draw(i);
+    if (hasClosestTarget)
+        m_aabb = closestTarget;
+    else {
+        SetVelocity(0, 0);
     }
-}
-
-std::span<Object*> Object::GetAllObjects()
-{
-    return {sAllObjects.data(), sAllObjects.size()};
-}
-
-void Object::QueueForDeletion(Object* obj)
-{
-    sObjectDeletionQueue.emplace(obj);
 }

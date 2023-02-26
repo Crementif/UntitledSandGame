@@ -5,7 +5,7 @@
 
 class TextButton : public Object {
 public:
-    TextButton(AABB box, std::string_view text): Object(box+Vector2f(-box.scale.x/2, -box.scale.y/2), true, DRAW_LAYER_0), m_text(text) {
+    TextButton(GameScene* parent, AABB box, std::string_view text): Object(parent, box+Vector2f(-box.scale.x/2, -box.scale.y/2), true, DRAW_LAYER_0), m_text(text) {
         this->m_textSize = this->m_aabb.scale.y <= 50.0f ? 0 : 1;
         this->m_textStartX = (u32)(this->m_aabb.GetCenter().x-((((float)text.size()*(this->m_textSize == 0 ? 14.0f : 26.0f))/2)));
         this->m_textStartY = (u32)(this->m_aabb.GetCenter().y-((this->m_textSize == 0 ? 32.0f : 64.0f)/2));
