@@ -56,10 +56,13 @@ void GameServer::ProcessPacket(u32 playerId, u8 opcode, PacketParser& pp)
 {
     OSReport("GameServer::ProcessPacket playerId %08x opcode %d\n", playerId, (int)opcode);
     bool r = false;
-    switch(opcode)
+    switch (opcode)
     {
         case NET_ACTION_C_MOVEMENT:
             r = ProcessPacket_Movement(playerId, pp);
+            break;
+        case NET_ACTION_C_ABILITY:
+            r = ProcessPacket_Ability(playerId, pp);
             break;
     }
     if(!r)
@@ -80,5 +83,24 @@ bool GameServer::ProcessPacket_Movement(u32 playerId, PacketParser& pp)
     pb.AddF32(speedX);
     pb.AddF32(speedY);
     m_server->SendToAllExceptPlayerId(pb, playerId);
+    return true;
+}
+
+bool GameServer::ProcessPacket_Ability(u32 playerId, PacketParser& pp)
+{
+    u32 abilityId = pp.ReadU32();
+    f32 posX = pp.ReadF32();
+    f32 posY = pp.ReadF32();
+    f32 velX = pp.ReadF32();
+    f32 velY = pp.ReadF32();
+    // rebuild packet but with playerId
+    PacketBuilder& pb = m_server->BuildNewPacket(NET_ACTION_S_ABILITY);
+    pb.AddU32(playerId);
+    pb.AddU32(abilityId);
+    pb.AddF32(posX);
+    pb.AddF32(posY);
+    pb.AddF32(velX);
+    pb.AddF32(velY);
+    m_server->SendToAll(pb);
     return true;
 }

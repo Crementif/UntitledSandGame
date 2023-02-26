@@ -1,6 +1,7 @@
 #include "Player.h"
 #include "../framework/render.h"
 #include "Map.h"
+#include "GameClient.h"
 
 #include "../framework/navigation.h"
 #include "Landmine.h"
@@ -84,10 +85,10 @@ void Player::HandleLocalPlayerControl()
     if (buttonState.buttonB.changedState && buttonState.buttonB.isDown) {
         Vector2f slightlyAbove = m_pos;
         slightlyAbove.y -= 60.0f;
-        Landmine* newLandmine = new Landmine(this->m_parent, m_playerId, slightlyAbove.x, slightlyAbove.y);
+
+        m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::LANDMINE, {slightlyAbove.x, slightlyAbove.y}, {0.0f, 0.0f});
         //newLandmine->AddVelocity(0.5f, -1.0f);
     }
-
 
     // jumping
     if(m_isTouchingGround && buttonState.buttonA.changedState && buttonState.buttonA.isDown)

@@ -4,7 +4,6 @@
 Landmine::Landmine(GameScene *parent, u32 owner, float x, float y) : PhysicsObject(parent, AABB({x, y}, {(f32)36/MAP_PIXEL_ZOOM, (f32)28/MAP_PIXEL_ZOOM}), DRAW_LAYER_0), m_owner(owner) {
 }
 
-
 void Landmine::Update(float timestep) {
     m_animationIdx++;
     if (m_animationIdx >= 100)

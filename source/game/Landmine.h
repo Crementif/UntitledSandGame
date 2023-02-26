@@ -11,7 +11,7 @@ class Landmine : public PhysicsObject {
 public:
     Landmine(GameScene* parent, u32 owner, float x, float y);
 
-    u32 GetOwner() { return m_owner; }
+    u32 GetOwner() const { return m_owner; }
 
     static Sprite* s_landmineSprite;
 private:

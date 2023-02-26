@@ -61,6 +61,7 @@ void GameScene::DoUpdates(float timestep) {
 
     while (!m_deletionQueue.empty()) {
         UnregisterObject(m_deletionQueue.back());
+        m_deletionQueue.pop_back();
     }
 }
 

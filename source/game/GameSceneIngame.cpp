@@ -9,6 +9,7 @@
 
 #include "GameServer.h"
 #include "GameClient.h"
+#include "Landmine.h"
 
 GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): GameScene(std::move(client), std::move(server))
 {
@@ -128,6 +129,12 @@ void GameSceneIngame::UpdateMultiplayer()
         auto playerIt = players.find(event.playerId);
         playerIt->second->SyncMovement(event.pos, event.speed);
     }
+    auto eventAbility = m_gameClient->GetAndClearAbilityEvents();
+    for (auto& event : eventAbility) {
+        new Landmine(this, event.playerId, event.pos.x, event.pos.y);
+    }
+
+
     // player started jumping
 
     // send movement state

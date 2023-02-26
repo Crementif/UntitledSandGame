@@ -11,6 +11,14 @@ public:
         STATE_INGAME = 1,
     };
 
+    enum class GAME_ABILITY : u32 {
+        NONE = 0,
+        LANDMINE = 1,
+        BOMB = 2,
+        TURBO_DRILL = 3,
+        LAVA = 4,
+    };
+
     struct GameSessionInfo
     {
         u32 levelId;
@@ -26,6 +34,16 @@ public:
         Vector2f speed;
     };
 
+    struct EventAbility
+    {
+        PlayerID playerId;
+        GAME_ABILITY ability;
+        Vector2f pos;
+        Vector2f velocity;
+    };
+
+    void SendLandmine();
+
 public:
     GameClient(std::string_view address);
     ~GameClient();
@@ -37,13 +55,16 @@ public:
     void Update();
 
     void SendMovement(Vector2f pos, Vector2f speed);
+    void SendAbility(GAME_ABILITY ability, Vector2f pos, Vector2f velocity);
 
     std::vector<EventMovement> GetAndClearMovementEvents();
+    std::vector<EventAbility> GetAndClearAbilityEvents();
 private:
     void ProcessPacket(u8 opcode, PacketParser& pp);
 
     bool ProcessPacket_Start(PacketParser& pp);
     bool ProcessPacket_Movement(PacketParser& pp);
+    bool ProcessPacket_Ability(PacketParser &pp);
 
     RelayClient* m_client;
     bool m_isConnecting{false};
@@ -53,8 +74,8 @@ private:
     GameSessionInfo m_gameInfo;
 
     // queued events
-    struct
-    {
+    struct {
         std::vector<EventMovement> queueMovement;
-    }m_queuedEvents;
+        std::vector<EventAbility> queueAbility;
+    } m_queuedEvents;
 };

@@ -23,7 +23,7 @@ public:
 
     void QueueUnregisterObject(class Object* obj);
     const std::unordered_map<PlayerID, std::unique_ptr<class Player>>& GetPlayers() const;
-
+    GameClient* GetClient() const { return m_gameClient.get(); };
 protected:
     class Player* RegisterPlayer(PlayerID id, f32 playerX, f32 playerY);
     void UnregisterAllPlayers();

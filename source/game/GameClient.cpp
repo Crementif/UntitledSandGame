@@ -44,6 +44,11 @@ void GameClient::ProcessPacket(u8 opcode, PacketParser& pp)
             r = ProcessPacket_Movement(pp);
             break;
         }
+        case NET_ACTION_S_ABILITY:
+        {
+            r = ProcessPacket_Ability(pp);
+            break;
+        }
     }
     if(!r)
         OSReport("GameClient: Received bad packet 0x%02x\n", (int)opcode);
@@ -77,10 +82,31 @@ bool GameClient::ProcessPacket_Movement(PacketParser& pp)
     return true;
 }
 
+bool GameClient::ProcessPacket_Ability(PacketParser& pp)
+{
+    PlayerID playerId = pp.ReadU32();
+    u32 ability = pp.ReadU32();
+    Vector2f pos;
+    pos.x = pp.ReadF32();
+    pos.y = pp.ReadF32();
+    Vector2f velocity;
+    velocity.x = pp.ReadF32();
+    velocity.y = pp.ReadF32();
+    m_queuedEvents.queueAbility.push_back({playerId, (GAME_ABILITY)ability, pos, velocity});
+    return true;
+}
+
 std::vector<GameClient::EventMovement> GameClient::GetAndClearMovementEvents()
 {
     std::vector<EventMovement> tmp;
     std::swap(tmp, m_queuedEvents.queueMovement);
+    return tmp;
+}
+
+std::vector<GameClient::EventAbility> GameClient::GetAndClearAbilityEvents()
+{
+    std::vector<EventAbility> tmp;
+    std::swap(tmp, m_queuedEvents.queueAbility);
     return tmp;
 }
 
@@ -92,5 +118,16 @@ void GameClient::SendMovement(Vector2f pos, Vector2f speed)
     pb.AddF32(pos.y);
     pb.AddF32(speed.x);
     pb.AddF32(speed.y);
+    m_client->SendPacket(pb);
+}
+
+void GameClient::SendAbility(GameClient::GAME_ABILITY ability, Vector2f pos, Vector2f velocity) {
+    OSReport("GameClient::SendAbility: Sending ability\n");
+    auto& pb = m_client->BuildNewPacket(NET_ACTION_C_ABILITY);
+    pb.AddU32((u32)ability);
+    pb.AddF32(pos.x);
+    pb.AddF32(pos.y);
+    pb.AddF32(velocity.x);
+    pb.AddF32(velocity.y);
     m_client->SendPacket(pb);
 }

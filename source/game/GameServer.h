@@ -25,6 +25,7 @@ public:
 private:
     void ProcessPacket(u32 playerId, u8 opcode, PacketParser& pp);
     bool ProcessPacket_Movement(u32 playerId, PacketParser& pp);
+    bool ProcessPacket_Ability(u32 playerId, PacketParser& pp);
 
     RelayServer* m_server;
     bool m_gameStarted{false};
