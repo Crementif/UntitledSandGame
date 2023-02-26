@@ -99,6 +99,12 @@ void MapCell::DrawCell()
 {
     //RefreshCellTexture();
     m_cellSprite->FlushCache();
+    // workaround necessary for Cemu
+    // Cemu texture invalidation heuristics may not always catch pixel updates
+    // so we modify the top left pixel (usually guaranteed to be checked) to coerce an invalidation
+    u8* pixData = (u8*)m_cellSprite->GetTexture()->surface.image;
+    pixData[3] ^= 1;
+
     Render::RenderSprite(m_cellSprite, m_posX * MAP_PIXEL_ZOOM, m_posY * MAP_PIXEL_ZOOM, MAP_CELL_WIDTH * MAP_PIXEL_ZOOM, MAP_CELL_HEIGHT * MAP_PIXEL_ZOOM);
 }
 
