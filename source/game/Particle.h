@@ -23,11 +23,17 @@ private:
         }
     };
     void Update(float timestep) override {
-        if (m_currStep < m_maxSteps)
+        if (m_currStep < m_maxSteps) {
             m_currStep++;
+            for (Vector2f& dir : m_directions) {
+                Vector2f emitPos = m_aabb.pos + ((dir * m_distance) * (f32)m_currStep);
+                Explode(emitPos);
+            }
+        }
         else
             m_parent->QueueUnregisterObject(this);
     };
+    virtual void Explode(Vector2f pos) {};
     Vector2f GetPosition() override {
         return m_aabb.GetCenter();
     };
@@ -37,4 +43,35 @@ private:
     const std::unique_ptr<Sprite> m_sprite;
     u32 m_currStep = 0;
     std::vector<Vector2f> m_directions;
+};
+
+class ExplosiveParticle: public Particle {
+public:
+    ExplosiveParticle(GameScene* parent, std::unique_ptr<Sprite> sprite, Vector2f pos, u32 rays, f32 distance, u32 lifetimeSteps, float randomness, float force) : Particle(parent, std::move(sprite), pos, rays, distance, lifetimeSteps, randomness), m_force(force) {
+    };
+private:
+    void Explode(Vector2f pos) override {
+        Map* map = GetCurrentMap();
+
+        AABB explosionRange = AABB({pos.x-(f32)m_force/2, pos.y-(f32)m_force/2}, Vector2f(m_force, m_force));
+
+        // loop over AABB pixels
+        for (s32 x = (s32)explosionRange.pos.x; x < (s32)(explosionRange.pos.x + explosionRange.scale.x); x++) {
+            for (s32 y = (s32)explosionRange.pos.y; y < (s32)(explosionRange.pos.y + explosionRange.scale.y); y++) {
+                // check if map pixel is in range of the explosion force and whether it is solid/destructible
+                if (map->IsPixelOOB(x, y))
+                    continue;
+
+                PixelType& pixel = map->GetPixelNoBoundsCheck(x, y);
+                if (pos.Distance({(f32)x, (f32)y}) <= m_force && pixel.IsSolid() && pixel.IsDestructible()) {
+                    // adjust force for distance
+                    f32 distanceAdjustedForce = m_force - Vector2f((f32)x, (f32)y).Distance(pos);
+                    // apply force to pixel
+                    map->ReanimateStaticPixel(pixel.GetPixelType(), x, y, distanceAdjustedForce);
+                }
+            }
+        }
+    };
+
+    float m_force = 0.0f;
 };

@@ -47,7 +47,7 @@ private:
     Vector2f m_speed{};
     bool m_isTouchingGround{};
 
-    u32 m_health = 3;
+    u32 m_health = 10;
 
     f32 m_drillAngle{};
     f32 m_visualDrillAngle{};

@@ -24,6 +24,11 @@ void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
     SpawnMaterialPixel(materialType, x, y);
 }
 
+void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y, f32 force)
+{
+    SpawnMaterialPixel(materialType, x, y);
+}
+
 template<typename T>
 void SimulateMaterial(Map* map, std::vector<T>& pixels)
 {

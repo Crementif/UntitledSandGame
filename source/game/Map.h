@@ -41,6 +41,11 @@ union PixelType
         //return (pixelType&BIT_DYNAMIC) == 0;
     }
 
+    bool IsDestructible() const
+    {
+        return true;
+    }
+
     inline bool IsDynamic() const
     {
         return (pixelType&1) == 0;
@@ -113,6 +118,7 @@ public:
         return m_playerSpawnpoints;
     }
 
+    bool IsPixelOOB(s32 x, s32 y);
     void SetPixelColor(s32 x, s32 y, u32 c);
 
     PixelType& GetPixel(s32 x, s32 y);
@@ -124,6 +130,7 @@ public:
     void CheckStaticPixels();
     void SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y);
     void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y);
+    void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y, f32 force);
 
     u32 GetRNGNumber()
     {

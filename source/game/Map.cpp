@@ -225,6 +225,13 @@ void Map::SetPixelColor(s32 x, s32 y, u32 c)
 static_assert(MAP_CELL_WIDTH == 64); // hardcoded in GetPixel()
 static_assert(MAP_CELL_HEIGHT == 64);
 
+bool Map::IsPixelOOB(s32 x, s32 y)
+{
+    s32 cellX = x >> 6;
+    s32 cellY = y >> 6;
+    return (cellX < 0 || cellX >= (s32)m_cellsX) || (cellY < 0 || cellY >= (s32)m_cellsY);
+}
+
 PixelType& Map::GetPixel(s32 x, s32 y)
 {
     s32 cellX = x >> 6;
