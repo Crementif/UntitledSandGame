@@ -4,8 +4,7 @@
 
 void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
 {
-    m_activePixels->sandPixels.emplace_back(x, y).IntegrateIntoWorld(this);
-    //m_map->GetPixel(150, 160);
+    m_activePixels->sandPixels.emplace_back(new ActivePixelSand(x, y));
 }
 
 template<typename T>
@@ -14,9 +13,11 @@ void SimulateMaterial(Map* map, std::vector<T>& pixels)
     T* dataArray = pixels.data();
     for(size_t i=0; i<pixels.size(); i++)
     {
-        if(!dataArray[i].SimulateStep(map))
+        if(!dataArray[i]->SimulateStep(map))
         {
             // removed particle
+            dataArray[i]->PixelDeactivated(map);
+            delete dataArray[i];
             dataArray[i] = pixels.back();
             pixels.pop_back();
         }

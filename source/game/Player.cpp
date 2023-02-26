@@ -262,21 +262,13 @@ bool Player::DoesPlayerCollideAtPos(f32 posX, f32 posY)
     {
         for(s32 px=px1; px<=px2; px++)
         {
-            if(!map->GetPixel(px, py).IsSolid())
+            if(!map->GetPixel(px, py).IsCollideWithObjects())
                 continue;
             AABB pixelAABB(px, py, px+1, py + 1);
             if(pixelAABB.Intersects(playerAABB))
                 return true;
         }
     }
-
-    /*
-    s32 pix = (s32)(m_pos.x + 0.5f);
-    s32 piy = (s32)(m_pos.y + 0.5f - 0.1f); // move collision a bit up so we can avoid hovering character sprites
-    if(map->GetPixel(pix, piy).IsSolid())
-        return true;
-        */
-
     return false;
 }
 

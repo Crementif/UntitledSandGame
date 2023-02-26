@@ -23,6 +23,8 @@ MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c)
         return MAP_PIXEL_TYPE::SOIL;
     if(c == 0xFFD800)
         return MAP_PIXEL_TYPE::SAND;
+    if(c == 0x007F0E)
+        return MAP_PIXEL_TYPE::GRASS;
 
     return MAP_PIXEL_TYPE::AIR;
 }
@@ -125,6 +127,13 @@ u32 _GetColorFromPixelType(PixelType& pixelType)
                 return 0x5F3300FF;
             return 0x512B00FF;
         }
+        case MAP_PIXEL_TYPE::GRASS:
+        {
+            u8 rd = rand()%2;
+            if(rd == 0)
+                return 0x2F861FFF;
+            return 0x3E932BFF;
+        }
     }
     return 0x12345678;
 }
@@ -181,7 +190,9 @@ Map::Map(const char* filename, u32 rngSeed)
         it.LoadCellFromTGA(tgaLoader);
     OSReport("Level load - Finished\n");
     double dur = GetMillisecondTimestamp() - startTime;
-    OSReport("Level loaded in %.04fms", dur);
+    char strBuf[64];
+    sprintf(strBuf, "%.04lf", dur);
+    OSReport("Level loaded in %sms\n", strBuf);
 }
 
 Map::~Map()
@@ -196,17 +207,6 @@ void Map::SetPixelColor(s32 x, s32 y, u32 c)
     s32 cellY = y >> 6;
     s32 relY = y & 0x3F;
     m_cells[cellX + cellY * m_cellsX].m_cellSprite->SetPixel(relX, relY, c);
-}
-
-
-void Map::GenerateTerrain()
-{
-    // done in MapCell constructor atm
-
-    //for(auto& it : m_pixelArray)
-    //{
-    //    it.SetPixel(MAP_PIXEL_TYPE::AIR);
-    //}
 }
 
 static_assert(MAP_CELL_WIDTH == 64); // hardcoded in GetPixel()
@@ -260,6 +260,16 @@ void Map::Draw()
             m_cells[x + y * m_cellsX].DrawCell();
         }
     }
+}
+
+MAP_PIXEL_TYPE PixelType::GetPixelType() const
+{
+    if(pixelType&1)
+    {
+        return (MAP_PIXEL_TYPE)((pixelType >> 1)&0x7F);
+    }
+    ActivePixelBase* pixelBase = (ActivePixelBase*)(pixelType&~1);
+    return pixelBase->material;
 }
 
 Map* s_currentMap{nullptr};

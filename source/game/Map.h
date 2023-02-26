@@ -13,6 +13,7 @@ enum class MAP_PIXEL_TYPE
     AIR = 0,
     SAND = 1,
     SOIL = 2,
+    GRASS = 3,
 };
 
 union PixelType
@@ -23,22 +24,30 @@ union PixelType
         pixelType |= ((u32)type << 1);
     }
 
-    /*
-    void SetDynamicPixel(ActivePixel* activePixel)
+    void SetDynamicPixel(class ActivePixelBase* pixelPtr)
     {
-
-    }*/
-
-    MAP_PIXEL_TYPE GetPixelType() const
-    {
-        // todo - if LSB not set
-        return (MAP_PIXEL_TYPE)(pixelType >> 1);
+        pixelType = (u32)(uintptr_t)pixelPtr;
     }
+
+    MAP_PIXEL_TYPE GetPixelType() const;
 
     // collision applies
     bool IsSolid() const
     {
-        return GetPixelType() != MAP_PIXEL_TYPE::AIR;
+        if(GetPixelType() == MAP_PIXEL_TYPE::AIR)
+            return false;
+        return true;
+        //return (pixelType&BIT_DYNAMIC) == 0;
+    }
+
+    bool IsCollideWithObjects() const
+    {
+        if((pixelType&1) == 0)
+            return false; // active pixels are exempt from object collision
+        if(GetPixelType() == MAP_PIXEL_TYPE::AIR)
+            return false;
+        return true;
+        //return (pixelType&BIT_DYNAMIC) == 0;
     }
 
     uint32_t pixelType; // LSB set
@@ -101,8 +110,6 @@ public:
 
 private:
     void Init(uint32_t width, uint32_t height);
-
-    void GenerateTerrain();
 
     u32 m_cellsX;
     u32 m_cellsY;

@@ -63,7 +63,7 @@ protected:
         Map* map = GetCurrentMap();
 
         // todo: loss of precision, since the position of a corner could be overlapping multiple pixels
-        return map->GetPixel((s32)cornerPos.x, (s32)cornerPos.y).IsSolid();
+        return map->GetPixel((s32)cornerPos.x, (s32)cornerPos.y).IsCollideWithObjects();
     }
 
     static bool DoesAABBCollide(AABB& aabb) {
