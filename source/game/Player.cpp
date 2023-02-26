@@ -10,6 +10,7 @@
 
 Sprite* s_sprite_default{nullptr};
 Sprite* s_sprite_debug_touch{nullptr};
+Sprite* s_sprite_drill{nullptr};
 
 Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(parent, CalcAABB(posX, posY), true, DRAW_LAYER_PLAYERS), m_playerId(playerId)
 {
@@ -20,6 +21,7 @@ Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(par
     {
         s_sprite_default = new Sprite("tex/player_default.tga", true);
         s_sprite_debug_touch = new Sprite("tex/debug_touch.tga", false);
+        s_sprite_drill = new Sprite("tex/drill.tga", true);
     }
 }
 
@@ -68,6 +70,17 @@ void Player::Draw(u32 layerIndex)
     if(m_isTouchingGround)
         Render::RenderSprite(s_sprite_debug_touch, m_aabb.pos.x * MAP_PIXEL_ZOOM, m_aabb.pos.y * MAP_PIXEL_ZOOM, 8, 8);
     // s_sprite_debug_touch
+
+    // draw drill
+    // s_sprite_drill
+    Vector2f playerCenter(m_aabb.pos.x + m_aabb.scale.x * 0.5f, m_aabb.pos.y + m_aabb.scale.y * 0.5f);
+    //f32 drillAngle = GetMillisecondTimestamp()*0.001f;
+
+    m_visualDrillAngle = _InterpolateAngle(m_visualDrillAngle, m_drillAngle, 0.2f);//m_visualDrillAngle * 0.8f + m_drillAngle * 0.2f;
+
+    Vector2f drillPos = playerCenter + Vector2f(12.0f, 0.0).Rotate(m_visualDrillAngle);
+
+    Render::RenderSprite(s_sprite_drill, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, m_aabb.scale.x * 0.8f * MAP_PIXEL_ZOOM, m_aabb.scale.y * 0.8f * MAP_PIXEL_ZOOM, m_visualDrillAngle);
 }
 
 Vector2f Player::GetPosition()
@@ -130,6 +143,9 @@ void Player::HandleLocalPlayerControl()
         }
     }
 
+    // drill control
+    if( leftStick.Length() > 0.1f)
+        m_drillAngle = atan2(leftStick.x, leftStick.y) - M_PI_2;
 }
 
 // "down" is +y

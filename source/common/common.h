@@ -70,3 +70,16 @@ inline double GetMillisecondTimestamp()
     double microSec = (double)(OSTicksToMicroseconds(OSGetTick()));
     return microSec / 1000.0;
 }
+
+inline f32 _InterpolateAngle(f32 current, f32 dest, f32 factor)
+{
+    f32 dist = fabs(dest - current);
+    if(dist > M_PI)
+    {
+        if(current < dest)
+            current += M_TWOPI;
+        else if(current > dest)
+            current -= M_TWOPI;
+    }
+    return current * (1.0f - factor) + dest * factor;
+}

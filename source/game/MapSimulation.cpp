@@ -4,7 +4,17 @@
 
 void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
 {
-    m_activePixels->sandPixels.emplace_back(new ActivePixelSand(x, y));
+    switch(materialType)
+    {
+        case MAP_PIXEL_TYPE::SAND:
+            m_activePixels->sandPixels.emplace_back(new ActivePixelSand(x, y));
+            break;
+        case MAP_PIXEL_TYPE::LAVA:
+            m_activePixels->lavaPixels.emplace_back(new ActivePixelLava(x, y));
+            break;
+        default:
+            break;
+    }
 }
 
 // technically this should grab the material type from the pixel at x/y,
@@ -46,7 +56,8 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
         u32 px = x + rdX - HOTSPOT_RANGE;
         u32 py = y + rdY - HOTSPOT_RANGE;
         PixelType& pixelType = GetPixelNoBoundsCheck(px, py);
-        if(pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::SAND)
+        auto mat = pixelType._GetPixelTypeStatic();
+        if(mat == MAP_PIXEL_TYPE::SAND)
         {
             if(!GetPixelNoBoundsCheck(px, py+1).IsFilled())
             {
@@ -54,20 +65,15 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
                 ReanimateStaticPixel(MAP_PIXEL_TYPE::SAND, px, py);
             }
         }
-    }
-
-    /*for(u32 py=y-2; py<y+2; py++)
-    {
-        for(u32 px=x-2; px<x+2; px++)
+        else if(mat == MAP_PIXEL_TYPE::LAVA)
         {
-            PixelType& pixelType = GetPixel(px, py);
-            if(pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::SAND)
+            if(!GetPixelNoBoundsCheck(px, py+1).IsFilled())
             {
-                if(!GetPixel(px, py+1).IsFilled())
-                    ReanimateStaticPixel(MAP_PIXEL_TYPE::SAND, px, py);
+                hasActivity = true;
+                ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, px, py);
             }
         }
-    }*/
+    }
     return hasActivity;
 }
 
@@ -89,7 +95,6 @@ void Map::CheckStaticPixels()
         PixelType& pixelType = GetPixelNoBoundsCheck(x, y);
         if(pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::SAND)
         {
-            // if pixel below is empty we should reanimate the sand pixel
             if(!GetPixelNoBoundsCheck(x, y+1).IsFilled())
             {
                 // create hotspot
@@ -97,8 +102,15 @@ void Map::CheckStaticPixels()
                 ClampHotspotCoords(hotspotX, hotspotY);
                 m_volatilityHotspots.emplace_back(x, y);
             }
-            //    CheckVolatileStaticPixelsHotspot(x, y);
-            // SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, x, y);
+        }
+        else if(pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::LAVA)
+        {
+            if(!GetPixelNoBoundsCheck(x, y+1).IsFilled())
+            {
+                u32 hotspotX = x, hotspotY = y;
+                ClampHotspotCoords(hotspotX, hotspotY);
+                m_volatilityHotspots.emplace_back(x, y);
+            }
         }
     }
     // handle hotspots
@@ -129,6 +141,7 @@ void Map::SimulateTick()
     CheckStaticPixels();
     double dur = GetMillisecondTimestamp() - startTime;
     SimulateMaterial(GetCurrentMap(), m_activePixels->sandPixels);
+    SimulateMaterial(GetCurrentMap(), m_activePixels->lavaPixels);
     g_debugStrings.emplace_back("Sand Particles: " + std::to_string(m_activePixels->sandPixels.size()));
 
     char strBuf[64];

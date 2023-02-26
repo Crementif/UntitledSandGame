@@ -14,6 +14,7 @@ enum class MAP_PIXEL_TYPE
     SAND = 1,
     SOIL = 2,
     GRASS = 3,
+    LAVA = 4,
 };
 
 union PixelType
@@ -82,7 +83,6 @@ public:
     MapCell(class Map* map, u32 cellX, u32 cellY);
     void LoadCellFromTGA(class TGALoader& tgaLoader);
 
-    void UpdateCell();
     void DrawCell();
 
     void RefreshCellTexture();

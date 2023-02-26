@@ -48,4 +48,7 @@ private:
     bool m_isTouchingGround{};
 
     u32 m_health = 3;
+
+    f32 m_drillAngle{};
+    f32 m_visualDrillAngle{};
 };

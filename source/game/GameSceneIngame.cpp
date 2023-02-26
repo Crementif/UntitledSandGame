@@ -193,6 +193,9 @@ void GameSceneIngame::RunDeterministicSimulationStep()
     if ((m_map->GetRNGNumber()&0x7) < 3)
         m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 700, 210);
 
+    if ((m_map->GetRNGNumber()&0x7) < 5)
+        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, 480, 160);
+
     m_map->SimulateTick();
     m_map->Update(); // map objects are always independent of the world simulation?
 

@@ -274,7 +274,7 @@ u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight)
 template<bool TUseCamPos>
 u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight, f32 cx, f32 cy, f32 cw, f32 ch)
 {
-    const f32 PIXEL_WIDTH = 1.0 / 1920.0 * 2.0; // *2.0 is since window coordinates are -1.0 to 1.0
+    const f32 PIXEL_WIDTH = 1.0 / 1920.0 * 2.0; // *2.0 since window coordinates are -1.0 to 1.0
     const f32 PIXEL_HEIGHT = 1.0 / 1080.0 * 2.0;
 
     u32 baseVertex;
@@ -313,10 +313,52 @@ u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight, f32 
     return baseVertex;
 }
 
+void _RotateVerticesAroundPoint(Vertex* vtx, f32 centerX, f32 centerY, f32 angle)
+{
+    const f32 PIXEL_WIDTH = 1.0 / 1920.0 * 2.0; // *2.0 since window coordinates are -1.0 to 1.0
+    const f32 PIXEL_HEIGHT = 1.0 / 1080.0 * 2.0;
+    centerX = centerX * PIXEL_WIDTH - 1.0;
+    centerY = 1.0 - centerY * PIXEL_HEIGHT;
+    centerX -= sRenderCamOffset.x;
+    centerY += sRenderCamOffset.y;
+
+    Vector2f centerVec(centerX, centerY);
+    for(int i=0; i<4; i++)
+    {
+        Vector2f pos(vtx[i].pos[0], vtx[i].pos[1]);
+        Vector2f tmp = (pos - centerVec);
+        tmp.x /= -(PIXEL_WIDTH / PIXEL_HEIGHT);
+        tmp = tmp.Rotate(angle);
+        tmp.x *= -(PIXEL_WIDTH / PIXEL_HEIGHT);
+        pos = tmp + centerVec;
+        vtx[i].pos[0] = pos.x;
+        vtx[i].pos[1] = pos.y;
+    }
+}
+
 void Render::RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight)
 {
     GX2Texture* tex = sprite->GetTexture();
     u32 baseVertex = _SetupSpriteVertexData<true>((f32)x, (f32)y, (f32)pxWidth, (f32)pxHeight);
+
+    if(sRenderTransparencyMode != sprite->m_hasTransparency)
+    {
+        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
+        sRenderTransparencyMode = sprite->m_hasTransparency;
+    }
+
+    GX2SetPixelTexture(tex, 0);
+    GX2SetPixelSampler(sprite->m_sampler, 0);
+
+    GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, baseVertex, 1);
+}
+
+
+void Render::RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight, f32 angle)
+{
+    GX2Texture* tex = sprite->GetTexture();
+    u32 baseVertex = _SetupSpriteVertexData<true>((f32)x - (f32)pxWidth * 0.5f, (f32)y - (f32)pxHeight * 0.5f, (f32)pxWidth, (f32)pxHeight);
+    _RotateVerticesAroundPoint(sVtxRingbuffer.base + baseVertex, x, y, angle);
 
     if(sRenderTransparencyMode != sprite->m_hasTransparency)
     {

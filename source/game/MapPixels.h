@@ -100,13 +100,86 @@ public:
         }
         return true;
     }
+};
 
-    /*
-    void PixelDeactivated(Map* map) override
+class ActivePixelLava : public ActivePixel<MAP_PIXEL_TYPE::LAVA>
+{
+public:
+    ActivePixelLava(s32 x, s32 y) : ActivePixel<MAP_PIXEL_TYPE::LAVA>(x, y) {};
+
+    bool SimulateStep(Map* map) override
     {
+        // try moving down if possible
+        if(!map->GetPixel(x, y+1).IsFilled())
+        {
+            ChangeParticleXY(map, x, y+1);
+            m_xMomentum = -1 + (map->GetRNGNumber()&2);
+            return true;
+        }
+        if(!map->GetPixel(x-1, y+1).IsFilled())
+        {
+            ChangeParticleXY(map, x-1, y+1);
+            m_xMomentum = -1;
+            return true;
+        }
+        if(!map->GetPixel(x+1, y+1).IsFilled())
+        {
+            ChangeParticleXY(map, x+1, y+1);
+            m_xMomentum = 1;
+            return true;
+        }
 
-    }*/
+        // movement with lower slope is slowish
+        if(m_moveDelay > 0)
+        {
+            m_moveDelay--;
+            return true;
+        }
+        m_moveDelay = 4;
 
+        idleTime++;
+
+
+        if(!map->GetPixel(x-2, y+1).IsFilled())
+        {
+            ChangeParticleXY(map, x-2, y+1);
+            m_xMomentum = -2;
+            return true;
+        }
+        if(!map->GetPixel(x+2, y+1).IsFilled())
+        {
+            ChangeParticleXY(map, x+2, y+1);
+            m_xMomentum = 2;
+            return true;
+        }
+        // keep momentum and move along x axis
+        if(m_xMomentum < 0)
+        {
+            if(!map->GetPixel(x-1, y).IsFilled())
+                ChangeParticleXY(map, x-1, y);
+            else
+                m_xMomentum = 1;
+            return true;
+        }
+        if(m_xMomentum > 0)
+        {
+            if(!map->GetPixel(x+1, y).IsFilled())
+                ChangeParticleXY(map, x+1, y);
+            else
+                m_xMomentum = -1;
+            return true;
+        }
+
+        if(idleTime >= 20)
+        {
+            return false; // inactivate particle
+        }
+        return true;
+    }
+
+private:
+    s8 m_xMomentum{0};
+    s8 m_moveDelay{0};
 };
 
 class ActivePixelCollection
@@ -114,4 +187,5 @@ class ActivePixelCollection
 public:
     // todo - do we even need per material grouping still?
     std::vector<ActivePixelSand*> sandPixels;
+    std::vector<ActivePixelLava*> lavaPixels;
 };

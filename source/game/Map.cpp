@@ -21,10 +21,12 @@ MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c)
 {
     if(c == 0x7F3300)
         return MAP_PIXEL_TYPE::SOIL;
-    if(c == 0xFFD800)
+    else if(c == 0xFFD800)
         return MAP_PIXEL_TYPE::SAND;
-    if(c == 0x007F0E)
+    else if(c == 0x007F0E)
         return MAP_PIXEL_TYPE::GRASS;
+    else if(c == 0xFF0000)
+        return MAP_PIXEL_TYPE::LAVA;
 
     return MAP_PIXEL_TYPE::AIR;
 }
@@ -90,14 +92,8 @@ PixelType& MapCell::GetPixelFromCellCoords(s32 x, s32 y)
     return m_pixelArray[x + y*MAP_CELL_WIDTH];
 }
 
-void MapCell::UpdateCell()
-{
-
-}
-
 void MapCell::DrawCell()
 {
-    //RefreshCellTexture();
     m_cellSprite->FlushCache();
     // workaround necessary for Cemu
     // Cemu texture invalidation heuristics may not always catch pixel updates
@@ -139,6 +135,15 @@ u32 _GetColorFromPixelType(PixelType& pixelType)
             if(rd == 0)
                 return 0x2F861FFF;
             return 0x3E932BFF;
+        }
+        case MAP_PIXEL_TYPE::LAVA:
+        {
+            u8 rd = rand()%3;
+            if(rd == 0)
+                return 0xFF0000FF;
+            if(rd == 1)
+                return 0xFF2B00FF;
+            return 0xFF6A00FF;
         }
     }
     return 0x12345678;
@@ -257,14 +262,7 @@ void Map::GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut)
 
 void Map::Update()
 {
-    // limit to active cells?
-    for(s32 y=0; y<(s32)m_cellsY; y++)
-    {
-        for(s32 x=0; x<(s32)m_cellsX; x++)
-        {
-            m_cells[x + y * m_cellsX].UpdateCell();
-        }
-    }
+
 }
 
 void Map::Draw()

@@ -118,6 +118,13 @@ struct Vector2f
         return Vector2f{cosf(radians), sinf(radians)};
     }
 
+    Vector2f Rotate(float radians)
+    {
+        f32 ca = cosf(radians);
+        f32 sa = sinf(radians);
+        return Vector2f(ca*this->x - sa*this->y, sa*this->x + ca*this->y);
+    }
+
     f32 x;
     f32 y;
 };
