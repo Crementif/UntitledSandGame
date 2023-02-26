@@ -15,17 +15,8 @@ GameSceneIngame::GameSceneIngame(class GameClient* client, class GameServer* ser
 {
     u32 levelId;
     u32 rngSeed;
-    if(client)
-    {
-        levelId = client->GetGameSessionInfo().levelId;
-        rngSeed = client->GetGameSessionInfo().rngSeed;
-    }
-    else
-    {
-        // sandbox mode
-        levelId = 0;
-        rngSeed = 1337;
-    }
+    levelId = client->GetGameSessionInfo().levelId;
+    rngSeed = client->GetGameSessionInfo().rngSeed;
 
     char levelFilename[32];
     sprintf(levelFilename, "level%u.tga", levelId);
@@ -44,22 +35,13 @@ GameSceneIngame::~GameSceneIngame()
 
 void GameSceneIngame::SpawnPlayers()
 {
-    m_idToPlayer.clear();
+    UnregisterAllPlayers();
     m_selfPlayer = nullptr;
 
     const std::vector<Vector2i> spawnpoints = m_map->GetPlayerSpawnpoints();
     if(spawnpoints.empty())
         CriticalErrorHandler("Level does not have any spawnpoints");
 
-    if(!m_client)
-    {
-        // sandbox mode
-        OSReport("[GameSceneIngame::SpawnPlayers] Sandbox mode\n");
-        size_t spawnIdx = m_map->GetRNGNumber() % spawnpoints.size();
-        Vector2i playerSpawnPos = spawnpoints[spawnIdx];
-        m_selfPlayer = new Player((f32)playerSpawnPos.x, (f32)playerSpawnPos.y);
-        return;
-    }
     OSReport("[GameSceneIngame::SpawnPlayers] Spawning %d players...\n", (int)m_client->GetGameSessionInfo().playerIds.size());
     PlayerID ourPlayerId = m_client->GetGameSessionInfo().ourPlayerId;
     // spawn players
@@ -80,13 +62,12 @@ void GameSceneIngame::SpawnPlayers()
         availSpawnpoints.erase(availSpawnpoints.begin() + spawnIdx);
         // spawn player
         OSReport("Spawning player %08x at %d/%d\n", playerId, playerSpawnPos.x, playerSpawnPos.y);
-        Player* player = new Player((f32)playerSpawnPos.x, (f32)playerSpawnPos.y);
-        m_idToPlayer.try_emplace(playerId, player);
+        Player* player = this->RegisterPlayer(playerId, (f32)playerSpawnPos.x, (f32)playerSpawnPos.y);
         // is it us?
-        if(playerId == ourPlayerId)
+        if (playerId == ourPlayerId)
             m_selfPlayer = player;
     }
-    if(!m_selfPlayer)
+    if (!m_selfPlayer)
         CriticalErrorHandler("Game started without self-player");
 }
 
@@ -146,10 +127,11 @@ void GameSceneIngame::UpdateMultiplayer()
     m_client->Update();
     // process received events
     std::vector<GameClient::EventMovement> eventMovement = m_client->GetAndClearMovementEvents();
+    const auto& players = this->GetPlayers();
     for(auto& event : eventMovement)
     {
-        Player* player = m_idToPlayer[event.playerId];
-        player->SyncMovement(event.pos, event.speed);
+        auto playerIt = players.find(event.playerId);
+        playerIt->second->SyncMovement(event.pos, event.speed);
     }
     // player started jumping
 

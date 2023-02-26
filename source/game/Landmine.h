@@ -2,13 +2,16 @@
 #include "../common/common.h"
 #include "Object.h"
 #include "../framework/render.h"
+#include "GameSceneIngame.h"
 
 class Landmine : public PhysicsObject {
     friend class PhysicsObject;
 
 public:
-    Landmine(float x, float y): PhysicsObject(AABB({x, y}, {(f32)36/MAP_PIXEL_ZOOM, (f32)28/MAP_PIXEL_ZOOM}), DRAW_LAYER_0) {
+    Landmine(u32 owner, float x, float y): PhysicsObject(AABB({x, y}, {(f32)36/MAP_PIXEL_ZOOM, (f32)28/MAP_PIXEL_ZOOM}), DRAW_LAYER_0), m_owner(owner) {
     }
+
+    u32 m_owner = 0;
 
     static Sprite* s_landmineSprite;
 private:
@@ -20,6 +23,10 @@ private:
         m_animationIdx++;
         if (m_animationIdx >= 100)
             m_animationIdx = 1;
+
+        GameScene* scene = GameScene::GetCurrent();
+        for (auto& player : scene->GetPlayers()) {
+        }
 
         this->AddVelocity(0.0f, 1.6f);
 

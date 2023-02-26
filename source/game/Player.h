@@ -6,7 +6,7 @@
 class Player : public Object
 {
 public:
-    Player(f32 posX, f32 posY);
+    Player(u32 playerId, f32 posX, f32 posY);
     ~Player();
 
     void Draw(u32 layerIndex) override;
@@ -29,6 +29,8 @@ public:
 
     bool FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, bool& isStuckInGround, bool& isFloatingInAir);
 private:
+    u32 m_playerId;
+
     AABB CalcAABB(f32 posX, f32 posY);
 
     Vector2f m_pos;

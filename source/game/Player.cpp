@@ -10,7 +10,7 @@
 Sprite* s_sprite_default{nullptr};
 Sprite* s_sprite_debug_touch{nullptr};
 
-Player::Player(f32 posX, f32 posY) : Object(CalcAABB(posX, posY), true, DRAW_LAYER_PLAYERS)
+Player::Player(u32 playerId, f32 posX, f32 posY) : Object(CalcAABB(posX, posY), true, DRAW_LAYER_PLAYERS), m_playerId(playerId)
 {
     Vector2f playerPos = Vector2f(posX, posY - GetPlayerHeight());
     UpdatePosition(playerPos);
@@ -85,7 +85,7 @@ void Player::HandleLocalPlayerControl()
     if (buttonState.buttonB.changedState && buttonState.buttonB.isDown) {
         Vector2f slightlyAbove = m_pos;
         slightlyAbove.y -= 60.0f;
-        Landmine* newLandmine = new Landmine(slightlyAbove.x, slightlyAbove.y);
+        Landmine* newLandmine = new Landmine(m_playerId, slightlyAbove.x, slightlyAbove.y);
         //newLandmine->AddVelocity(0.5f, -1.0f);
     }
 

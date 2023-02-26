@@ -76,7 +76,7 @@ void GameSceneMenu::HandleInput() {
     }
 
     // Server states
-    if (m_state == MenuState::WAIT_FOR_GAME && m_gameServer && pressedStart() && !this->m_startPacketSent) {
+    if (m_state == MenuState::WAIT_FOR_GAME && m_gameServer && (pressedStart() || this->m_startSandboxImmediately) && !this->m_startPacketSent) {
         // tell server to start game
         this->m_startPacketSent = true;
         m_gameServer->StartGame();
@@ -91,8 +91,14 @@ void GameSceneMenu::HandleInput() {
 
     if (isTouchValid && m_state == MenuState::NORMAL)
     {
-        if (m_sandbox_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY}))
-            GameScene::ChangeTo(new GameSceneIngame());
+        if (m_sandbox_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
+            this->m_state = MenuState::WAIT_FOR_CONNECTION;
+
+            this->m_gameServer = new GameServer();
+            this->m_gameClient = new GameClient("127.0.0.1");
+
+            this->m_startSandboxImmediately = true;
+        }
         else if (m_host_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
 

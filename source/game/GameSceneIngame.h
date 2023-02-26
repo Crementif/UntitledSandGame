@@ -49,7 +49,6 @@ private:
     // player
     class Player* m_selfPlayer;
     Vector2f m_prevCamPos;
-    std::unordered_map<PlayerID, class Player*> m_idToPlayer;
 
     // multiplayer
     class GameServer* m_server{nullptr};

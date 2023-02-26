@@ -81,8 +81,7 @@ public:
     void Update();
     void Draw();
 
-    const std::vector<Vector2i>& GetPlayerSpawnpoints()
-    {
+    const std::vector<Vector2i>& GetPlayerSpawnpoints() {
         return m_playerSpawnpoints;
     }
 
