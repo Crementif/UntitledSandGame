@@ -83,3 +83,28 @@ inline f32 _InterpolateAngle(f32 current, f32 dest, f32 factor)
     }
     return current * (1.0f - factor) + dest * factor;
 }
+
+inline f32 _MoveAngleTowardsTarget(f32 current, f32 dest, f32 rate)
+{
+    f32 dist = fabs(dest - current);
+    if(dist > M_PI)
+    {
+        if(current < dest)
+            current += M_TWOPI;
+        else if(current > dest)
+            current -= M_TWOPI;
+    }
+    if(current < dest)
+    {
+        current += rate;
+        if(current > dest)
+            current = dest;
+    }
+    else if(current > dest)
+    {
+        current -= rate;
+        if(current < dest)
+            current = dest;
+    }
+    return current;
+}

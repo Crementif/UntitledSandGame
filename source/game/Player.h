@@ -39,6 +39,11 @@ public:
 
     bool FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, bool& isStuckInGround, bool& isFloatingInAir);
 private:
+    void HandleLocalPlayerControl_WalkMode(struct ButtonState& buttonState, Vector2f leftStick);
+    void HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState, Vector2f leftStick);
+
+    void Update_DrillMode(float timestep);
+
     u32 m_playerId;
 
     AABB CalcAABB(f32 posX, f32 posY);
@@ -51,4 +56,9 @@ private:
 
     f32 m_drillAngle{};
     f32 m_visualDrillAngle{};
+
+    // drilling action
+    bool m_isDrilling{false};
+    f32 m_drillingDur{0.0f};
+    //uint8_t m_isDrilling{}; // slowly ramps up
 };

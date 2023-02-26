@@ -88,12 +88,8 @@ Vector2f Player::GetPosition()
     return m_pos;
 }
 
-void Player::HandleLocalPlayerControl()
+void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2f leftStick)
 {
-    Vector2f leftStick = getLeftStick();
-    ButtonState& buttonState = GetButtonState();
-
-
     // bomb placing (temporary)
     if (buttonState.buttonB.changedState && buttonState.buttonB.isDown) {
         Vector2f slightlyAbove = m_pos;
@@ -143,9 +139,42 @@ void Player::HandleLocalPlayerControl()
         }
     }
 
-    // drill control
+    // drill arm can be controlled freely when not drilling
     if( leftStick.Length() > 0.1f)
         m_drillAngle = atan2(leftStick.x, leftStick.y) - M_PI_2;
+}
+
+void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState, Vector2f leftStick)
+{
+    m_drillingDur += 1000.0f / 60.0f;
+    //m_speed = m_speed + Vector2f(1.0f, 0.0f).Rotate(m_drillAngle) * 0.01f;
+    m_speed = Vector2f(1.0f, 0.0f).Rotate(m_drillAngle) * 0.1f;
+
+    // drill arm can be controlled freely when not drilling
+    if( leftStick.Length() > 0.1f)
+    {
+        f32 targetAngle = atan2(leftStick.x, leftStick.y) - M_PI_2;
+        m_drillAngle = _MoveAngleTowardsTarget(m_drillAngle, targetAngle, 0.017f);
+    }
+}
+
+void Player::HandleLocalPlayerControl()
+{
+    ButtonState& buttonState = GetButtonState();
+    Vector2f leftStick = getLeftStick();
+
+    if(buttonState.buttonA.isDown)
+        m_isDrilling = true;
+    else
+    {
+        m_isDrilling = false; // probably should have a tiny cooldown?
+        m_drillingDur = 0.0f;
+    }
+
+    if(!m_isDrilling)
+        HandleLocalPlayerControl_WalkMode(buttonState, leftStick);
+    else
+        HandleLocalPlayerControl_DrillMode(buttonState, leftStick);
 }
 
 // "down" is +y
@@ -155,9 +184,15 @@ void Player::Update(float timestep)
 {
     Map* map = GetCurrentMap();
 
+    if(m_isDrilling)
+    {
+        Update_DrillMode(timestep);
+        return;
+    }
+
     // get pos as pixel integer coordinates
-    s32 pix = (s32)(m_pos.x + 0.5f);
-    s32 piy = (s32)(m_pos.y + 0.5f);
+    //s32 pix = (s32)(m_pos.x + 0.5f);
+    //s32 piy = (s32)(m_pos.y + 0.5f);
 
     // apply gravity
     if(!m_isTouchingGround)
@@ -207,24 +242,23 @@ void Player::Update(float timestep)
             }
 
         }
-
-        //m_speed.x *= 0.5f;
-        /*if(DoesPlayerCollideAtPos(m_pos.x, m_pos.y))
-        {
-            // move the player a little bit up if that would move them out of the ground
-            m_pos.x
-            if(DoesPlayerCollideAtPos(m_pos.x, m_pos.y))
-                m_pos.y -= 1.0f;
-        }*/
-
     }
+}
 
-    //if(!map->GetPixel(pix, piy).IsSolid())
-    //{
-    //    UpdatePosition(Vector2f(m_pos.x, m_pos.y + 0.1f));
-    //}
+void Player::Update_DrillMode(float timestep)
+{
+    m_speed = m_speed + Vector2f(0.3f, 0.0f).Rotate(m_drillAngle);
+    Vector2f newPos = m_pos + m_speed;
+    UpdatePosition(Vector2f(newPos.x, newPos.y));
 
-    // check collision!
+    if(!DoesPlayerCollideAtPos(newPos.x, newPos.y + 2.0f))
+    {
+        // falling!
+        m_speed.x = m_speed.x * 0.9f;
+        m_speed.y += 0.16f;
+    }
+    else
+        m_speed = m_speed * 0.9f;
 }
 
 // move player to new position, stop at collisions

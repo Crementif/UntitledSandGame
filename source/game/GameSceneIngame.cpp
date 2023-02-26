@@ -110,6 +110,7 @@ void GameSceneIngame::UpdateCamera()
     // center on player
     newCameraPosition = newCameraPosition - Vector2f(1920.0f, 1080.0f) * 0.5f;
     newCameraPosition = newCameraPosition * 0.75f + m_prevCamPos * 0.25f;
+    newCameraPosition.y -= 130.0f;
     m_prevCamPos = newCameraPosition;
     Render::SetCameraPosition(newCameraPosition);
 }

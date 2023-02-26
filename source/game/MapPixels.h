@@ -185,6 +185,20 @@ private:
 class ActivePixelCollection
 {
 public:
+    ~ActivePixelCollection()
+    {
+        while(!sandPixels.empty())
+        {
+            delete sandPixels.back();
+            sandPixels.pop_back();
+        }
+        while(!lavaPixels.empty())
+        {
+            delete lavaPixels.back();
+            lavaPixels.pop_back();
+        }
+    }
+
     // todo - do we even need per material grouping still?
     std::vector<ActivePixelSand*> sandPixels;
     std::vector<ActivePixelLava*> lavaPixels;
