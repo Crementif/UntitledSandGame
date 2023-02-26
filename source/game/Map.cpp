@@ -166,6 +166,8 @@ void Map::Init(uint32_t width, uint32_t height)
     m_activePixels = new ActivePixelCollection();
     m_cellsX = (width+MAP_CELL_WIDTH-1) / MAP_CELL_WIDTH;
     m_cellsY = (height+MAP_CELL_HEIGHT-1) / MAP_CELL_HEIGHT;
+    m_pixelsX = m_cellsX * MAP_CELL_WIDTH;
+    m_pixelsY = m_cellsY * MAP_CELL_HEIGHT;
     m_cells.clear();
     for(u32 y=0; y<m_cellsY; y++)
     {
@@ -229,6 +231,15 @@ PixelType& Map::GetPixel(s32 x, s32 y)
     {
         CriticalErrorHandler("Map::GetPixel - x/y out of range");
     }
+    return m_cells[cellX + cellY * m_cellsX].GetPixelFromCellCoords(relX, relY);
+}
+
+PixelType& Map::GetPixelNoBoundsCheck(s32 x, s32 y)
+{
+    s32 cellX = x >> 6;
+    s32 relX = x & 0x3F;
+    s32 cellY = y >> 6;
+    s32 relY = y & 0x3F;
     return m_cells[cellX + cellY * m_cellsX].GetPixelFromCellCoords(relX, relY);
 }
 

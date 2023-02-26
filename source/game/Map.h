@@ -40,6 +40,17 @@ union PixelType
         //return (pixelType&BIT_DYNAMIC) == 0;
     }
 
+    inline bool IsDynamic() const
+    {
+        return (pixelType&1) == 0;
+    }
+
+    // if we know IsDynamic is false, then calling this directly is faster
+    inline MAP_PIXEL_TYPE _GetPixelTypeStatic() const
+    {
+        return (MAP_PIXEL_TYPE)((pixelType >> 1)&0x7F);
+    }
+
     bool IsCollideWithObjects() const
     {
         if((pixelType&1) == 0)
@@ -48,6 +59,14 @@ union PixelType
             return false;
         return true;
         //return (pixelType&BIT_DYNAMIC) == 0;
+    }
+
+    // has any pixel other than air
+    const bool IsFilled() const
+    {
+        if((pixelType&1) == 0)
+            return true;
+        return _GetPixelTypeStatic() != MAP_PIXEL_TYPE::AIR;
     }
 
     uint32_t pixelType; // LSB set
@@ -97,11 +116,14 @@ public:
     void SetPixelColor(s32 x, s32 y, u32 c);
 
     PixelType& GetPixel(s32 x, s32 y);
+    PixelType& GetPixelNoBoundsCheck(s32 x, s32 y);
     void GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut);
 
     void SimulateTick();
-
+    bool CheckVolatileStaticPixelsHotspot(u32 x, u32 y);
+    void CheckStaticPixels();
     void SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y);
+    void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y);
 
     u32 GetRNGNumber()
     {
@@ -113,6 +135,8 @@ private:
 
     u32 m_cellsX;
     u32 m_cellsY;
+    u32 m_pixelsX;
+    u32 m_pixelsY;
     std::vector<MapCell> m_cells;
 
     std::vector<Vector2i> m_playerSpawnpoints;
@@ -120,6 +144,18 @@ private:
     class ActivePixelCollection* m_activePixels{nullptr};
 
     LCGRng m_rng;
+
+    // static volatility hotspots
+    // these track locations where there have been static pixels found that might need reanimation
+    struct StaticVolatilityHotSpot
+    {
+        StaticVolatilityHotSpot(u16 x, u16 y) : x(x), y(y), ttl(500) {};
+        u16 x;
+        u16 y;
+        u16 ttl; // ticks to live
+    };
+
+    std::vector<StaticVolatilityHotSpot> m_volatilityHotspots;
 };
 
 void SetCurrentMap(Map* newMap);

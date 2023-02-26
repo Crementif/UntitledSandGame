@@ -168,19 +168,27 @@ struct AABB
 class LCGRng
 {
 public:
-    uint32_t GetNext()
+    inline u32 GetNext()
     {
-        // todo - optimize by using 32bit ops only?
-        uint32_t val = lehmer_lcg;
-        lehmer_lcg = (u32)((u64)lehmer_lcg * 279470273ull % 0xfffffffbull);
+        lehmer_lcg ^= lehmer_lcg << 13;
+        lehmer_lcg ^= lehmer_lcg >> 17;
+        lehmer_lcg ^= lehmer_lcg << 5;
         return lehmer_lcg;
     }
 
-    void SetSeed(uint32_t seed)
+//    inline uint32_t GetNext()
+//    {
+//        // todo - optimize by using 32bit ops only?
+//        uint32_t val = lehmer_lcg;
+//        lehmer_lcg = (u32)((u64)lehmer_lcg * 279470273ull % 0xfffffffbull);
+//        return lehmer_lcg;
+//    }
+
+    void SetSeed(u32 seed)
     {
         lehmer_lcg = seed;
     }
 
 private:
-    uint32_t lehmer_lcg = 12345;
+    u32 lehmer_lcg = 12345;
 };
