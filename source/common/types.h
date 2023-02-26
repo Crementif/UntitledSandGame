@@ -74,6 +74,13 @@ struct Vector2f
         return {std::clamp(this->x, minVec.x, maxVec.x), std::clamp(this->y, minVec.y, maxVec.y)};
     }
 
+    f32 Distance(const Vector2f& rhs) const
+    {
+        f32 dx = this->x - rhs.x;
+        f32 dy = this->y - rhs.y;
+        return sqrtf(dx*dx + dy*dy);
+    }
+
     f32 DistanceSquare(const Vector2f& rhs) const
     {
         f32 dx = this->x - rhs.x;

@@ -7,7 +7,7 @@
 #include "GameServer.h"
 #include "GameClient.h"
 
-GameSceneMenu::GameSceneMenu() {
+GameSceneMenu::GameSceneMenu(): GameScene() {
     m_map = new Map("menu.tga", 1337);
     SetCurrentMap(m_map);
 
@@ -50,13 +50,13 @@ void GameSceneMenu::HandleInput() {
         nn::swkbd::CalcSubThreadFont();
     }
 
-    if(m_gameServer)
+    if (m_gameServer)
         m_gameServer->Update();
-    if(m_gameClient)
+    if (m_gameClient)
     {
         m_gameClient->Update();
-        if(m_gameClient->GetGameState() == GameClient::GAME_STATE::STATE_INGAME)
-            GameScene::ChangeTo(new GameSceneIngame(m_gameClient, m_gameServer));
+        if (m_gameClient->GetGameState() == GameClient::GAME_STATE::STATE_INGAME)
+            GameScene::ChangeTo(new GameSceneIngame(std::move(m_gameClient), std::move(m_gameServer)));
     }
 
 
@@ -67,7 +67,7 @@ void GameSceneMenu::HandleInput() {
         m_state = MenuState::WAIT_FOR_CONNECTION;
 
         auto ipAddress = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(nn::swkbd::GetInputFormString());
-        m_gameClient = new GameClient(ipAddress);
+        m_gameClient = std::make_unique<GameClient>(ipAddress);
     }
     bool pressedCancelButton = false;
     if (m_state == MenuState::WAIT_FOR_INPUT && nn::swkbd::IsDecideCancelButton(&pressedCancelButton)) {
@@ -94,16 +94,16 @@ void GameSceneMenu::HandleInput() {
         if (m_sandbox_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
 
-            this->m_gameServer = new GameServer();
-            this->m_gameClient = new GameClient("127.0.0.1");
+            this->m_gameServer = std::make_unique<GameServer>();
+            this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
 
             this->m_startSandboxImmediately = true;
         }
         else if (m_host_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
 
-            this->m_gameServer = new GameServer();
-            this->m_gameClient = new GameClient("127.0.0.1");
+            this->m_gameServer = std::make_unique<GameServer>();
+            this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
         }
         else if (m_join_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
             this->m_state = MenuState::WAIT_FOR_INPUT;

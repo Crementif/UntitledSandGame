@@ -21,7 +21,7 @@ extern std::vector<std::string> g_debugStrings;
 class GameSceneIngame : public GameScene
 {
 public:
-    explicit GameSceneIngame(class GameClient* client = nullptr, class GameServer* server = nullptr);
+    explicit GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server);
     ~GameSceneIngame() override;
 
     void Draw() override;
@@ -42,17 +42,13 @@ private:
 
     Sprite m_heartSprite{"/tex/heart.tga", true};
 
-    Sprite m_bgSpriteA{"/tex/background_tile_a.tga"};
-
     class Map* m_map;
 
     // player
-    class Player* m_selfPlayer;
+    class Player* m_selfPlayer{};
     Vector2f m_prevCamPos;
 
     // multiplayer
-    class GameServer* m_server{nullptr};
-    class GameClient* m_client{nullptr};
     u32 m_lastMovementBroadcast{};
 
     // touch scrolling

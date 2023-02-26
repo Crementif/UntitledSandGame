@@ -33,9 +33,6 @@ private:
 
     MenuState m_state = MenuState::NORMAL;
 
-    class GameServer* m_gameServer{nullptr};
-    class GameClient* m_gameClient{nullptr};
-
     bool m_startSandboxImmediately{false};
     bool m_startPacketSent{false};
 };

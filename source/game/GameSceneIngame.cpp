@@ -6,24 +6,19 @@
 
 #include "../framework/navigation.h"
 #include "../framework/physics/physics.h"
-#include "Particle.h"
 
 #include "GameServer.h"
 #include "GameClient.h"
 
-GameSceneIngame::GameSceneIngame(class GameClient* client, class GameServer* server) : m_server(server), m_client(client)
+GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): GameScene(std::move(client), std::move(server))
 {
-    u32 levelId;
-    u32 rngSeed;
-    levelId = client->GetGameSessionInfo().levelId;
-    rngSeed = client->GetGameSessionInfo().rngSeed;
+    u32 levelId = m_gameClient->GetGameSessionInfo().levelId;
+    u32 rngSeed = m_gameClient->GetGameSessionInfo().rngSeed;
 
     char levelFilename[32];
     sprintf(levelFilename, "level%u.tga", levelId);
     m_map = new Map(levelFilename, rngSeed);
     SetCurrentMap(m_map);
-
-    //new Particle(std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(spawnpos), 8, 2.0f, 40, 0.0f);
 
     SpawnPlayers();
     m_prevCamPos = Render::GetCameraPosition();
@@ -42,16 +37,16 @@ void GameSceneIngame::SpawnPlayers()
     if(spawnpoints.empty())
         CriticalErrorHandler("Level does not have any spawnpoints");
 
-    OSReport("[GameSceneIngame::SpawnPlayers] Spawning %d players...\n", (int)m_client->GetGameSessionInfo().playerIds.size());
-    PlayerID ourPlayerId = m_client->GetGameSessionInfo().ourPlayerId;
+    OSReport("[GameSceneIngame::SpawnPlayers] Spawning %d players...\n", (int)this->m_gameClient->GetGameSessionInfo().playerIds.size());
+    PlayerID ourPlayerId = this->m_gameClient->GetGameSessionInfo().ourPlayerId;
     // spawn players
     std::vector<Vector2i> availSpawnpoints = spawnpoints;
     m_selfPlayer = nullptr;
     OSReport("Our player id: %08x\n", ourPlayerId);
 
-    for(PlayerID playerId : m_client->GetGameSessionInfo().playerIds)
+    for (PlayerID playerId : this->m_gameClient->GetGameSessionInfo().playerIds)
     {
-        if(availSpawnpoints.empty())
+        if (availSpawnpoints.empty())
         {
             OSReport("Ran out of spawnpoints. Reusing already assigned locations");
             availSpawnpoints = spawnpoints;
@@ -120,13 +115,13 @@ void GameSceneIngame::UpdateCamera()
 
 void GameSceneIngame::UpdateMultiplayer()
 {
-    if(m_server)
-        m_server->Update();
-    if(!m_client)
+    if (m_gameServer)
+        m_gameServer->Update();
+    if (!m_gameClient)
         return;
-    m_client->Update();
+    m_gameClient->Update();
     // process received events
-    std::vector<GameClient::EventMovement> eventMovement = m_client->GetAndClearMovementEvents();
+    std::vector<GameClient::EventMovement> eventMovement = m_gameClient->GetAndClearMovementEvents();
     const auto& players = this->GetPlayers();
     for(auto& event : eventMovement)
     {
@@ -142,7 +137,7 @@ void GameSceneIngame::UpdateMultiplayer()
         // also sent this immediately when the player is starting a jump?
         Vector2f pos = m_selfPlayer->GetPosition();
         Vector2f speed = m_selfPlayer->GetSpeed();
-        m_client->SendMovement(pos, speed);
+        m_gameClient->SendMovement(pos, speed);
         m_lastMovementBroadcast = OSGetTick();
     }
 

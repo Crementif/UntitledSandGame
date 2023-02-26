@@ -19,6 +19,16 @@ public:
     s32 GetPlayerHeight() const;
 
     u32 GetPlayerHealth() const { return m_health; }
+    u32 TakeDamage(u8 damage = 1) {
+        if (m_health > damage)
+            m_health -= damage;
+        else
+            m_health = 0;
+
+        if (m_health == 0)
+            CriticalErrorHandler("Player died!");
+        return m_health;
+    }
     Vector2f GetPosition() override;
     Vector2f GetSpeed() { return m_speed; }
 

@@ -2,10 +2,13 @@
 
 #include "NetCommon.h"
 #include "Player.h"
+#include "GameClient.h"
+#include "GameServer.h"
 
 class GameScene
 {
 public:
+    GameScene(std::unique_ptr<GameClient> client = nullptr, std::unique_ptr<GameServer> server = nullptr): m_gameClient(std::move(client)), m_gameServer(std::move(server)) {};
     virtual ~GameScene() {};
 
     virtual void Draw() = 0;
@@ -31,4 +34,8 @@ public:
     void UnregisterAllPlayers() {
         sCurrPlayers.clear();
     }
+
+protected:
+    std::unique_ptr<GameClient> m_gameClient;
+    std::unique_ptr<GameServer> m_gameServer;
 };
