@@ -110,10 +110,13 @@ void Map::Init(uint32_t width, uint32_t height)
 {
     perlinNoise_init();
     m_activePixels = new ActivePixelCollection();
+    OSReport("Create map with size %dx%d\n", width, height);
     m_cellsX = (width+MAP_CELL_WIDTH-1) / MAP_CELL_WIDTH;
     m_cellsY = (height+MAP_CELL_HEIGHT-1) / MAP_CELL_HEIGHT;
     m_pixelsX = m_cellsX * MAP_CELL_WIDTH;
     m_pixelsY = m_cellsY * MAP_CELL_HEIGHT;
+    if(m_pixelsX != width || m_pixelsY != height)
+        CriticalErrorHandler("Map size is not aligned to cell size. Level TGA width and height must be a multiple of 64");
     m_cells.clear();
     for(u32 y=0; y<m_cellsY; y++)
     {
