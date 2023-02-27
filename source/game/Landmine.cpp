@@ -13,7 +13,7 @@ void Landmine::Update(float timestep) {
     this->SimulatePhysics();
 
     for (auto& playerIt : m_parent->GetPlayers()) {
-        if (playerIt.first == this->m_owner && playerIt.second->GetPosition().Distance(this->GetPosition()) > 80.0f) {
+        if (playerIt.first != this->m_owner && playerIt.second->GetPosition().Distance(this->GetPosition()) < 120.0f) {
             new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(m_aabb.pos), 8, 2.0f, 80, 20.0f, 20.0f);
             playerIt.second->TakeDamage();
             m_parent->QueueUnregisterObject(this);
