@@ -74,6 +74,8 @@ u32 _GetColorFromPixelType(PixelType& pixelType)
                 return 0x30303080;
             return 0x50505080;
         }
+        case MAP_PIXEL_TYPE::_COUNT:
+            break;
     }
     return 0x12345678;
 }

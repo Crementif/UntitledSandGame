@@ -1,6 +1,7 @@
 #include "Map.h"
 #include "MapPixels.h"
 #include "GameSceneIngame.h"
+#include "MapFlungPixels.h"
 
 void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
 {
@@ -174,6 +175,8 @@ void Map::SimulateTick()
     sprintf(strBuf, "%.04lf", dur);
     g_debugStrings.emplace_back("Hotspots: " + std::to_string(m_volatilityHotspots.size()) + " StaticCheck: " + strBuf + "ms");
 
+    SimulateFlungPixels();
+
     m_simulationTick++;
 }
 
@@ -224,6 +227,17 @@ void Map::HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos)
     }
 }
 
+bool _CanMaterialBeFlung(MAP_PIXEL_TYPE mat)
+{
+    switch(mat)
+    {
+        case MAP_PIXEL_TYPE::SOIL:
+            return true;
+        default:
+            return false;
+    }
+}
+
 void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius)
 {
     s32 radiusI = (s32)(radius + 0.5f);
@@ -231,6 +245,8 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
         return;
     s32 posX = (s32)(pos.x + 0.5f);
     s32 posY = (s32)(pos.y + 0.5f);
+    u32 flungCountTracker[(size_t)MAP_PIXEL_TYPE::_COUNT]{}; // keeps track of how many pixels per material need to be flung
+
     for(s32 y=posY-radiusI; y<=posY+radiusI; y++)
     {
         for(s32 x=posX-radiusI; x<=posX+radiusI; x++)
@@ -243,6 +259,7 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
             if( IsPixelOOB(x, y) )
                 continue;
             PixelType& pt = GetPixel(x, y);
+            MAP_PIXEL_TYPE prevMaterial = pt.GetPixelType();
             pt.SetPixel(MAP_PIXEL_TYPE::AIR);
             SetPixelColor(x, y, _GetColorFromPixelType(pt));
             // randomly spawn smoke
@@ -251,6 +268,40 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
                 SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, x, y);
                 PixelType& pt2 = GetPixel(x, y);
                 SetPixelColor(x, y, _GetColorFromPixelType(pt2));
+            }
+            // decide if the particle should be flung
+            if(_CanMaterialBeFlung(prevMaterial) && (GetRNGNumber()&0x7) < 0x4)
+            {
+                flungCountTracker[(size_t)prevMaterial]++;
+            }
+        }
+    }
+
+    // second pass to create all the flung pixels
+    if( radius >= 2.0f)
+    {
+        for(u32 matIndex = 0; matIndex < (size_t)MAP_PIXEL_TYPE::_COUNT; matIndex++)
+        {
+            MAP_PIXEL_TYPE mat = (MAP_PIXEL_TYPE)matIndex;
+            while(flungCountTracker[matIndex] > 0)
+            {
+                flungCountTracker[matIndex]--;
+                // find a random location within the circle
+                while( true )
+                {
+                    f32 rdx = GetRNGFloat01();
+                    f32 rdy = GetRNGFloat01();
+                    f32 spx = pos.x - radius + rdx * radius * 2.0f;
+                    f32 spy = pos.y - radius + rdy * radius * 2.0f;
+                    // spawn
+                    Vector2f pixelPos(spx, spy);
+                    Vector2f flungDir = pixelPos - pos;
+                    f32 dist = flungDir.x * flungDir.x + flungDir.y * flungDir.y;
+                    if(dist >= radius*radius)
+                        continue;
+                    new FlungPixel(this, pixelPos, flungDir * 0.07f, mat);
+                    break;
+                }
             }
         }
     }
