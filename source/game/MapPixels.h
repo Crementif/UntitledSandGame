@@ -188,6 +188,12 @@ public:
             return true;
         }
         // keep momentum and move along x axis
+        // if above is free then occasionally spawn a smoke pixel
+        if(!map->GetPixel(x, y-1).IsFilled() && (map->GetRNGNumber()&127) < 1)
+        {
+            map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, x, y-1);
+        }
+
         if(m_xMomentum < 0)
         {
             if(!map->GetPixel(x-1, y).IsFilled())
@@ -222,7 +228,7 @@ class ActivePixelSmoke : public ActivePixel<MAP_PIXEL_TYPE::SMOKE>
 public:
     ActivePixelSmoke(Map* map, s32 x, s32 y) : ActivePixel<MAP_PIXEL_TYPE::SMOKE>(x, y)
     {
-        m_ttl = 300 + (map->GetRNGNumber()%300);
+        m_ttl = 40 + (map->GetRNGNumber()%60);
     }
 
     bool SimulateStep(Map* map) final override
