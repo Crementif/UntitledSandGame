@@ -199,18 +199,6 @@ PixelType& Map::GetPixelNoBoundsCheck(s32 x, s32 y)
     return m_cells[cellX + cellY * m_cellsX].GetPixelFromCellCoords(relX, relY);
 }
 
-// can be optimized, probably more efficient than reading pixels individually
-void Map::GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut)
-{
-    for(s32 iy=0; iy<height; iy++)
-    {
-        for(s32 ix=0; ix<width; ix++)
-        {
-            rectOut[ix + iy * width] = GetPixel(x + ix, y + iy).IsSolid();
-        }
-    }
-}
-
 void Map::Update()
 {
 
