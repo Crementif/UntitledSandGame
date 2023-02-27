@@ -101,8 +101,8 @@ void GameSceneIngame::UpdateCamera()
     // clamp to map
     newCameraPosition.x = std::max(newCameraPosition.x, 0.0f);
     newCameraPosition.y = std::max(newCameraPosition.y, 0.0f);
-    newCameraPosition.x = std::min(newCameraPosition.x, (f32)GetMap()->GetPixelWidth() - SCREEN_WIDTH);
-    newCameraPosition.y = std::min(newCameraPosition.y, (f32)GetMap()->GetPixelHeight() - SCREEN_HEIGHT);
+    newCameraPosition.x = std::min(newCameraPosition.x, (f32)GetMap()->GetPixelWidth() * MAP_PIXEL_ZOOM - SCREEN_WIDTH);
+    newCameraPosition.y = std::min(newCameraPosition.y, (f32)GetMap()->GetPixelHeight() * MAP_PIXEL_ZOOM - SCREEN_HEIGHT);
 
     m_prevCamPos = newCameraPosition;
     Render::SetCameraPosition(newCameraPosition);

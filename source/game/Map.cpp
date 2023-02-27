@@ -224,10 +224,26 @@ void Map::Draw()
         }
     }
 
-    // todo - limit to visible cells
-    for(s32 y=0; y<(s32)m_cellsY; y++)
+    // get visible area
+    Vector2f camTopLeft = camPos - Vector2f(1.0f, 1.0f);
+    camTopLeft = camTopLeft / MAP_PIXEL_ZOOM;
+    Vector2i screenSize = Render::GetScreenSize();
+    Vector2f camBottomRight = camPos + Vector2f((f32)screenSize.x + 1.0f, (f32)screenSize.y + 1.0f);
+    camBottomRight = camBottomRight / MAP_PIXEL_ZOOM;
+
+    s32 cx1 = (s32)camTopLeft.x / MAP_CELL_WIDTH;
+    s32 cy1 = (s32)camTopLeft.y / MAP_CELL_HEIGHT;
+    s32 cx2 = ((s32)camBottomRight.x + screenSize.x +  MAP_CELL_WIDTH) / MAP_CELL_WIDTH;
+    s32 cy2 = ((s32)camBottomRight.y + screenSize.y + MAP_CELL_HEIGHT) / MAP_CELL_HEIGHT;
+
+    cx1 = std::clamp<s32>(cx1, 0, m_cellsX-1);
+    cy1 = std::clamp<s32>(cy1, 0, m_cellsY-1);
+    cx2 = std::clamp<s32>(cx2, 0, m_cellsX-1);
+    cy2 = std::clamp<s32>(cy2, 0, m_cellsY-1);
+
+    for(s32 y=cy1; y<=cy2; y++)
     {
-        for(s32 x=0; x<(s32)m_cellsX; x++)
+        for(s32 x=cx1; x<=cx2; x++)
         {
             m_cells[x + y * m_cellsX].DrawCell();
         }

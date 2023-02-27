@@ -69,6 +69,11 @@ struct Vector2f
         return Vector2f(this->x * rhs, this->y * rhs);
     }
 
+    Vector2f operator/(const f32& rhs) const
+    {
+        return Vector2f(this->x / rhs, this->y / rhs);
+    }
+
     Vector2f clamp(const Vector2f& minVec, const Vector2f& maxVec) const
     {
         return {std::clamp(this->x, minVec.x, maxVec.x), std::clamp(this->y, minVec.y, maxVec.y)};

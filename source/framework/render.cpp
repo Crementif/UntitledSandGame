@@ -203,6 +203,11 @@ Vector2f Render::GetUnfilteredCameraPosition()
     return sRenderCamUnfiltered;
 }
 
+Vector2i Render::GetScreenSize()
+{
+    return {1920, 1080};
+}
+
 bool sRenderTransparencyMode = false;
 
 void Render::BeginSpriteRendering()

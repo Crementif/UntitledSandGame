@@ -48,6 +48,7 @@ public:
     static void SetCameraPosition(Vector2f pos);
     static Vector2f GetCameraPosition(); // returns camera position, pixel-aligned
     static Vector2f GetUnfilteredCameraPosition(); // returns the original vector passed to SetCameraPosition
+    static Vector2i GetScreenSize();
 
     static void RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* text, ...);
 protected:
