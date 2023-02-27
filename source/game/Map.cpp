@@ -182,8 +182,14 @@ PixelType& Map::GetPixel(s32 x, s32 y)
     s32 relX = x & 0x3F;
     s32 cellY = y >> 6;
     s32 relY = y & 0x3F;
+    /*
     if((cellX < 0 || cellX >= (s32)m_cellsX) ||
        (cellY < 0 || cellY >= (s32)m_cellsY))
+    {
+        CriticalErrorHandler("Map::GetPixel - x/y out of range");
+    }*/
+    // optimized:
+    if((u32)cellX >= (u32)m_cellsX || (u32)cellY >= (u32)m_cellsY)
     {
         CriticalErrorHandler("Map::GetPixel - x/y out of range");
     }

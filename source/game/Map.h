@@ -18,6 +18,7 @@ enum class MAP_PIXEL_TYPE
     LAVA = 4,
     ROCK = 5,
     SMOKE = 6,
+    _COUNT = 7,
 };
 
 union PixelType
@@ -86,7 +87,6 @@ union PixelType
         MAP_PIXEL_TYPE mat = GetPixelType();
         if(mat == MAP_PIXEL_TYPE::AIR)
             return false;
-        // smoke only exists as an active object so we dont need to check
         return true;
     }
 
@@ -130,6 +130,7 @@ private:
 class Map
 {
     friend class MapCell;
+    friend class FlungPixel;
 public:
     Map(const char* filename, u32 rngSeed);
     ~Map();
@@ -166,6 +167,12 @@ public:
         return m_rng.GetNext();
     }
 
+    f32 GetRNGFloat01()
+    {
+        u32 v = GetRNGNumber() & 0xFFFF;
+        return (float)v / 65535.0f;
+    }
+
     u32 GetPixelWidth() const { return m_pixelsX; };
     u32 GetPixelHeight() const { return m_pixelsY; };
 
@@ -175,6 +182,8 @@ private:
     void HandleSynchronizedEvents();
     void HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos);
     void HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius);
+
+    void SimulateFlungPixels();
 
     u32 m_cellsX;
     u32 m_cellsY;
@@ -187,6 +196,7 @@ private:
     std::vector<Vector2i> m_playerSpawnpoints;
 
     class ActivePixelCollection* m_activePixels{nullptr};
+    std::vector<class FlungPixel*> m_flungPixels;
 
     LCGRng m_rng;
     u32 m_simulationTick{0};

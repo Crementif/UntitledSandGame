@@ -96,7 +96,7 @@ class ActivePixelSand : public ActivePixel<MAP_PIXEL_TYPE::SAND>
 public:
     ActivePixelSand(s32 x, s32 y) : ActivePixel<MAP_PIXEL_TYPE::SAND>(x, y) {};
 
-    bool SimulateStep(Map* map) override
+    bool SimulateStep(Map* map) final override
     {
         idleTime++;
         PixelType& ptBelow = map->GetPixel(x, y+1);
@@ -142,7 +142,7 @@ class ActivePixelLava : public ActivePixel<MAP_PIXEL_TYPE::LAVA>
 public:
     ActivePixelLava(s32 x, s32 y) : ActivePixel<MAP_PIXEL_TYPE::LAVA>(x, y) {};
 
-    bool SimulateStep(Map* map) override
+    bool SimulateStep(Map* map) final override
     {
         // try moving down if possible
         if(!map->GetPixel(x, y+1).IsFilled())
@@ -225,7 +225,7 @@ public:
         m_ttl = 300 + (map->GetRNGNumber()%300);
     }
 
-    bool SimulateStep(Map* map) override
+    bool SimulateStep(Map* map) final override
     {
         m_slowdown ^= 1;
         if(m_slowdown == 0)
@@ -252,7 +252,7 @@ public:
         return true;
     }
 
-    void PixelDeactivated(Map* map) override
+    void PixelDeactivated(Map* map) final override
     {
         // smoke just disappears
         map->GetPixel(x, y).SetPixel(MAP_PIXEL_TYPE::AIR);

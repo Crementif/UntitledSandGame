@@ -40,6 +40,7 @@ bool FlungPixel::Update(Map* map)
 
     if(map->GetPixel(newPosXi, newPosYi).IsCollideWithObjects())
     {
+        map->SpawnMaterialPixel(m_materialType, prevPosXi, prevPosYi);
         return false;
     }
 
