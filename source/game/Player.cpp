@@ -74,8 +74,8 @@ void Player::Draw(u32 layerIndex)
     Render::RenderSprite(s_tankBodySprite, m_aabb.pos.x * MAP_PIXEL_ZOOM, m_aabb.pos.y * MAP_PIXEL_ZOOM, s_tankBodySprite->GetWidth(), s_tankBodySprite->GetHeight());
 
     // draw wheels
-    Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x+3.5f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM)-s_tankWheelSprite->GetHeight()), s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
-    Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x+19.2f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM)-s_tankWheelSprite->GetHeight()), s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
+    Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x+5.9f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM)-s_tankWheelSprite->GetHeight())+11.0f, s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
+    Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x+21.6f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM)-s_tankWheelSprite->GetHeight())+11.0f, s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
 
     // draw drill
     Vector2f playerCenter(m_aabb.pos.x + m_aabb.scale.x * 0.5f, m_aabb.pos.y + m_aabb.scale.y * 0.58f);
