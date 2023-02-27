@@ -149,8 +149,8 @@ void Map::SimulateTick()
     double startTime = GetMillisecondTimestamp();
     CheckStaticPixels();
     double dur = GetMillisecondTimestamp() - startTime;
-    SimulateMaterial(GetCurrentMap(), m_activePixels->sandPixels);
-    SimulateMaterial(GetCurrentMap(), m_activePixels->lavaPixels);
+    SimulateMaterial(this, m_activePixels->sandPixels);
+    SimulateMaterial(this, m_activePixels->lavaPixels);
     g_debugStrings.emplace_back("Particles Sand: " + std::to_string(m_activePixels->sandPixels.size()) + " Lava: " + std::to_string(m_activePixels->lavaPixels.size()));
 
     char strBuf[64];
