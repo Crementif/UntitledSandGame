@@ -22,18 +22,6 @@ public:
 
     }
 
-    u16 x;
-    u16 y;
-    MAP_PIXEL_TYPE material;
-    u16 idleTime{0};
-};
-
-template<MAP_PIXEL_TYPE TMaterial>
-class ActivePixel : public ActivePixelBase
-{
-public:
-    ActivePixel(s32 x, s32 y) : ActivePixelBase(x, y, TMaterial) { }
-
     void RemoveFromWorld(Map* map)
     {
         PixelType& pt = map->GetPixel(x, y);
@@ -49,11 +37,63 @@ public:
         map->SetPixelColor(x, y, _GetColorFromPixelType(pt));
     }
 
+    u16 x;
+    u16 y;
+    MAP_PIXEL_TYPE material;
+    u16 idleTime{0};
+};
+
+template<MAP_PIXEL_TYPE TMaterial>
+class ActivePixel : public ActivePixelBase
+{
+public:
+    ActivePixel(s32 x, s32 y) : ActivePixelBase(x, y, TMaterial) { }
+
+    /*
+    void RemoveFromWorld(Map* map)
+    {
+        PixelType& pt = map->GetPixel(x, y);
+        pt.SetPixel(MAP_PIXEL_TYPE::AIR);
+        map->SetPixelColor(x, y, 0x00000000);
+    }
+
+    void IntegrateIntoWorld(Map* map)
+    {
+        PixelType& pt = map->GetPixel(x, y);
+        pt.SetDynamicPixel(this);
+        // update pixel color
+        map->SetPixelColor(x, y, _GetColorFromPixelType(pt));
+    }*/
+
     void ChangeParticleXY(Map* map, s32 x, s32 y)
     {
         RemoveFromWorld(map);
         this->x = x;
         this->y = y;
+        IntegrateIntoWorld(map);
+        idleTime = 0;
+    }
+
+    void SwapPixelPosition(Map* map, s32 otherX, s32 otherY)
+    {
+        RemoveFromWorld(map);
+        PixelType& otherPT = map->GetPixelNoBoundsCheck(otherX, otherY);
+        if(otherPT.IsDynamic())
+        {
+            ActivePixelBase* otherActivePixel = otherPT._GetDynamicPtr();
+            otherActivePixel->RemoveFromWorld(map);
+            otherActivePixel->x = x;
+            otherActivePixel->y = y;
+            otherActivePixel->IntegrateIntoWorld(map);
+        }
+        else
+        {
+            PixelType& selfPT = map->GetPixelNoBoundsCheck(x, y);
+            selfPT.SetPixel(otherPT.GetPixelType());
+            map->SetPixelColor(x, y, _GetColorFromPixelType(selfPT));
+        }
+        x = otherX;
+        y = otherY;
         IntegrateIntoWorld(map);
         idleTime = 0;
     }
@@ -74,10 +114,20 @@ public:
     bool SimulateStep(Map* map) override
     {
         idleTime++;
-        if(!map->GetPixel(x, y+1).IsSolid())
+        PixelType& ptBelow = map->GetPixel(x, y+1);
+        if(!ptBelow.IsSolid())
         {
             ChangeParticleXY(map, x, y+1);
             return true;
+        }
+        else
+        {
+            // if it's a liquid then drop down, but slowly
+            if( ptBelow.IsLiquid() && (map->GetRNGNumber()&0xF) < 5)
+            {
+                SwapPixelPosition(map, x, y+1);
+                return true;
+            }
         }
 
         if((map->GetRNGNumber()&0xF) <= 5)

@@ -231,7 +231,7 @@ MAP_PIXEL_TYPE PixelType::GetPixelType() const
     {
         return (MAP_PIXEL_TYPE)((pixelType >> 1)&0x7F);
     }
-    ActivePixelBase* pixelBase = (ActivePixelBase*)(pixelType&~1);
+    ActivePixelBase* pixelBase = _GetDynamicPtr();
     return pixelBase->material;
 }
 

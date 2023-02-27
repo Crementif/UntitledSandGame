@@ -29,6 +29,19 @@ void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y, f32 fo
     SpawnMaterialPixel(materialType, x, y);
 }
 
+bool _IsReanimatableMaterial(MAP_PIXEL_TYPE materialType)
+{
+    switch(materialType)
+    {
+        case MAP_PIXEL_TYPE::LAVA:
+        case MAP_PIXEL_TYPE::SAND:
+            return true;
+        default:
+            break;
+    }
+    return false;
+}
+
 template<typename T>
 void SimulateMaterial(Map* map, std::vector<T>& pixels)
 {
@@ -95,7 +108,7 @@ void Map::CheckStaticPixels()
         y = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
     };
 
-    for(u32 i=0; i<300; i++)
+    for(u32 i=0; i<450; i++)
     {
         u32 x = 4 + (this->GetRNGNumber() % boundX);
         u32 y = 4 + (this->GetRNGNumber() % boundY);

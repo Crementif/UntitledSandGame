@@ -20,15 +20,21 @@ enum class MAP_PIXEL_TYPE
 
 union PixelType
 {
-    void SetPixel(MAP_PIXEL_TYPE type)
+    inline void SetPixel(MAP_PIXEL_TYPE type)
     {
         pixelType = 1;
         pixelType |= ((u32)type << 1);
     }
 
-    void SetDynamicPixel(class ActivePixelBase* pixelPtr)
+    inline void SetDynamicPixel(class ActivePixelBase* pixelPtr)
     {
         pixelType = (u32)(uintptr_t)pixelPtr;
+    }
+
+    inline class ActivePixelBase* _GetDynamicPtr() const
+    {
+        ActivePixelBase* pixelBase = (ActivePixelBase*)(pixelType&~1);
+        return pixelBase;
     }
 
     MAP_PIXEL_TYPE GetPixelType() const;
@@ -39,6 +45,19 @@ union PixelType
         if(GetPixelType() == MAP_PIXEL_TYPE::AIR)
             return false;
         return true;
+    }
+
+    bool IsLiquid() const
+    {
+        MAP_PIXEL_TYPE mat = GetPixelType();
+        switch(mat)
+        {
+            case MAP_PIXEL_TYPE::LAVA:
+                return true;
+            default:
+                break;
+        }
+        return false;
     }
 
     bool IsDestructible() const
