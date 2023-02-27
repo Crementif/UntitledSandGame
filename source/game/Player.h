@@ -13,7 +13,7 @@ public:
     void Update(float timestep) override;
 
     void UpdatePosition(const Vector2f& newPos) override;
-    void SyncMovement(Vector2f pos, Vector2f speed);
+    void SyncMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 drillAngle);
 
     s32 GetPlayerWidth() const;
     s32 GetPlayerHeight() const;
@@ -31,6 +31,8 @@ public:
     }
     Vector2f GetPosition() override;
     Vector2f GetSpeed() { return m_speed; }
+    bool IsDrilling() { return m_isDrilling; }
+    f32 GetDrillAngle() { return m_drillAngle; }
 
     bool SlidePlayerPos(const Vector2f& newPos); // move player to new position, take collisions into account
     bool DoesPlayerCollideAtPos(f32 posX, f32 posY);

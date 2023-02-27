@@ -140,6 +140,9 @@ public:
 private:
     void Init(uint32_t width, uint32_t height);
 
+    void HandleSynchronizedEvents();
+    void HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos);
+
     u32 m_cellsX;
     u32 m_cellsY;
     u32 m_pixelsX;
@@ -151,6 +154,7 @@ private:
     class ActivePixelCollection* m_activePixels{nullptr};
 
     LCGRng m_rng;
+    u32 m_simulationTick{0};
 
     // static volatility hotspots
     // these track locations where there have been static pixels found that might need reanimation

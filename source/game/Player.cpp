@@ -54,11 +54,13 @@ void Player::UpdatePosition(const Vector2f& newPos)
     m_aabb = CalcAABB(m_pos.x, m_pos.y);
 }
 
-void Player::SyncMovement(Vector2f pos, Vector2f speed)
+void Player::SyncMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 drillAngle)
 {
     m_pos = pos;
     m_speed = speed;
     m_isTouchingGround = false; // calculating this properly requires more sophisticated logic
+    m_isDrilling = isDrilling;
+    m_drillAngle = drillAngle;
 }
 
 void Player::Draw(u32 layerIndex)
@@ -76,7 +78,7 @@ void Player::Draw(u32 layerIndex)
     Vector2f playerCenter(m_aabb.pos.x + m_aabb.scale.x * 0.5f, m_aabb.pos.y + m_aabb.scale.y * 0.5f);
     //f32 drillAngle = GetMillisecondTimestamp()*0.001f;
 
-    m_visualDrillAngle = _InterpolateAngle(m_visualDrillAngle, m_drillAngle, 0.2f);//m_visualDrillAngle * 0.8f + m_drillAngle * 0.2f;
+    m_visualDrillAngle = _InterpolateAngle(m_visualDrillAngle, m_drillAngle, 0.2f);
 
     Vector2f drillPos = playerCenter + Vector2f(12.0f, 0.0).Rotate(m_visualDrillAngle);
 
@@ -148,7 +150,6 @@ void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState,
 {
     m_drillingDur += 1000.0f / 60.0f;
     //m_speed = m_speed + Vector2f(1.0f, 0.0f).Rotate(m_drillAngle) * 0.01f;
-    m_speed = Vector2f(1.0f, 0.0f).Rotate(m_drillAngle) * 0.1f;
 
     // drill arm can be controlled freely when not drilling
     if( leftStick.Length() > 0.1f)
@@ -247,7 +248,7 @@ void Player::Update(float timestep)
 
 void Player::Update_DrillMode(float timestep)
 {
-    m_speed = m_speed + Vector2f(0.3f, 0.0f).Rotate(m_drillAngle);
+    m_speed = Vector2f(0.4f, 0.0f).Rotate(m_drillAngle);
     Vector2f newPos = m_pos + m_speed;
     UpdatePosition(Vector2f(newPos.x, newPos.y));
 

@@ -49,6 +49,11 @@ void GameClient::ProcessPacket(u8 opcode, PacketParser& pp)
             r = ProcessPacket_Ability(pp);
             break;
         }
+        case NET_ACTION_S_DRILLING:
+        {
+            r = ProcessPacket_Drilling(pp);
+            break;
+        }
     }
     if(!r)
         OSReport("GameClient: Received bad packet 0x%02x\n", (int)opcode);
@@ -78,7 +83,9 @@ bool GameClient::ProcessPacket_Movement(PacketParser& pp)
     Vector2f speed;
     speed.x = pp.ReadF32();
     speed.y = pp.ReadF32();
-    m_queuedEvents.queueMovement.push_back({playerId, pos, speed});
+    bool isDrilling = pp.ReadU8() != 0;
+    f32 drillAngle = pp.ReadF32();
+    m_queuedEvents.queueMovement.push_back({playerId, pos, speed, isDrilling, drillAngle});
     return true;
 }
 
@@ -96,6 +103,22 @@ bool GameClient::ProcessPacket_Ability(PacketParser& pp)
     return true;
 }
 
+bool GameClient::ProcessPacket_Drilling(PacketParser &pp)
+{
+    PlayerID playerId = pp.ReadU32();
+    Vector2f pos;
+    pos.x = pp.ReadF32();
+    pos.y = pp.ReadF32();
+    SynchronizedEvent se{};
+    se.eventType = SynchronizedEvent::EVENT_TYPE::DRILLING;
+    se.frameIndex = 9999;
+    se.action_drill.playerId = playerId;
+    se.action_drill.pos.x = pos.x;
+    se.action_drill.pos.y = pos.y;
+    m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
+    return true;
+}
+
 std::vector<GameClient::EventMovement> GameClient::GetAndClearMovementEvents()
 {
     std::vector<EventMovement> tmp;
@@ -110,24 +133,40 @@ std::vector<GameClient::EventAbility> GameClient::GetAndClearAbilityEvents()
     return tmp;
 }
 
-void GameClient::SendMovement(Vector2f pos, Vector2f speed)
+bool GameClient::GetSynchronizedEvents(u32 frameCount, std::vector<GameClient::SynchronizedEvent>& events)
 {
-    OSReport("GameClient::SendMovement: Sending movement\n");
+    events.clear();
+    std::swap(events, m_queuedEvents.queueSynchronizedEvents);
+    return true;
+}
+
+void GameClient::SendMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 drillAngle)
+{
     auto& pb = m_client->BuildNewPacket(NET_ACTION_C_MOVEMENT);
     pb.AddF32(pos.x);
     pb.AddF32(pos.y);
     pb.AddF32(speed.x);
     pb.AddF32(speed.y);
+    pb.AddU8(isDrilling);
+    pb.AddF32(drillAngle);
     m_client->SendPacket(pb);
 }
 
-void GameClient::SendAbility(GameClient::GAME_ABILITY ability, Vector2f pos, Vector2f velocity) {
-    OSReport("GameClient::SendAbility: Sending ability\n");
+void GameClient::SendAbility(GameClient::GAME_ABILITY ability, Vector2f pos, Vector2f velocity)
+{
     auto& pb = m_client->BuildNewPacket(NET_ACTION_C_ABILITY);
     pb.AddU32((u32)ability);
     pb.AddF32(pos.x);
     pb.AddF32(pos.y);
     pb.AddF32(velocity.x);
     pb.AddF32(velocity.y);
+    m_client->SendPacket(pb);
+}
+
+void GameClient::SendDrillingAction(Vector2f pos)
+{
+    auto& pb = m_client->BuildNewPacket(NET_ACTION_C_DRILLING);
+    pb.AddF32(pos.x);
+    pb.AddF32(pos.y);
     m_client->SendPacket(pb);
 }

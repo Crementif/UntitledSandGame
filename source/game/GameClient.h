@@ -32,6 +32,8 @@ public:
         PlayerID playerId;
         Vector2f pos;
         Vector2f speed;
+        bool isDrilling;
+        f32 drillAngle;
     };
 
     struct EventAbility
@@ -40,6 +42,24 @@ public:
         GAME_ABILITY ability;
         Vector2f pos;
         Vector2f velocity;
+    };
+
+    struct SynchronizedEvent
+    {
+        enum class EVENT_TYPE : u8
+        {
+            DRILLING = 0,
+        };
+        EVENT_TYPE eventType;
+        u32 frameIndex;
+        union
+        {
+            struct
+            {
+                PlayerID playerId;
+                Vector2f pos;
+            }action_drill;
+        };
     };
 
     void SendLandmine();
@@ -54,17 +74,20 @@ public:
 
     void Update();
 
-    void SendMovement(Vector2f pos, Vector2f speed);
+    void SendMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 drillAngle);
     void SendAbility(GAME_ABILITY ability, Vector2f pos, Vector2f velocity);
+    void SendDrillingAction(Vector2f pos);
 
     std::vector<EventMovement> GetAndClearMovementEvents();
     std::vector<EventAbility> GetAndClearAbilityEvents();
+    bool GetSynchronizedEvents(u32 frameCount, std::vector<GameClient::SynchronizedEvent>& events);
 private:
     void ProcessPacket(u8 opcode, PacketParser& pp);
 
     bool ProcessPacket_Start(PacketParser& pp);
     bool ProcessPacket_Movement(PacketParser& pp);
     bool ProcessPacket_Ability(PacketParser &pp);
+    bool ProcessPacket_Drilling(PacketParser &pp);
 
     RelayClient* m_client;
     bool m_isConnecting{false};
@@ -77,5 +100,6 @@ private:
     struct {
         std::vector<EventMovement> queueMovement;
         std::vector<EventAbility> queueAbility;
+        std::vector<SynchronizedEvent> queueSynchronizedEvents;
     } m_queuedEvents;
 };

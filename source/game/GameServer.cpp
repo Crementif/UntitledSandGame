@@ -64,6 +64,9 @@ void GameServer::ProcessPacket(u32 playerId, u8 opcode, PacketParser& pp)
         case NET_ACTION_C_ABILITY:
             r = ProcessPacket_Ability(playerId, pp);
             break;
+        case NET_ACTION_C_DRILLING:
+            r = ProcessPacket_Drilling(playerId, pp);
+            break;
     }
     if(!r)
         OSReport("GameServer::ProcessPacket: Error processing packet opcode %d from player %08x\n", (int)opcode, playerId);
@@ -75,6 +78,8 @@ bool GameServer::ProcessPacket_Movement(u32 playerId, PacketParser& pp)
     f32 posY = pp.ReadF32();
     f32 speedX = pp.ReadF32();
     f32 speedY = pp.ReadF32();
+    bool isDrilling = pp.ReadU8();
+    f32 drillAngle = pp.ReadF32();
     // rebuild packet but with playerId
     PacketBuilder& pb = m_server->BuildNewPacket(NET_ACTION_S_MOVEMENT);
     pb.AddU32(playerId);
@@ -82,6 +87,8 @@ bool GameServer::ProcessPacket_Movement(u32 playerId, PacketParser& pp)
     pb.AddF32(posY);
     pb.AddF32(speedX);
     pb.AddF32(speedY);
+    pb.AddU8(isDrilling);
+    pb.AddF32(drillAngle);
     m_server->SendToAllExceptPlayerId(pb, playerId);
     return true;
 }
@@ -101,6 +108,20 @@ bool GameServer::ProcessPacket_Ability(u32 playerId, PacketParser& pp)
     pb.AddF32(posY);
     pb.AddF32(velX);
     pb.AddF32(velY);
+    m_server->SendToAll(pb);
+    return true;
+}
+
+bool GameServer::ProcessPacket_Drilling(u32 playerId, PacketParser& pp)
+{
+    f32 posX = pp.ReadF32();
+    f32 posY = pp.ReadF32();
+    // rebuild packet but with playerId
+    PacketBuilder& pb = m_server->BuildNewPacket(NET_ACTION_S_DRILLING);
+    pb.AddU32(playerId);
+    // todo - frame synchronization
+    pb.AddF32(posX);
+    pb.AddF32(posY);
     m_server->SendToAll(pb);
     return true;
 }

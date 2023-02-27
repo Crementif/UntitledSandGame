@@ -128,7 +128,7 @@ void GameSceneIngame::UpdateMultiplayer()
     for(auto& event : eventMovement)
     {
         auto playerIt = players.find(event.playerId);
-        playerIt->second->SyncMovement(event.pos, event.speed);
+        playerIt->second->SyncMovement(event.pos, event.speed, event.isDrilling, event.drillAngle);
     }
     auto eventAbility = m_gameClient->GetAndClearAbilityEvents();
     for (auto& event : eventAbility) {
@@ -140,12 +140,14 @@ void GameSceneIngame::UpdateMultiplayer()
 
     // send movement state
     u32 elapsedTicks = OSGetTick() - m_lastMovementBroadcast;
-    if(elapsedTicks > OSMillisecondsToTicks(180))
+    if(elapsedTicks > OSMillisecondsToTicks(170))
     {
         // also sent this immediately when the player is starting a jump?
         Vector2f pos = m_selfPlayer->GetPosition();
         Vector2f speed = m_selfPlayer->GetSpeed();
-        m_gameClient->SendMovement(pos, speed);
+        m_gameClient->SendMovement(pos, speed, m_selfPlayer->IsDrilling(), m_selfPlayer->GetDrillAngle());
+        if(m_selfPlayer->IsDrilling())
+            m_gameClient->SendDrillingAction(pos + Vector2f(0.0f, -8.0f));
         m_lastMovementBroadcast = OSGetTick();
     }
 

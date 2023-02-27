@@ -46,6 +46,11 @@ public:
         m_buffer.emplace_back((v>>0)&0xFF);
     }
 
+    void AddU8(u8 v)
+    {
+        m_buffer.emplace_back(v);
+    }
+
     void AddF32(f32 v)
     {
         u32 uv = _bit_cast<u32>(v);
@@ -77,6 +82,15 @@ public:
         v |= ((u32)m_ptr[2] << 8);
         v |= ((u32)m_ptr[3] << 0);
         m_ptr += 4;
+        return v;
+    }
+
+    u8 ReadU8()
+    {
+        if((m_end - m_ptr) < 1)
+            return 0;
+        u8 v = m_ptr[0];
+        m_ptr += 1;
         return v;
     }
 

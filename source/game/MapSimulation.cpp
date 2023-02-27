@@ -142,6 +142,8 @@ void Map::CheckStaticPixels()
 
 void Map::SimulateTick()
 {
+    HandleSynchronizedEvents();
+
     double startTime = GetMillisecondTimestamp();
     CheckStaticPixels();
     double dur = GetMillisecondTimestamp() - startTime;
@@ -152,4 +154,51 @@ void Map::SimulateTick()
     char strBuf[64];
     sprintf(strBuf, "%.04lf", dur);
     g_debugStrings.emplace_back("Hotspots: " + std::to_string(m_volatilityHotspots.size()) + " StaticCheck: " + strBuf + "ms");
+
+    m_simulationTick++;
+}
+
+void Map::HandleSynchronizedEvents()
+{
+    GameClient* client = GameScene::sActiveScene->GetClient();
+    if(!client)
+        return;
+    std::vector<GameClient::SynchronizedEvent> syncedEvents;
+    if( !client->GetSynchronizedEvents(m_simulationTick, syncedEvents) )
+    {
+        // lagging behind
+        return;
+    }
+    for(const auto& event : syncedEvents)
+    {
+        switch(event.eventType)
+        {
+            case GameClient::SynchronizedEvent::EVENT_TYPE::DRILLING:
+            {
+                HandleSynchronizedEvent_Drilling(event.action_drill.playerId, event.action_drill.pos);
+                break;
+            }
+        }
+    }
+}
+
+void Map::HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos)
+{
+    s32 posX = (s32)(pos.x + 0.5f);
+    s32 posY = (s32)(pos.y + 0.5f);
+    for(s32 y=posY-6; y<=posY+6; y++)
+    {
+        for(s32 x=posX-6; x<=posX+6; x++)
+        {
+            s32 dfx = x - posX;
+            s32 dfy = y - posY;
+            s32 squareDist = dfx * dfx + dfy * dfy;
+            if(dfx >= 4*4)
+                continue;
+
+            PixelType& pt = GetPixel(x, y);
+            pt.SetPixel(MAP_PIXEL_TYPE::AIR);
+            SetPixelColor(x, y, _GetColorFromPixelType(pt));
+        }
+    }
 }
