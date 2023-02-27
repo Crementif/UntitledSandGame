@@ -203,3 +203,7 @@ public:
     std::vector<ActivePixelSand*> sandPixels;
     std::vector<ActivePixelLava*> lavaPixels;
 };
+
+MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c);
+// format: RRGGBBAA
+u32 _GetColorFromPixelType(PixelType& pixelType);

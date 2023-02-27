@@ -15,6 +15,7 @@ enum class MAP_PIXEL_TYPE
     SOIL = 2,
     GRASS = 3,
     LAVA = 4,
+    ROCK = 5,
 };
 
 union PixelType
@@ -38,7 +39,6 @@ union PixelType
         if(GetPixelType() == MAP_PIXEL_TYPE::AIR)
             return false;
         return true;
-        //return (pixelType&BIT_DYNAMIC) == 0;
     }
 
     bool IsDestructible() const
