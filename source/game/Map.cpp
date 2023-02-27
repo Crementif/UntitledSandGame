@@ -19,7 +19,7 @@ MAP_PIXEL_TYPE _GeneratePixelAtWorldPos(s32 x, s32 y)
 
 MapCell::MapCell(Map* map, u32 cellX, u32 cellY) : m_cellX(cellX), m_cellY(cellY), m_posX(cellX * MAP_CELL_WIDTH), m_posY(cellY * MAP_CELL_HEIGHT), m_map(map)
 {
-    m_cellSprite = new Sprite(MAP_CELL_WIDTH, MAP_CELL_HEIGHT, false);
+    m_cellSprite = new Sprite(MAP_CELL_WIDTH, MAP_CELL_HEIGHT, true);
     m_cellSprite->SetupSampler(false);
 
     /*
@@ -215,6 +215,18 @@ void Map::Update()
 
 void Map::Draw()
 {
+    Vector2f camPos = Render::GetCameraPosition();
+    s32 bgTileOffsetX = ((s32)camPos.x-299) / 300;
+    s32 bgTileOffsetY = ((s32)camPos.y-299) / 300;
+
+    for(s32 y=0; y<6; y++)
+    {
+        for(s32 x=0; x<12; x++)
+        {
+            Render::RenderSprite(&m_backgroundSprite, (bgTileOffsetX + x) * 300, (bgTileOffsetY + y) * 300, m_backgroundSprite.GetWidth()*MAP_PIXEL_ZOOM, m_backgroundSprite.GetHeight()*MAP_PIXEL_ZOOM);
+        }
+    }
+
     // todo - limit to visible cells
     for(s32 y=0; y<(s32)m_cellsY; y++)
     {

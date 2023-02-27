@@ -4,7 +4,7 @@
 #include "../framework/noise/noise.h"
 #include "../framework/render.h"
 
-#define MAP_PIXEL_ZOOM  (3) // one world pixel will translate to this many screen pixels
+#define MAP_PIXEL_ZOOM  (1) // one world pixel will translate to this many screen pixels
 
 #define MAP_CELL_WIDTH  (64)
 #define MAP_CELL_HEIGHT  (64)
@@ -168,6 +168,8 @@ private:
     u32 m_pixelsX;
     u32 m_pixelsY;
     std::vector<MapCell> m_cells;
+
+    Sprite m_backgroundSprite{"/tex/background_tile_a.tga", false};
 
     std::vector<Vector2i> m_playerSpawnpoints;
 
