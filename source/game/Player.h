@@ -56,6 +56,9 @@ private:
 
     u32 m_health = 10;
 
+    f32 m_moveAnimRot = 0;
+
+    u32 m_drillAnimIdx = 0;
     f32 m_drillAngle{};
     f32 m_visualDrillAngle{};
 

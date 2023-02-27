@@ -6,22 +6,24 @@
 #include "../framework/navigation.h"
 #include "Landmine.h"
 
-#include <coreinit/debug.h>
-
-Sprite* s_sprite_default{nullptr};
-Sprite* s_sprite_debug_touch{nullptr};
-Sprite* s_sprite_drill{nullptr};
+Sprite* s_tankBodySprite{nullptr};
+Sprite* s_tankDrill0Sprite{nullptr};
+Sprite* s_tankDrill1Sprite{nullptr};
+Sprite* s_tankDrill2Sprite{nullptr};
+Sprite* s_tankWheelSprite{nullptr};
 
 Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(parent, CalcAABB(posX, posY), true, DRAW_LAYER_PLAYERS), m_playerId(playerId)
 {
     Vector2f playerPos = Vector2f(posX, posY - GetPlayerHeight());
     UpdatePosition(playerPos);
     // player_default.tga
-    if(!s_sprite_default)
+    if(!s_tankBodySprite)
     {
-        s_sprite_default = new Sprite("tex/player_default.tga", true);
-        s_sprite_debug_touch = new Sprite("tex/debug_touch.tga", false);
-        s_sprite_drill = new Sprite("tex/drill.tga", true);
+        s_tankBodySprite = new Sprite("tex/tank.tga", true);
+        s_tankDrill0Sprite = new Sprite("tex/tank_drill0.tga", true);
+        s_tankDrill1Sprite = new Sprite("tex/tank_drill1.tga", true);
+        s_tankDrill2Sprite = new Sprite("tex/tank_drill2.tga", true);
+        s_tankWheelSprite = new Sprite("tex/tank_wheel.tga", true);
     }
 }
 
@@ -32,12 +34,12 @@ Player::~Player()
 // width/height in world pixels
 s32 Player::GetPlayerWidth() const
 {
-    return 16;
+    return 28;
 }
 
 s32 Player::GetPlayerHeight() const
 {
-    return 16;
+    return 28;
 }
 
 
@@ -65,24 +67,24 @@ void Player::SyncMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 dri
 
 void Player::Draw(u32 layerIndex)
 {
-    //if(layerIndex != DRAW_LAYER_PLAYERS)
-    //    return;
-    Render::RenderSprite(s_sprite_default, m_aabb.pos.x * MAP_PIXEL_ZOOM, m_aabb.pos.y * MAP_PIXEL_ZOOM, m_aabb.scale.x * MAP_PIXEL_ZOOM, m_aabb.scale.y * MAP_PIXEL_ZOOM);
-    // debug touch icon
-    if(m_isTouchingGround)
-        Render::RenderSprite(s_sprite_debug_touch, m_aabb.pos.x * MAP_PIXEL_ZOOM, m_aabb.pos.y * MAP_PIXEL_ZOOM, 8, 8);
-    // s_sprite_debug_touch
+    // draw body
+    Render::RenderSprite(s_tankBodySprite, m_aabb.pos.x * MAP_PIXEL_ZOOM, m_aabb.pos.y * MAP_PIXEL_ZOOM, s_tankBodySprite->GetWidth(), s_tankBodySprite->GetHeight());
 
     // draw drill
-    // s_sprite_drill
-    Vector2f playerCenter(m_aabb.pos.x + m_aabb.scale.x * 0.5f, m_aabb.pos.y + m_aabb.scale.y * 0.5f);
-    //f32 drillAngle = GetMillisecondTimestamp()*0.001f;
-
+    Vector2f playerCenter(m_aabb.pos.x + m_aabb.scale.x * 0.5f, m_aabb.pos.y + m_aabb.scale.y * 0.58f);
     m_visualDrillAngle = _InterpolateAngle(m_visualDrillAngle, m_drillAngle, 0.2f);
-
     Vector2f drillPos = playerCenter + Vector2f(12.0f, 0.0).Rotate(m_visualDrillAngle);
 
-    Render::RenderSprite(s_sprite_drill, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, m_aabb.scale.x * 0.8f * MAP_PIXEL_ZOOM, m_aabb.scale.y * 0.8f * MAP_PIXEL_ZOOM, m_visualDrillAngle);
+    if (m_drillAnimIdx > 30)
+        Render::RenderSprite(s_tankDrill2Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill2Sprite->GetWidth(), s_tankDrill2Sprite->GetHeight(), m_visualDrillAngle);
+    else if (m_drillAnimIdx > 15)
+        Render::RenderSprite(s_tankDrill1Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill1Sprite->GetWidth(), s_tankDrill1Sprite->GetHeight(), m_visualDrillAngle);
+    else
+        Render::RenderSprite(s_tankDrill0Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill0Sprite->GetWidth(), s_tankDrill0Sprite->GetHeight(), m_visualDrillAngle);
+
+    // draw wheels
+    Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x+3.5f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM)-s_tankWheelSprite->GetHeight()), s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
+    Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x+19.2f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM)-s_tankWheelSprite->GetHeight()), s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
 }
 
 Vector2f Player::GetPosition()
@@ -131,13 +133,20 @@ void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2
         // ground movement
         if(leftStick.x < -0.1f)
         {
+            m_moveAnimRot -= M_PI_4/10.0f;
             if(m_speed.x > -0.4)
                 m_speed.x -= 0.15f;
+
+            if (m_moveAnimRot <= 0.01)
+                m_moveAnimRot = M_TWOPI;
         }
         else if(leftStick.x > 0.1f)
         {
+            m_moveAnimRot += M_PI_4/10.0f;
             if(m_speed.x < 0.4)
                 m_speed.x += 0.15f;
+            if (m_moveAnimRot >= M_TWOPI)
+                m_moveAnimRot = 0.0;
         }
     }
 
@@ -157,6 +166,8 @@ void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState,
         f32 targetAngle = atan2(leftStick.x, leftStick.y) - M_PI_2;
         m_drillAngle = _MoveAngleTowardsTarget(m_drillAngle, targetAngle, 0.017f);
     }
+
+    m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + 1;
 }
 
 void Player::HandleLocalPlayerControl()
