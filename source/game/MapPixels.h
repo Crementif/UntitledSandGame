@@ -149,18 +149,21 @@ public:
         {
             ChangeParticleXY(map, x, y+1);
             m_xMomentum = -1 + (map->GetRNGNumber()&2);
+            m_lavaNoEventTime = 0;
             return true;
         }
         if(!map->GetPixel(x-1, y+1).IsFilled())
         {
             ChangeParticleXY(map, x-1, y+1);
             m_xMomentum = -1;
+            m_lavaNoEventTime = 0;
             return true;
         }
         if(!map->GetPixel(x+1, y+1).IsFilled())
         {
             ChangeParticleXY(map, x+1, y+1);
             m_xMomentum = 1;
+            m_lavaNoEventTime = 0;
             return true;
         }
 
@@ -179,12 +182,14 @@ public:
         {
             ChangeParticleXY(map, x-2, y+1);
             m_xMomentum = -2;
+            m_lavaNoEventTime = 0;
             return true;
         }
         if(!map->GetPixel(x+2, y+1).IsFilled())
         {
             ChangeParticleXY(map, x+2, y+1);
             m_xMomentum = 2;
+            m_lavaNoEventTime = 0;
             return true;
         }
         // keep momentum and move along x axis
@@ -193,6 +198,10 @@ public:
         {
             map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, x, y-1);
         }
+
+        if(m_lavaNoEventTime >= 200)
+            return false; // inactivate particle
+        m_lavaNoEventTime++;
 
         if(m_xMomentum < 0)
         {
@@ -210,17 +219,13 @@ public:
                 m_xMomentum = -1;
             return true;
         }
-
-        if(idleTime >= 20)
-        {
-            return false; // inactivate particle
-        }
         return true;
     }
 
 private:
     s8 m_xMomentum{0};
     s8 m_moveDelay{0};
+    u8 m_lavaNoEventTime{0};
 };
 
 class ActivePixelSmoke : public ActivePixel<MAP_PIXEL_TYPE::SMOKE>
