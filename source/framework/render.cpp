@@ -228,7 +228,7 @@ const u16 s_idx_data[] = {
         0, 1, 2, 2, 1, 3
 };
 
-template<bool TUseCamPos>
+template<bool TUseCamPos, bool TInvalidate = true>
 u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight)
 {
     const f32 PIXEL_WIDTH = 1.0 / 1920.0 * 2.0; // *2.0 is since window coordinates are -1.0 to 1.0
@@ -266,12 +266,13 @@ u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight)
     vtx[3].pos[0] = x2;
     vtx[3].pos[1] = y2;
 
-    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, (void*)vtx, (sizeof(Vertex) * 4));
+    if constexpr (TInvalidate)
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, (void*)vtx, (sizeof(Vertex) * 4));
 
     return baseVertex;
 }
 
-template<bool TUseCamPos>
+template<bool TUseCamPos, bool TInvalidate = true>
 u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight, f32 cx, f32 cy, f32 cw, f32 ch)
 {
     const f32 PIXEL_WIDTH = 1.0 / 1920.0 * 2.0; // *2.0 since window coordinates are -1.0 to 1.0
@@ -308,7 +309,8 @@ u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight, f32 
     vtx[3].pos[0] = x2;
     vtx[3].pos[1] = y2;
 
-    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, (void*)vtx, (sizeof(Vertex) * 4));
+    if constexpr (TInvalidate)
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, (void*)vtx, (sizeof(Vertex) * 4));
 
     return baseVertex;
 }
@@ -357,8 +359,10 @@ void Render::RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeigh
 void Render::RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight, f32 angle)
 {
     GX2Texture* tex = sprite->GetTexture();
-    u32 baseVertex = _SetupSpriteVertexData<true>((f32)x - (f32)pxWidth * 0.5f, (f32)y - (f32)pxHeight * 0.5f, (f32)pxWidth, (f32)pxHeight);
+    u32 baseVertex = _SetupSpriteVertexData<true, false>((f32)x - (f32)pxWidth * 0.5f, (f32)y - (f32)pxHeight * 0.5f, (f32)pxWidth, (f32)pxHeight);
     _RotateVerticesAroundPoint(sVtxRingbuffer.base + baseVertex, x, y, angle);
+
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, sVtxRingbuffer.base + baseVertex, (sizeof(Vertex) * 4));
 
     if(sRenderTransparencyMode != sprite->m_hasTransparency)
     {
