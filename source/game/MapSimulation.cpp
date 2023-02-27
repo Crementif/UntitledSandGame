@@ -61,6 +61,8 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
         u32 px = x + rdX - HOTSPOT_RANGE;
         u32 py = y + rdY - HOTSPOT_RANGE;
         PixelType& pixelType = GetPixelNoBoundsCheck(px, py);
+        if(pixelType.IsDynamic())
+            continue;
         auto mat = pixelType._GetPixelTypeStatic();
         if(mat == MAP_PIXEL_TYPE::SAND)
         {
@@ -149,7 +151,7 @@ void Map::SimulateTick()
     double dur = GetMillisecondTimestamp() - startTime;
     SimulateMaterial(GetCurrentMap(), m_activePixels->sandPixels);
     SimulateMaterial(GetCurrentMap(), m_activePixels->lavaPixels);
-    g_debugStrings.emplace_back("Sand Particles: " + std::to_string(m_activePixels->sandPixels.size()));
+    g_debugStrings.emplace_back("Particles Sand: " + std::to_string(m_activePixels->sandPixels.size()) + " Lava: " + std::to_string(m_activePixels->lavaPixels.size()));
 
     char strBuf[64];
     sprintf(strBuf, "%.04lf", dur);
