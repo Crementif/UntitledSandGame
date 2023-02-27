@@ -128,15 +128,13 @@ void GameSceneIngame::UpdateMultiplayer()
     for(auto& event : eventMovement)
     {
         auto playerIt = players.find(event.playerId);
-        playerIt->second->SyncMovement(event.pos, event.speed, event.isDrilling, event.drillAngle);
+        playerIt->second->SyncMovement(event.pos, event.speed, event.moveFlags, event.drillAngle);
     }
     auto eventAbility = m_gameClient->GetAndClearAbilityEvents();
-    for (auto& event : eventAbility) {
+    for (auto& event : eventAbility)
+    {
         new Landmine(this, event.playerId, event.pos.x, event.pos.y);
     }
-
-
-    // player started jumping
 
     // send movement state
     u32 elapsedTicks = OSGetTick() - m_lastMovementBroadcast;
@@ -145,7 +143,7 @@ void GameSceneIngame::UpdateMultiplayer()
         // also sent this immediately when the player is starting a jump?
         Vector2f pos = m_selfPlayer->GetPosition();
         Vector2f speed = m_selfPlayer->GetSpeed();
-        m_gameClient->SendMovement(pos, speed, m_selfPlayer->IsDrilling(), m_selfPlayer->GetDrillAngle());
+        m_gameClient->SendMovement(pos, speed, m_selfPlayer->GetMovementFlags(), m_selfPlayer->GetDrillAngle());
         if(m_selfPlayer->IsDrilling())
             m_gameClient->SendDrillingAction(pos + Vector2f(0.0f, -8.0f));
         m_lastMovementBroadcast = OSGetTick();

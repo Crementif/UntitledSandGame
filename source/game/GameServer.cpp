@@ -78,7 +78,7 @@ bool GameServer::ProcessPacket_Movement(u32 playerId, PacketParser& pp)
     f32 posY = pp.ReadF32();
     f32 speedX = pp.ReadF32();
     f32 speedY = pp.ReadF32();
-    bool isDrilling = pp.ReadU8();
+    u8 moveFlags = pp.ReadU8();
     f32 drillAngle = pp.ReadF32();
     // rebuild packet but with playerId
     PacketBuilder& pb = m_server->BuildNewPacket(NET_ACTION_S_MOVEMENT);
@@ -87,7 +87,7 @@ bool GameServer::ProcessPacket_Movement(u32 playerId, PacketParser& pp)
     pb.AddF32(posY);
     pb.AddF32(speedX);
     pb.AddF32(speedY);
-    pb.AddU8(isDrilling);
+    pb.AddU8(moveFlags);
     pb.AddF32(drillAngle);
     m_server->SendToAllExceptPlayerId(pb, playerId);
     return true;

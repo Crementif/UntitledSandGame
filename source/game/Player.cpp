@@ -14,6 +14,9 @@ Sprite* s_tankWheelSprite{nullptr};
 
 Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(parent, CalcAABB(posX, posY), true, DRAW_LAYER_PLAYERS), m_playerId(playerId)
 {
+    m_moveFlags.isDrilling = false;
+    m_moveFlags.walkingLeft = false;
+    m_moveFlags.walkingRight = false;
     Vector2f playerPos = Vector2f(posX, posY - GetPlayerHeight());
     UpdatePosition(playerPos);
     // player_default.tga
@@ -56,12 +59,12 @@ void Player::UpdatePosition(const Vector2f& newPos)
     m_aabb = CalcAABB(m_pos.x, m_pos.y);
 }
 
-void Player::SyncMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 drillAngle)
+void Player::SyncMovement(Vector2f pos, Vector2f speed, u8 moveFlags, f32 drillAngle)
 {
     m_pos = pos;
     m_speed = speed;
     m_isTouchingGround = false; // calculating this properly requires more sophisticated logic
-    m_isDrilling = isDrilling;
+    m_moveFlags.rawBits = moveFlags;
     m_drillAngle = drillAngle;
 }
 
@@ -114,18 +117,18 @@ void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2
         m_isTouchingGround = false;
         // player might be slightly stuck in the ground so move him up by a tiny bit?
     }
+    m_moveFlags.walkingLeft = false;
+    m_moveFlags.walkingRight = false;
     if(!m_isTouchingGround)
     {
         // air movement
         if(leftStick.x < -0.1f)
         {
-            if(m_speed.x > -1.0)
-                m_speed.x -= 0.2f;
+            m_moveFlags.walkingLeft = true;
         }
         else if(leftStick.x > 0.1f)
         {
-            if(m_speed.x < 1.0)
-                m_speed.x += 0.2f;
+            m_moveFlags.walkingRight = true;
         }
     }
     else
@@ -133,20 +136,11 @@ void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2
         // ground movement
         if(leftStick.x < -0.1f)
         {
-            m_moveAnimRot -= M_PI_4/10.0f;
-            if(m_speed.x > -0.4)
-                m_speed.x -= 0.15f;
-
-            if (m_moveAnimRot <= 0.01)
-                m_moveAnimRot = M_TWOPI;
+            m_moveFlags.walkingLeft = true;
         }
         else if(leftStick.x > 0.1f)
         {
-            m_moveAnimRot += M_PI_4/10.0f;
-            if(m_speed.x < 0.4)
-                m_speed.x += 0.15f;
-            if (m_moveAnimRot >= M_TWOPI)
-                m_moveAnimRot = 0.0;
+            m_moveFlags.walkingRight = true;
         }
     }
 
@@ -158,16 +152,12 @@ void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2
 void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState, Vector2f leftStick)
 {
     m_drillingDur += 1000.0f / 60.0f;
-    //m_speed = m_speed + Vector2f(1.0f, 0.0f).Rotate(m_drillAngle) * 0.01f;
-
     // drill arm can be controlled freely when not drilling
     if( leftStick.Length() > 0.1f)
     {
         f32 targetAngle = atan2(leftStick.x, leftStick.y) - M_PI_2;
         m_drillAngle = _MoveAngleTowardsTarget(m_drillAngle, targetAngle, 0.017f);
     }
-
-    m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + 1;
 }
 
 void Player::HandleLocalPlayerControl()
@@ -176,14 +166,14 @@ void Player::HandleLocalPlayerControl()
     Vector2f leftStick = getLeftStick();
 
     if(buttonState.buttonA.isDown)
-        m_isDrilling = true;
+        m_moveFlags.isDrilling = true;
     else
     {
-        m_isDrilling = false; // probably should have a tiny cooldown?
+        m_moveFlags.isDrilling = false; // probably should have a tiny cooldown?
         m_drillingDur = 0.0f;
     }
 
-    if(!m_isDrilling)
+    if(!m_moveFlags.isDrilling)
         HandleLocalPlayerControl_WalkMode(buttonState, leftStick);
     else
         HandleLocalPlayerControl_DrillMode(buttonState, leftStick);
@@ -196,15 +186,49 @@ void Player::Update(float timestep)
 {
     Map* map = GetCurrentMap();
 
-    if(m_isDrilling)
+    if(m_moveFlags.isDrilling)
     {
         Update_DrillMode(timestep);
         return;
     }
 
-    // get pos as pixel integer coordinates
-    //s32 pix = (s32)(m_pos.x + 0.5f);
-    //s32 piy = (s32)(m_pos.y + 0.5f);
+    // left/right move
+    if(!m_isTouchingGround)
+    {
+        // air movement
+        if(m_moveFlags.walkingLeft)
+        {
+            if(m_speed.x > -1.0)
+                m_speed.x -= 0.2f;
+        }
+        else if(m_moveFlags.walkingRight)
+        {
+            if(m_speed.x < 1.0)
+                m_speed.x += 0.2f;
+        }
+    }
+    else
+    {
+        // ground movement
+        if(m_moveFlags.walkingLeft)
+        {
+            m_moveAnimRot -= M_PI_4/10.0f;
+            if(m_speed.x > -0.4)
+                m_speed.x -= 0.15f;
+
+            if (m_moveAnimRot <= 0.01)
+                m_moveAnimRot = M_TWOPI;
+        }
+        else if(m_moveFlags.walkingRight)
+        {
+            m_moveAnimRot += M_PI_4/10.0f;
+            if(m_speed.x < 0.4)
+                m_speed.x += 0.15f;
+            if (m_moveAnimRot >= M_TWOPI)
+                m_moveAnimRot = 0.0;
+        }
+    }
+
 
     // apply gravity
     if(!m_isTouchingGround)
@@ -271,6 +295,8 @@ void Player::Update_DrillMode(float timestep)
     }
     else
         m_speed = m_speed * 0.9f;
+
+    m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + 1;
 }
 
 // move player to new position, stop at collisions

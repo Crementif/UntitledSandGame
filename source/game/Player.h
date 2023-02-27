@@ -6,6 +6,18 @@
 class Player: public Object
 {
 public:
+    union MOVEMENT_BITS
+    {
+        struct
+        {
+            bool walkingLeft : 1;
+            bool walkingRight : 1;
+            bool isDrilling : 1;
+        };
+        u8 rawBits;
+    };
+    static_assert(sizeof(MOVEMENT_BITS) == 1);
+
     Player(GameScene* parent, u32 playerId, f32 posX, f32 posY);
     ~Player() override;
 
@@ -13,7 +25,7 @@ public:
     void Update(float timestep) override;
 
     void UpdatePosition(const Vector2f& newPos) override;
-    void SyncMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 drillAngle);
+    void SyncMovement(Vector2f pos, Vector2f speed, u8 moveFlags, f32 drillAngle);
 
     s32 GetPlayerWidth() const;
     s32 GetPlayerHeight() const;
@@ -31,7 +43,8 @@ public:
     }
     Vector2f GetPosition() override;
     Vector2f GetSpeed() { return m_speed; }
-    bool IsDrilling() { return m_isDrilling; }
+    bool IsDrilling() { return m_moveFlags.isDrilling; }
+    u8 GetMovementFlags() { return m_moveFlags.rawBits; }
     f32 GetDrillAngle() { return m_drillAngle; }
 
     bool SlidePlayerPos(const Vector2f& newPos); // move player to new position, take collisions into account
@@ -61,9 +74,9 @@ private:
     u32 m_drillAnimIdx = 0;
     f32 m_drillAngle{};
     f32 m_visualDrillAngle{};
-
+    // movement flags
+    MOVEMENT_BITS m_moveFlags;
     // drilling action
-    bool m_isDrilling{false};
     f32 m_drillingDur{0.0f};
     //uint8_t m_isDrilling{}; // slowly ramps up
 };

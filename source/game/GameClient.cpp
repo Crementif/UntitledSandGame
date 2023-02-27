@@ -83,9 +83,9 @@ bool GameClient::ProcessPacket_Movement(PacketParser& pp)
     Vector2f speed;
     speed.x = pp.ReadF32();
     speed.y = pp.ReadF32();
-    bool isDrilling = pp.ReadU8() != 0;
+    u8 moveFlags = pp.ReadU8();
     f32 drillAngle = pp.ReadF32();
-    m_queuedEvents.queueMovement.push_back({playerId, pos, speed, isDrilling, drillAngle});
+    m_queuedEvents.queueMovement.push_back({playerId, pos, speed, moveFlags, drillAngle});
     return true;
 }
 
@@ -140,14 +140,14 @@ bool GameClient::GetSynchronizedEvents(u32 frameCount, std::vector<GameClient::S
     return true;
 }
 
-void GameClient::SendMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 drillAngle)
+void GameClient::SendMovement(Vector2f pos, Vector2f speed, u8 moveFlags, f32 drillAngle)
 {
     auto& pb = m_client->BuildNewPacket(NET_ACTION_C_MOVEMENT);
     pb.AddF32(pos.x);
     pb.AddF32(pos.y);
     pb.AddF32(speed.x);
     pb.AddF32(speed.y);
-    pb.AddU8(isDrilling);
+    pb.AddU8(moveFlags);
     pb.AddF32(drillAngle);
     m_client->SendPacket(pb);
 }

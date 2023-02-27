@@ -32,7 +32,7 @@ public:
         PlayerID playerId;
         Vector2f pos;
         Vector2f speed;
-        bool isDrilling;
+        u8 moveFlags;
         f32 drillAngle;
     };
 
@@ -74,7 +74,7 @@ public:
 
     void Update();
 
-    void SendMovement(Vector2f pos, Vector2f speed, bool isDrilling, f32 drillAngle);
+    void SendMovement(Vector2f pos, Vector2f speed, u8 moveFlags, f32 drillAngle);
     void SendAbility(GAME_ABILITY ability, Vector2f pos, Vector2f velocity);
     void SendDrillingAction(Vector2f pos);
 
