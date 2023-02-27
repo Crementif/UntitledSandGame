@@ -51,7 +51,7 @@ public:
     };
 private:
     void Explode(Vector2f pos) override {
-        Map* map = GetCurrentMap();
+        Map* map = this->m_parent->GetMap();
 
         AABB explosionRange = AABB({pos.x-(f32)m_force/2, pos.y-(f32)m_force/2}, Vector2f(m_force, m_force));
 

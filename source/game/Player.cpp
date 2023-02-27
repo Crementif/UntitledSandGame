@@ -184,7 +184,7 @@ void Player::HandleLocalPlayerControl()
 // top left corner of the level is 0/0
 void Player::Update(float timestep)
 {
-    Map* map = GetCurrentMap();
+    Map* map = m_parent->GetMap();
 
     if(m_moveFlags.isDrilling)
     {
@@ -337,7 +337,7 @@ bool Player::SlidePlayerPos(const Vector2f& newPos)
 
 bool Player::DoesPlayerCollideAtPos(f32 posX, f32 posY)
 {
-    Map* map = GetCurrentMap();
+    Map* map = this->m_parent->GetMap();
 
     AABB playerAABB = Player::CalcAABB(posX, posY);
     // we need to do geometry-perfect collisions with the pixels

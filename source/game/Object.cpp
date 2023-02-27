@@ -24,10 +24,8 @@ void PhysicsObject::AddVelocity(float x, float y) {
 }
 
 bool PhysicsObject::DoesCornerCollide(Vector2f cornerPos) {
-    Map* map = GetCurrentMap();
-
     // todo: loss of precision, since the position of a corner could be overlapping multiple pixels
-    return map->GetPixel((s32)cornerPos.x, (s32)cornerPos.y).IsCollideWithObjects();
+    return m_parent->GetMap()->GetPixel((s32)cornerPos.x, (s32)cornerPos.y).IsCollideWithObjects();
 }
 
 bool PhysicsObject::DoesAABBCollide(AABB &aabb) {

@@ -42,8 +42,6 @@ private:
 
     Sprite m_heartSprite{"/tex/heart.tga", true};
 
-    class Map* m_map;
-
     // player
     class Player* m_selfPlayer{};
     Vector2f m_prevCamPos;

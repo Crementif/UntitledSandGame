@@ -2,6 +2,7 @@
 
 #include "./../common/types.h"
 #include "../framework/noise/noise.h"
+#include "../framework/render.h"
 
 #define MAP_PIXEL_ZOOM  (3) // one world pixel will translate to this many screen pixels
 
@@ -187,6 +188,3 @@ private:
 
     std::vector<StaticVolatilityHotSpot> m_volatilityHotspots;
 };
-
-void SetCurrentMap(Map* newMap);
-Map* GetCurrentMap();

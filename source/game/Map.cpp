@@ -234,16 +234,3 @@ MAP_PIXEL_TYPE PixelType::GetPixelType() const
     ActivePixelBase* pixelBase = _GetDynamicPtr();
     return pixelBase->material;
 }
-
-Map* s_currentMap{nullptr};
-
-// objects are tied to whichever map is active
-void SetCurrentMap(Map* newMap)
-{
-    s_currentMap = newMap;
-}
-
-Map* GetCurrentMap()
-{
-    return s_currentMap;
-}

@@ -21,6 +21,9 @@ public:
     static GameScene* sActiveScene;
     static void ChangeTo(GameScene* newGameScene) { sActiveScene = newGameScene; }
 
+    void RegisterMap(class Map* newMap) { m_map = newMap; }
+    class Map* GetMap() { return m_map; }
+
     void QueueUnregisterObject(class Object* obj);
     const std::unordered_map<PlayerID, std::unique_ptr<class Player>>& GetPlayers() const;
     GameClient* GetClient() const { return m_gameClient.get(); };
@@ -36,6 +39,8 @@ protected:
 
     std::unique_ptr<GameClient> m_gameClient;
     std::unique_ptr<GameServer> m_gameServer;
+
+    class Map* m_map;
 
     std::unordered_map<PlayerID, std::unique_ptr<class Player>> sCurrPlayers;
 

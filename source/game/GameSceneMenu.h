@@ -1,7 +1,6 @@
 #pragma once
 #include "GameScene.h"
 #include "TextButton.h"
-#include "Map.h"
 #include "../framework/render.h"
 #include "../framework/physics/physics.h"
 #include "../framework/multiplayer/multiplayer.h"
@@ -25,7 +24,6 @@ private:
     void DrawBackground();
     void DrawButtons();
 
-    Map* m_map;
     TextButton* m_sandbox_btn;
     TextButton* m_host_btn;
     TextButton* m_join_btn;

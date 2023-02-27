@@ -1,5 +1,6 @@
 #include "GameScene.h"
 #include "Player.h"
+#include "Map.h"
 
 GameScene::GameScene(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): m_gameClient(std::move(client)), m_gameServer(std::move(server)) {
 };
@@ -7,6 +8,8 @@ GameScene::GameScene(std::unique_ptr<GameClient> client, std::unique_ptr<GameSer
 GameScene::~GameScene() {
     for (class Object* obj : m_objects)
         delete obj;
+
+    delete m_map;
 }
 
 Player* GameScene::RegisterPlayer(PlayerID id, f32 playerX, f32 playerY) {

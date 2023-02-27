@@ -18,8 +18,7 @@ GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique
 
     char levelFilename[32];
     sprintf(levelFilename, "level%u.tga", levelId);
-    m_map = new Map(levelFilename, rngSeed);
-    SetCurrentMap(m_map);
+    this->RegisterMap(new Map(levelFilename, rngSeed));
 
     SpawnPlayers();
     m_prevCamPos = Render::GetCameraPosition();
@@ -34,7 +33,7 @@ void GameSceneIngame::SpawnPlayers()
     UnregisterAllPlayers();
     m_selfPlayer = nullptr;
 
-    const std::vector<Vector2i> spawnpoints = m_map->GetPlayerSpawnpoints();
+    const std::vector<Vector2i> spawnpoints = this->GetMap()->GetPlayerSpawnpoints();
     if(spawnpoints.empty())
         CriticalErrorHandler("Level does not have any spawnpoints");
 
@@ -53,7 +52,7 @@ void GameSceneIngame::SpawnPlayers()
             availSpawnpoints = spawnpoints;
         }
         // get random spawn position according to player id
-        size_t spawnIdx = m_map->GetRNGNumber() % availSpawnpoints.size();
+        size_t spawnIdx = this->GetMap()->GetRNGNumber() % availSpawnpoints.size();
         Vector2i playerSpawnPos = availSpawnpoints[spawnIdx];
         availSpawnpoints.erase(availSpawnpoints.begin() + spawnIdx);
         // spawn player
@@ -85,23 +84,6 @@ void GameSceneIngame::DrawHUD() {
 
 void GameSceneIngame::DrawBackground()
 {
-    Vector2f camPos = Render::GetCameraPosition();
-    s32 camX = (s32)camPos.x;
-    s32 camY = (s32)camPos.y;
-
-    // todo - we'll have a bounded world with unlockable regions? Show different background tiles based on the area
-
-    /*
-    s32 bgTileOffsetX = (camX-255) / 256;
-    s32 bgTileOffsetY = (camY-255) / 256;
-
-    for(s32 y=0; y<5; y++)
-    {
-        for(s32 x=0; x<10; x++)
-        {
-            Render::RenderSprite(&m_bgSpriteA, (bgTileOffsetX + x) * 256, (bgTileOffsetY + y) * 256);
-        }
-    }*/
 }
 
 void GameSceneIngame::UpdateCamera()
@@ -166,7 +148,7 @@ void GameSceneIngame::Draw()
 
     DrawBackground();
 
-    m_map->Draw();
+    this->GetMap()->Draw();
 
     DoDraws();
     DrawHUD();
@@ -188,17 +170,17 @@ void GameSceneIngame::RunDeterministicSimulationStep()
 {
     double startTime = GetMillisecondTimestamp();
 
-    if ((m_map->GetRNGNumber()&0x7) < 3)
-        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 200, 155);
+    if ((this->GetMap()->GetRNGNumber()&0x7) < 3)
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 200, 155);
 
-    if ((m_map->GetRNGNumber()&0x7) < 3)
-        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 700, 210);
+    if ((this->GetMap()->GetRNGNumber()&0x7) < 3)
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 700, 210);
 
-    if ((m_map->GetRNGNumber()&0x7) < 5)
-        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, 480, 160);
+    if ((this->GetMap()->GetRNGNumber()&0x7) < 5)
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, 480, 160);
 
-    m_map->SimulateTick();
-    m_map->Update(); // map objects are always independent of the world simulation?
+    this->GetMap()->SimulateTick();
+    this->GetMap()->Update(); // map objects are always independent of the world simulation?
 
     double dur = GetMillisecondTimestamp() - startTime;
     char buf[128];

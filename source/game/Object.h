@@ -51,10 +51,8 @@ public:
     void SetVelocity(float x, float y);
     void AddVelocity(float x, float y);
 protected:
-    static bool DoesCornerCollide(Vector2f cornerPos);
-
-    static bool DoesAABBCollide(AABB& aabb);
-
+    bool DoesCornerCollide(Vector2f cornerPos);
+    bool DoesAABBCollide(AABB& aabb);
     void SimulatePhysics();
 
     Vector2f m_velocity = {0, 0};

@@ -1,6 +1,7 @@
 #include "../common/common.h"
 #include "GameSceneMenu.h"
 #include "Object.h"
+#include "Map.h"
 
 #include "../framework/navigation.h"
 #include "GameSceneIngame.h"
@@ -8,8 +9,7 @@
 #include "GameClient.h"
 
 GameSceneMenu::GameSceneMenu(): GameScene() {
-    m_map = new Map("menu.tga", 1337);
-    SetCurrentMap(m_map);
+    this->RegisterMap(new Map("menu.tga", 1337));
 
     Render::SetCameraPosition({3, 3});
 
@@ -32,8 +32,6 @@ GameSceneMenu::GameSceneMenu(): GameScene() {
 }
 
 GameSceneMenu::~GameSceneMenu() {
-    delete m_map;
-
     delete m_sandbox_btn;
     delete m_host_btn;
     delete m_join_btn;
@@ -125,18 +123,18 @@ void GameSceneMenu::HandleInput() {
 }
 
 void GameSceneMenu::DrawBackground() {
-    if ((m_map->GetRNGNumber()&0x7) < 1)
-        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 430, 2);
+    if ((this->GetMap()->GetRNGNumber()&0x7) < 1)
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 430, 2);
 
-    if ((m_map->GetRNGNumber()&0x7) < 1)
-        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 260, 2);
+    if ((this->GetMap()->GetRNGNumber()&0x7) < 1)
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 260, 2);
 
-    if ((m_map->GetRNGNumber()&0x7) < 2)
-        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, 2, 178);
+    if ((this->GetMap()->GetRNGNumber()&0x7) < 2)
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, 2, 178);
 
-    m_map->SimulateTick();
-    m_map->Draw();
-    m_map->Update(); // map objects are always independent of the world simulation?
+    this->GetMap()->SimulateTick();
+    this->GetMap()->Draw();
+    this->GetMap()->Update(); // map objects are always independent of the world simulation?
 }
 
 void GameSceneMenu::DrawButtons() {
