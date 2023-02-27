@@ -11,6 +11,8 @@ GameSceneMenu::GameSceneMenu(): GameScene() {
     m_map = new Map("menu.tga", 1337);
     SetCurrentMap(m_map);
 
+    Render::SetCameraPosition({3, 3});
+
     m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
     m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, "Host");
     m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, "Join");
@@ -124,10 +126,13 @@ void GameSceneMenu::HandleInput() {
 
 void GameSceneMenu::DrawBackground() {
     if ((m_map->GetRNGNumber()&0x7) < 1)
-        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 430, 0);
+        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 430, 2);
 
     if ((m_map->GetRNGNumber()&0x7) < 1)
-        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 260, 0);
+        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 260, 2);
+
+    if ((m_map->GetRNGNumber()&0x7) < 2)
+        m_map->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, 2, 178);
 
     m_map->SimulateTick();
     m_map->Draw();
