@@ -90,11 +90,20 @@ void GameSceneIngame::DrawBackground()
 
 void GameSceneIngame::UpdateCamera()
 {
+    const f32 SCREEN_WIDTH = 1920.0f;
+    const f32 SCREEN_HEIGHT = 1080.0f;
+
     Vector2f newCameraPosition = m_selfPlayer->GetPosition() * MAP_PIXEL_ZOOM;
     // center on player
-    newCameraPosition = newCameraPosition - Vector2f(1920.0f, 1080.0f) * 0.5f;
+    newCameraPosition = newCameraPosition - Vector2f(SCREEN_WIDTH, SCREEN_HEIGHT) * 0.5f;
     newCameraPosition = newCameraPosition * 0.75f + m_prevCamPos * 0.25f;
     newCameraPosition.y -= 130.0f;
+    // clamp to map
+    newCameraPosition.x = std::max(newCameraPosition.x, 0.0f);
+    newCameraPosition.y = std::max(newCameraPosition.y, 0.0f);
+    newCameraPosition.x = std::min(newCameraPosition.x, (f32)GetMap()->GetPixelWidth() - SCREEN_WIDTH);
+    newCameraPosition.y = std::min(newCameraPosition.y, (f32)GetMap()->GetPixelHeight() - SCREEN_HEIGHT);
+
     m_prevCamPos = newCameraPosition;
     Render::SetCameraPosition(newCameraPosition);
 }
