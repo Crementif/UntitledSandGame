@@ -45,6 +45,11 @@ public:
             CriticalErrorHandler("Player died!");
         return m_health;
     }
+    GameClient::GAME_ABILITY GetAbility() const { return m_ability; }
+    void GiveAbility(GameClient::GAME_ABILITY ability) {
+        m_ability = ability;
+    }
+
     Vector2f GetPosition() override;
     Vector2f GetSpeed() { return m_speed; }
     bool IsDrilling() { return m_moveFlags.isDrilling; }
@@ -57,6 +62,9 @@ public:
     void HandleLocalPlayerControl();
 
     bool FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, bool& isStuckInGround, bool& isFloatingInAir);
+
+    void HandleCollisions();
+
 private:
     void HandleLocalPlayerControl_WalkMode(struct ButtonState& buttonState, Vector2f leftStick);
     void HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState, Vector2f leftStick);
@@ -73,6 +81,7 @@ private:
 
     bool m_isSelf{false};
     u32 m_health = 10;
+    GameClient::GAME_ABILITY m_ability = GameClient::GAME_ABILITY::NONE;
 
     f32 m_moveAnimRot = 0;
 

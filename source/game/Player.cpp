@@ -98,11 +98,12 @@ Vector2f Player::GetPosition()
 void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2f leftStick)
 {
     // bomb placing (temporary)
-    if (buttonState.buttonB.changedState && buttonState.buttonB.isDown) {
+    if (buttonState.buttonB.changedState && buttonState.buttonB.isDown && m_ability == GameClient::GAME_ABILITY::LANDMINE) {
         Vector2f slightlyAbove = m_pos;
         slightlyAbove.y -= 60.0f;
 
         m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::LANDMINE, {slightlyAbove.x, slightlyAbove.y}, {0.0f, 0.0f});
+        GiveAbility(GameClient::GAME_ABILITY::NONE);
         //newLandmine->AddVelocity(0.5f, -1.0f);
     }
 
@@ -162,6 +163,8 @@ void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState,
 
 void Player::HandleLocalPlayerControl()
 {
+    g_debugStrings.emplace_back("Current Item: "+std::to_string((int)m_ability));
+
     ButtonState& buttonState = GetButtonState();
     Vector2f leftStick = getLeftStick();
 

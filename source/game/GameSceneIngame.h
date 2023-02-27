@@ -5,17 +5,6 @@
 #include "../framework/multiplayer/multiplayer.h"
 #include "NetCommon.h"
 
-#include <unordered_map>
-
-enum BUILDTYPE
-{
-    // matching the hotbar order
-    BUILDTYPE_BEAM_HORIZONTAL_SHORT = 0,
-    BUILDTYPE_BEAM_VERTICAL_LONG = 1,
-    BUILDTYPE_SPLITTER = 2,
-    BUILDTYPE_SPEED_BOOST = 3
-};
-
 class GameSceneIngame : public GameScene
 {
 public:
@@ -27,7 +16,9 @@ public:
 
 private:
     void RunDeterministicSimulationStep();
+    void HandlePlayerCollisions();
 
+    void SpawnCollectibles();
     void SpawnPlayers();
 
     void DrawBackground();
@@ -43,13 +34,10 @@ private:
     // player
     class Player* m_selfPlayer{};
     Vector2f m_prevCamPos;
+    std::vector<class Collectable*> m_collectibles;
 
     // multiplayer
     u32 m_lastMovementBroadcast{};
-
-    // touch scrolling
-    bool m_isScrolling{false};
-    Vector2f m_startCameraPosition;
 
     // misc
     f32 m_gameTime{};

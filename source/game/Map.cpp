@@ -64,6 +64,11 @@ void MapCell::LoadCellFromTGA(class TGALoader& tgaLoader)
                 m_map->m_playerSpawnpoints.emplace_back(m_posX + x, py);
             }
 
+            if (c == 0x4800FF)
+            {
+                m_map->m_collectablePoints.emplace_back(m_posX + x, py);
+            }
+
             tgaPixelIn += 3;
             pOut++;
             //px++;

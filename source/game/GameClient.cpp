@@ -54,6 +54,11 @@ void GameClient::ProcessPacket(u8 opcode, PacketParser& pp)
             r = ProcessPacket_Drilling(pp);
             break;
         }
+        case NET_ACTION_S_PICK:
+        {
+            r = ProcessPacket_Pick(pp);
+            break;
+        }
         case NET_ACTIONS_S_SYNCED_EVENT:
         {
             r = ProcessPacket_SyncedEvent(pp);
@@ -124,6 +129,16 @@ bool GameClient::ProcessPacket_Drilling(PacketParser &pp)
     return true;
 }
 
+bool GameClient::ProcessPacket_Pick(PacketParser &pp)
+{
+    PlayerID playerId = pp.ReadU32();
+    Vector2f pos;
+    pos.x = pp.ReadF32();
+    pos.y = pp.ReadF32();
+    m_queuedEvents.queuePickingEvents.emplace_back(EventPick{playerId, pos});
+    return true;
+}
+
 bool GameClient::ProcessPacket_SyncedEvent(PacketParser &pp)
 {
     PlayerID playerId = pp.ReadU32();
@@ -178,6 +193,13 @@ std::vector<GameClient::EventAbility> GameClient::GetAndClearAbilityEvents()
     return tmp;
 }
 
+std::vector<GameClient::EventPick> GameClient::GetAndClearPickingEvents()
+{
+    std::vector<EventPick> tmp;
+    std::swap(tmp, m_queuedEvents.queuePickingEvents);
+    return tmp;
+}
+
 bool GameClient::GetSynchronizedEvents(u32 frameCount, std::vector<GameClient::SynchronizedEvent>& events)
 {
     events.clear();
@@ -211,6 +233,14 @@ void GameClient::SendAbility(GameClient::GAME_ABILITY ability, Vector2f pos, Vec
 void GameClient::SendDrillingAction(Vector2f pos)
 {
     auto& pb = m_client->BuildNewPacket(NET_ACTION_C_DRILLING);
+    pb.AddF32(pos.x);
+    pb.AddF32(pos.y);
+    m_client->SendPacket(pb);
+}
+
+void GameClient::SendPickAction(Vector2f pos)
+{
+    auto& pb = m_client->BuildNewPacket(NET_ACTION_C_PICK);
     pb.AddF32(pos.x);
     pb.AddF32(pos.y);
     m_client->SendPacket(pb);

@@ -142,6 +142,10 @@ public:
         return m_playerSpawnpoints;
     }
 
+    const std::vector<Vector2i>& GetCollectablePoints() {
+        return m_collectablePoints;
+    }
+
     bool IsPixelOOB(s32 x, s32 y);
     void SetPixelColor(s32 x, s32 y, u32 c);
 
@@ -194,6 +198,7 @@ private:
     Sprite m_backgroundSprite{"/tex/background_tile_a.tga", false};
 
     std::vector<Vector2i> m_playerSpawnpoints;
+    std::vector<Vector2i> m_collectablePoints;
 
     class ActivePixelCollection* m_activePixels{nullptr};
     std::vector<class FlungPixel*> m_flungPixels;

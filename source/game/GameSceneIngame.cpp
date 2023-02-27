@@ -10,6 +10,8 @@
 #include "GameServer.h"
 #include "GameClient.h"
 #include "Landmine.h"
+#include "Collectable.h"
+
 
 GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): GameScene(std::move(client), std::move(server))
 {
@@ -21,6 +23,7 @@ GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique
     this->RegisterMap(new Map(levelFilename, rngSeed));
 
     SpawnPlayers();
+    SpawnCollectibles();
     m_prevCamPos = Render::GetCameraPosition();
 }
 
@@ -66,6 +69,17 @@ void GameSceneIngame::SpawnPlayers()
     }
     if (!m_selfPlayer)
         CriticalErrorHandler("Game started without self-player");
+}
+
+void GameSceneIngame::SpawnCollectibles() {
+    const std::vector<Vector2i> collectiblesPoints = this->GetMap()->GetCollectablePoints();
+    // spawn collectibles
+    for (Vector2i spawnpoint : collectiblesPoints)
+    {
+        Collectable* collectable = new Collectable(this, {(f32)spawnpoint.x, (f32)spawnpoint.y});
+        this->RegisterObject(collectable);
+        m_collectibles.emplace_back(collectable);
+    }
 }
 
 std::vector<std::string> g_debugStrings;
@@ -128,6 +142,30 @@ void GameSceneIngame::UpdateMultiplayer()
     {
         new Landmine(this, event.playerId, event.pos.x, event.pos.y);
     }
+    auto eventPicking = m_gameClient->GetAndClearPickingEvents();
+    for (auto& event : eventPicking)
+    {
+        for (auto& player : this->GetPlayers())
+        {
+            if (player.first == event.playerId)
+            {
+                float closestDistance = std::numeric_limits<float>::max();
+                Collectable* closestCollectible = nullptr;
+                for (auto& collectible : this->m_collectibles)
+                {
+                    float distanceToCollectible = collectible->GetPosition().DistanceSquare(player.second->GetPosition());
+                    if (distanceToCollectible < closestDistance) {
+                        closestDistance = collectible->GetPosition().DistanceSquare(player.second->GetPosition());
+                        closestCollectible = collectible;
+                    }
+                }
+                if (closestCollectible != nullptr) {
+                    closestCollectible->Pickup(player.second.get());
+                }
+                break;
+            }
+        }
+    }
 
     // send movement state
     u32 elapsedTicks = OSGetTick() - m_lastMovementBroadcast;
@@ -141,7 +179,17 @@ void GameSceneIngame::UpdateMultiplayer()
             m_gameClient->SendDrillingAction(pos + Vector2f(0.0f, -13.0f));
         m_lastMovementBroadcast = OSGetTick();
     }
+}
 
+void GameSceneIngame::HandlePlayerCollisions() {
+    // check for collisions with other objects
+    for (auto& collectible : m_collectibles) {
+        if (collectible->m_hidden)
+            continue;
+        if (m_selfPlayer->GetBoundingBox().Intersects(collectible->GetBoundingBox())) {
+            this->m_gameClient->SendPickAction(m_selfPlayer->GetPosition());
+        }
+    }
 }
 
 void GameSceneIngame::Draw()
@@ -149,6 +197,7 @@ void GameSceneIngame::Draw()
     UpdateMultiplayer();
 
     m_selfPlayer->HandleLocalPlayerControl();
+    HandlePlayerCollisions();
 
     RunDeterministicSimulationStep();
 

@@ -70,6 +70,9 @@ void GameServer::ProcessPacket(u32 playerId, u8 opcode, PacketParser& pp)
         case NET_ACTION_C_SYNCED_EVENT:
             r = ProcessPacket_SyncedEvent(playerId, pp);
             break;
+        case NET_ACTION_C_PICK:
+            r = ProcessPacket_Pick(playerId, pp);
+            break;
     }
     if(!r)
         OSReport("GameServer::ProcessPacket: Error processing packet opcode %d from player %08x\n", (int)opcode, playerId);
@@ -123,6 +126,19 @@ bool GameServer::ProcessPacket_Drilling(u32 playerId, PacketParser& pp)
     PacketBuilder& pb = m_server->BuildNewPacket(NET_ACTION_S_DRILLING);
     pb.AddU32(playerId);
     // todo - frame synchronization
+    pb.AddF32(posX);
+    pb.AddF32(posY);
+    m_server->SendToAll(pb);
+    return true;
+}
+
+bool GameServer::ProcessPacket_Pick(u32 playerId, PacketParser& pp)
+{
+    f32 posX = pp.ReadF32();
+    f32 posY = pp.ReadF32();
+    // rebuild packet but with playerId
+    PacketBuilder& pb = m_server->BuildNewPacket(NET_ACTION_S_PICK);
+    pb.AddU32(playerId);
     pb.AddF32(posX);
     pb.AddF32(posY);
     m_server->SendToAll(pb);

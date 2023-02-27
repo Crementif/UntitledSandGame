@@ -5,6 +5,7 @@
 #include "Object.h"
 #include "Landmine.h"
 #include "TextButton.h"
+#include "Collectable.h"
 
 #include "../framework/render.h"
 #include "../framework/navigation.h"
@@ -15,6 +16,7 @@ GameScene* GameScene::sActiveScene = nullptr;
 
 Sprite* TextButton::s_buttonBackdrop = nullptr;
 Sprite* Landmine::s_landmineSprite = nullptr;
+Sprite* Collectable::s_collectableSprite = nullptr;
 
 #include <chrono>
 
@@ -29,6 +31,7 @@ int main()
 
     TextButton::s_buttonBackdrop = new Sprite("/tex/button_backdrop.tga", true);
     Landmine::s_landmineSprite = new Sprite("/tex/landmine.tga", true);
+    Collectable::s_collectableSprite = new Sprite("/tex/cross.tga", true);
 
     // set polygon mode
     GX2SetPolygonControl(

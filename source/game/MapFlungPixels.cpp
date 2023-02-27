@@ -1,13 +1,14 @@
 #include "MapFlungPixels.h"
+#include "Map.h"
 
 u32 _GetColorFromPixelType(PixelType& pixelType);
 
-FlungPixel::FlungPixel(class Map* map, Vector2f pos, Vector2f velocity, MAP_PIXEL_TYPE type) : m_pos(pos), m_velocity(velocity), m_materialType(type)
+FlungPixel::FlungPixel(Map* map, Vector2f pos, Vector2f velocity, MAP_PIXEL_TYPE type) : m_pos(pos), m_velocity(velocity), m_materialType(type)
 {
     map->m_flungPixels.emplace_back(this);
 }
 
-void FlungPixel::RemovePixelColor(class Map* map)
+void FlungPixel::RemovePixelColor(Map* map)
 {
     s32 x = (s32)(m_pos.x + 0.5f);
     s32 y = (s32)(m_pos.y + 0.5f);
