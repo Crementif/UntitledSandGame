@@ -12,6 +12,9 @@ void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
         case MAP_PIXEL_TYPE::LAVA:
             m_activePixels->lavaPixels.emplace_back(new ActivePixelLava(x, y));
             break;
+        case MAP_PIXEL_TYPE::SMOKE:
+            m_activePixels->smokePixels.emplace_back(new ActivePixelSmoke(this, x, y));
+            break;
         default:
             break;
     }
@@ -87,7 +90,7 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
         }
         else if(mat == MAP_PIXEL_TYPE::LAVA)
         {
-            if(!GetPixelNoBoundsCheck(px, py+1).IsFilled())
+            if(!GetPixelNoBoundsCheck(px - 1, py+1).IsFilled() || !GetPixelNoBoundsCheck(px, py+1).IsFilled() || !GetPixelNoBoundsCheck(px + 1, py+1).IsFilled())
             {
                 hasActivity = true;
                 ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, px, py);
@@ -164,7 +167,8 @@ void Map::SimulateTick()
     double dur = GetMillisecondTimestamp() - startTime;
     SimulateMaterial(this, m_activePixels->sandPixels);
     SimulateMaterial(this, m_activePixels->lavaPixels);
-    g_debugStrings.emplace_back("Particles Sand: " + std::to_string(m_activePixels->sandPixels.size()) + " Lava: " + std::to_string(m_activePixels->lavaPixels.size()));
+    SimulateMaterial(this, m_activePixels->smokePixels);
+    g_debugStrings.emplace_back("Particles Sand: " + std::to_string(m_activePixels->sandPixels.size()) + " Lava: " + std::to_string(m_activePixels->lavaPixels.size()) + " Smoke: " + std::to_string(m_activePixels->smokePixels.size()));
 
     char strBuf[64];
     sprintf(strBuf, "%.04lf", dur);
@@ -241,6 +245,13 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
             PixelType& pt = GetPixel(x, y);
             pt.SetPixel(MAP_PIXEL_TYPE::AIR);
             SetPixelColor(x, y, _GetColorFromPixelType(pt));
+            // randomly spawn smoke
+            if((GetRNGNumber()&0xF) < 0x3)
+            {
+                SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, x, y);
+                PixelType& pt2 = GetPixel(x, y);
+                SetPixelColor(x, y, _GetColorFromPixelType(pt2));
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ enum class MAP_PIXEL_TYPE
     GRASS = 3,
     LAVA = 4,
     ROCK = 5,
+    SMOKE = 6,
 };
 
 union PixelType
@@ -41,6 +42,7 @@ union PixelType
     MAP_PIXEL_TYPE GetPixelType() const;
 
     // collision applies
+    // deprecated, use IsFilled() instead
     bool IsSolid() const
     {
         if(GetPixelType() == MAP_PIXEL_TYPE::AIR)
@@ -81,10 +83,11 @@ union PixelType
     {
         if((pixelType&1) == 0)
             return false; // active pixels are exempt from object collision
-        if(GetPixelType() == MAP_PIXEL_TYPE::AIR)
+        MAP_PIXEL_TYPE mat = GetPixelType();
+        if(mat == MAP_PIXEL_TYPE::AIR)
             return false;
+        // smoke only exists as an active object so we dont need to check
         return true;
-        //return (pixelType&BIT_DYNAMIC) == 0;
     }
 
     // has any pixel other than air
@@ -143,7 +146,6 @@ public:
 
     PixelType& GetPixel(s32 x, s32 y); // crashes with message if out-of-bounds
     PixelType& GetPixelNoBoundsCheck(s32 x, s32 y); // no bounds checking at all, fastest
-    void GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut);
 
     bool DoesPixelCollideWithObject(s32 x, s32 y)
     {

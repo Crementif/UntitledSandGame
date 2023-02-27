@@ -86,6 +86,7 @@ public:
     {
         PixelType& pt = map->GetPixel(x, y);
         pt.SetPixel(TMaterial);
+        map->SetPixelColor(x, y, _GetColorFromPixelType(pt));
     }
 
 };
@@ -216,6 +217,54 @@ private:
     s8 m_moveDelay{0};
 };
 
+class ActivePixelSmoke : public ActivePixel<MAP_PIXEL_TYPE::SMOKE>
+{
+public:
+    ActivePixelSmoke(Map* map, s32 x, s32 y) : ActivePixel<MAP_PIXEL_TYPE::SMOKE>(x, y)
+    {
+        m_ttl = 300 + (map->GetRNGNumber()%300);
+    }
+
+    bool SimulateStep(Map* map) override
+    {
+        m_slowdown ^= 1;
+        if(m_slowdown == 0)
+            return true;
+
+        m_timeAlive++;
+        s32 xOffset = -2 + (map->GetRNGNumber()%5);
+        PixelType& ptAfter = map->GetPixel(x + xOffset, y-1);
+        if(!ptAfter.IsSolid())
+        {
+            ChangeParticleXY(map, x + xOffset, y-1);
+            idleTime = 0;
+            return true;
+        }
+        else
+        {
+            idleTime++;
+            if(idleTime > 5)
+                return false;
+        }
+
+        if(m_timeAlive > m_ttl)
+            return false;
+        return true;
+    }
+
+    void PixelDeactivated(Map* map) override
+    {
+        // smoke just disappears
+        map->GetPixel(x, y).SetPixel(MAP_PIXEL_TYPE::AIR);
+        map->SetPixelColor(x, y, 0x00000000);
+    }
+
+private:
+    u32 m_ttl;
+    u32 m_timeAlive{0};
+    u8 m_slowdown{0};
+};
+
 class ActivePixelCollection
 {
 public:
@@ -231,11 +280,17 @@ public:
             delete lavaPixels.back();
             lavaPixels.pop_back();
         }
+        while(!smokePixels.empty())
+        {
+            delete smokePixels.back();
+            smokePixels.pop_back();
+        }
     }
 
     // todo - do we even need per material grouping still?
     std::vector<ActivePixelSand*> sandPixels;
     std::vector<ActivePixelLava*> lavaPixels;
+    std::vector<ActivePixelSmoke*> smokePixels;
 };
 
 MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c);

@@ -67,6 +67,13 @@ u32 _GetColorFromPixelType(PixelType& pixelType)
                 return 0x484849FF;
             return 0x414142FF;
         }
+        case MAP_PIXEL_TYPE::SMOKE:
+        {
+            u8 rd = rand()%2;
+            if(rd == 0)
+                return 0x30303080;
+            return 0x50505080;
+        }
     }
     return 0x12345678;
 }
