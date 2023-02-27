@@ -235,7 +235,7 @@ void Player::Update(float timestep)
         m_speed.y += 0.16f;
 
     Vector2f newPos = m_pos + m_speed;
-    if( !SlidePlayerPos(newPos) )
+    if( !SlidePlayerPos(map, newPos) )
     {
         m_speed = m_speed * 0.5f; // collision happened, so slow down movement
         // hacky way to detect partial down movement as touching the ground?
@@ -285,6 +285,11 @@ void Player::Update_DrillMode(float timestep)
 {
     m_speed = Vector2f(0.4f, 0.0f).Rotate(m_drillAngle);
     Vector2f newPos = m_pos + m_speed;
+
+    Map* map = m_parent->GetMap();
+    newPos.x = std::clamp(newPos.x, 8.0f, (f32)map->GetPixelWidth() - 8.0f);
+    newPos.y = std::clamp(newPos.y, 8.0f, (f32)map->GetPixelHeight() - 8.0f);
+
     UpdatePosition(Vector2f(newPos.x, newPos.y));
 
     if(!DoesPlayerCollideAtPos(newPos.x, newPos.y + 2.0f))
@@ -300,8 +305,11 @@ void Player::Update_DrillMode(float timestep)
 }
 
 // move player to new position, stop at collisions
-bool Player::SlidePlayerPos(const Vector2f& newPos)
+bool Player::SlidePlayerPos(Map* map, Vector2f newPos)
 {
+    newPos.x = std::clamp(newPos.x, 8.0f, (f32)map->GetPixelWidth() - 8.0f);
+    newPos.y = std::clamp(newPos.y, 8.0f, (f32)map->GetPixelHeight() - 8.0f);
+
     // try moving full range first
     if(!DoesPlayerCollideAtPos(newPos.x, newPos.y))
     {
@@ -350,7 +358,7 @@ bool Player::DoesPlayerCollideAtPos(f32 posX, f32 posY)
     {
         for(s32 px=px1; px<=px2; px++)
         {
-            if(!map->GetPixel(px, py).IsCollideWithObjects())
+            if(!map->DoesPixelCollideWithObject(px, py))
                 continue;
             AABB pixelAABB(px, py, px+1, py + 1);
             if(pixelAABB.Intersects(playerAABB))

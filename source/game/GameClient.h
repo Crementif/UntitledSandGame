@@ -49,6 +49,7 @@ public:
         enum class EVENT_TYPE : u8
         {
             DRILLING = 0,
+            EXPLOSION = 1,
         };
         EVENT_TYPE eventType;
         u32 frameIndex;
@@ -59,6 +60,12 @@ public:
                 PlayerID playerId;
                 Vector2f pos;
             }action_drill;
+            struct
+            {
+                PlayerID playerId;
+                Vector2f pos;
+                f32 radius;
+            }action_explosion;
         };
     };
 
@@ -77,6 +84,7 @@ public:
     void SendMovement(Vector2f pos, Vector2f speed, u8 moveFlags, f32 drillAngle);
     void SendAbility(GAME_ABILITY ability, Vector2f pos, Vector2f velocity);
     void SendDrillingAction(Vector2f pos);
+    void SendSyncedEvent(SynchronizedEvent::EVENT_TYPE eventType, Vector2f pos, f32 extraParam1, f32 extraParam2);
 
     std::vector<EventMovement> GetAndClearMovementEvents();
     std::vector<EventAbility> GetAndClearAbilityEvents();
@@ -88,6 +96,7 @@ private:
     bool ProcessPacket_Movement(PacketParser& pp);
     bool ProcessPacket_Ability(PacketParser &pp);
     bool ProcessPacket_Drilling(PacketParser &pp);
+    bool ProcessPacket_SyncedEvent(PacketParser &pp);
 
     RelayClient* m_client;
     bool m_isConnecting{false};

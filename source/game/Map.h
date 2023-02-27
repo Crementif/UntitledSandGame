@@ -141,9 +141,16 @@ public:
     bool IsPixelOOB(s32 x, s32 y);
     void SetPixelColor(s32 x, s32 y, u32 c);
 
-    PixelType& GetPixel(s32 x, s32 y);
-    PixelType& GetPixelNoBoundsCheck(s32 x, s32 y);
+    PixelType& GetPixel(s32 x, s32 y); // crashes with message if out-of-bounds
+    PixelType& GetPixelNoBoundsCheck(s32 x, s32 y); // no bounds checking at all, fastest
     void GetCollisionRect(s32 x, s32 y, s32 width, s32 height, bool* rectOut);
+
+    bool DoesPixelCollideWithObject(s32 x, s32 y)
+    {
+        if(IsPixelOOB(x, y))
+            return true;
+        return GetPixel(x, y).IsCollideWithObjects();
+    }
 
     void SimulateTick();
     bool CheckVolatileStaticPixelsHotspot(u32 x, u32 y);
@@ -157,11 +164,15 @@ public:
         return m_rng.GetNext();
     }
 
+    u32 GetPixelWidth() const { return m_pixelsX; };
+    u32 GetPixelHeight() const { return m_pixelsY; };
+
 private:
     void Init(uint32_t width, uint32_t height);
 
     void HandleSynchronizedEvents();
     void HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos);
+    void HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius);
 
     u32 m_cellsX;
     u32 m_cellsY;

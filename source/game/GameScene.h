@@ -7,6 +7,8 @@
 
 static inline const int NUM_DRAW_LAYERS = 8;
 
+extern std::vector<std::string> g_debugStrings;
+
 class GameScene
 {
     friend class Object;

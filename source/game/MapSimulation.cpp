@@ -181,7 +181,7 @@ void Map::HandleSynchronizedEvents()
     std::vector<GameClient::SynchronizedEvent> syncedEvents;
     if( !client->GetSynchronizedEvents(m_simulationTick, syncedEvents) )
     {
-        // lagging behind
+        // next frame not approved by server, need to pause simulation
         return;
     }
     for(const auto& event : syncedEvents)
@@ -189,10 +189,11 @@ void Map::HandleSynchronizedEvents()
         switch(event.eventType)
         {
             case GameClient::SynchronizedEvent::EVENT_TYPE::DRILLING:
-            {
                 HandleSynchronizedEvent_Drilling(event.action_drill.playerId, event.action_drill.pos);
                 break;
-            }
+            case GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION:
+                HandleSynchronizedEvent_Explosion(event.action_explosion.playerId, event.action_explosion.pos, event.action_explosion.radius);
+                break;
         }
     }
 }
@@ -201,16 +202,42 @@ void Map::HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos)
 {
     s32 posX = (s32)(pos.x + 0.5f);
     s32 posY = (s32)(pos.y + 0.5f);
-    for(s32 y=posY-6; y<=posY+6; y++)
+    for(s32 y=posY-9; y<=posY+9; y++)
     {
-        for(s32 x=posX-6; x<=posX+6; x++)
+        for(s32 x=posX-9; x<=posX+9; x++)
         {
             s32 dfx = x - posX;
             s32 dfy = y - posY;
             s32 squareDist = dfx * dfx + dfy * dfy;
-            if(dfx >= 4*4)
+            if(squareDist >= 9*9-3)
                 continue;
+            if( IsPixelOOB(x, y) )
+                continue;
+            PixelType& pt = GetPixel(x, y);
+            pt.SetPixel(MAP_PIXEL_TYPE::AIR);
+            SetPixelColor(x, y, _GetColorFromPixelType(pt));
+        }
+    }
+}
 
+void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius)
+{
+    s32 radiusI = (s32)(radius + 0.5f);
+    if(radiusI <= 0)
+        return;
+    s32 posX = (s32)(pos.x + 0.5f);
+    s32 posY = (s32)(pos.y + 0.5f);
+    for(s32 y=posY-radiusI; y<=posY+radiusI; y++)
+    {
+        for(s32 x=posX-radiusI; x<=posX+radiusI; x++)
+        {
+            s32 dfx = x - posX;
+            s32 dfy = y - posY;
+            s32 squareDist = dfx * dfx + dfy * dfy;
+            if(squareDist >= radiusI*radiusI)
+                continue;
+            if( IsPixelOOB(x, y) )
+                continue;
             PixelType& pt = GetPixel(x, y);
             pt.SetPixel(MAP_PIXEL_TYPE::AIR);
             SetPixelColor(x, y, _GetColorFromPixelType(pt));

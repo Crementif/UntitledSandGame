@@ -56,6 +56,9 @@ private:
         AABB explosionRange = AABB({pos.x-(f32)m_force/2, pos.y-(f32)m_force/2}, Vector2f(m_force, m_force));
 
         // loop over AABB pixels
+
+        // -> pixel interaction has to be synchronized (see synchronized event explosion)
+        /*
         for (s32 x = (s32)explosionRange.pos.x; x < (s32)(explosionRange.pos.x + explosionRange.scale.x); x++) {
             for (s32 y = (s32)explosionRange.pos.y; y < (s32)(explosionRange.pos.y + explosionRange.scale.y); y++) {
                 // check if map pixel is in range of the explosion force and whether it is solid/destructible
@@ -70,7 +73,8 @@ private:
                     map->ReanimateStaticPixel(pixel.GetPixelType(), x, y, distanceAdjustedForce);
                 }
             }
-        }
+        }*/
+
     };
 
     float m_force = 0.0f;

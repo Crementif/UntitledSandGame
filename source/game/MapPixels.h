@@ -49,22 +49,6 @@ class ActivePixel : public ActivePixelBase
 public:
     ActivePixel(s32 x, s32 y) : ActivePixelBase(x, y, TMaterial) { }
 
-    /*
-    void RemoveFromWorld(Map* map)
-    {
-        PixelType& pt = map->GetPixel(x, y);
-        pt.SetPixel(MAP_PIXEL_TYPE::AIR);
-        map->SetPixelColor(x, y, 0x00000000);
-    }
-
-    void IntegrateIntoWorld(Map* map)
-    {
-        PixelType& pt = map->GetPixel(x, y);
-        pt.SetDynamicPixel(this);
-        // update pixel color
-        map->SetPixelColor(x, y, _GetColorFromPixelType(pt));
-    }*/
-
     void ChangeParticleXY(Map* map, s32 x, s32 y)
     {
         RemoveFromWorld(map);

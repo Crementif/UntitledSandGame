@@ -54,6 +54,11 @@ void GameClient::ProcessPacket(u8 opcode, PacketParser& pp)
             r = ProcessPacket_Drilling(pp);
             break;
         }
+        case NET_ACTIONS_S_SYNCED_EVENT:
+        {
+            r = ProcessPacket_SyncedEvent(pp);
+            break;
+        }
     }
     if(!r)
         OSReport("GameClient: Received bad packet 0x%02x\n", (int)opcode);
@@ -119,6 +124,46 @@ bool GameClient::ProcessPacket_Drilling(PacketParser &pp)
     return true;
 }
 
+bool GameClient::ProcessPacket_SyncedEvent(PacketParser &pp)
+{
+    PlayerID playerId = pp.ReadU32();
+    Vector2f pos;
+    u32 eventId = pp.ReadU32();
+    pos.x = pp.ReadF32();
+    pos.y = pp.ReadF32();
+    f32 extraParam1 = pp.ReadF32();
+    f32 extraParam2 = pp.ReadF32();
+    SynchronizedEvent se{};
+    SynchronizedEvent::EVENT_TYPE evt = (SynchronizedEvent::EVENT_TYPE)eventId;
+    se.eventType = evt;
+    se.frameIndex = 9999;
+    switch(evt)
+    {
+        // drilling could be unified with this
+        /*
+        case SynchronizedEvent::EVENT_TYPE::DRILLING:
+        {
+            se.action_drill.playerId = playerId;
+            se.action_drill.pos.x = pos.x;
+            se.action_drill.pos.y = pos.y;
+            m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
+        }
+         */
+        case SynchronizedEvent::EVENT_TYPE::EXPLOSION:
+        {
+            se.action_explosion.playerId = playerId;
+            se.action_explosion.pos.x = pos.x;
+            se.action_explosion.pos.y = pos.y;
+            se.action_explosion.radius = extraParam1;
+            m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
+            break;
+        }
+        default:
+            break;
+    }
+    return true;
+}
+
 std::vector<GameClient::EventMovement> GameClient::GetAndClearMovementEvents()
 {
     std::vector<EventMovement> tmp;
@@ -168,5 +213,16 @@ void GameClient::SendDrillingAction(Vector2f pos)
     auto& pb = m_client->BuildNewPacket(NET_ACTION_C_DRILLING);
     pb.AddF32(pos.x);
     pb.AddF32(pos.y);
+    m_client->SendPacket(pb);
+}
+
+void GameClient::SendSyncedEvent(SynchronizedEvent::EVENT_TYPE eventType, Vector2f pos, f32 extraParam1, f32 extraParam2)
+{
+    auto& pb = m_client->BuildNewPacket(NET_ACTION_C_SYNCED_EVENT);
+    pb.AddU32((u32)eventType);
+    pb.AddF32(pos.x);
+    pb.AddF32(pos.y);
+    pb.AddF32(extraParam1);
+    pb.AddF32(extraParam2);
     m_client->SendPacket(pb);
 }

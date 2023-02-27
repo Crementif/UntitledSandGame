@@ -21,6 +21,10 @@ public:
     Player(GameScene* parent, u32 playerId, f32 posX, f32 posY);
     ~Player() override;
 
+    bool IsSelf() const { return m_isSelf; };
+    void SetSelfFlag(bool isSelf) { m_isSelf = isSelf; }
+    PlayerID GetPlayerId() const { return m_playerId; }
+
     void Draw(u32 layerIndex) override;
     void Update(float timestep) override;
 
@@ -47,7 +51,7 @@ public:
     u8 GetMovementFlags() { return m_moveFlags.rawBits; }
     f32 GetDrillAngle() { return m_drillAngle; }
 
-    bool SlidePlayerPos(const Vector2f& newPos); // move player to new position, take collisions into account
+    bool SlidePlayerPos(class Map* map, Vector2f newPos); // move player to new position, take collisions into account
     bool DoesPlayerCollideAtPos(f32 posX, f32 posY);
 
     void HandleLocalPlayerControl();
@@ -67,6 +71,7 @@ private:
     Vector2f m_speed{};
     bool m_isTouchingGround{};
 
+    bool m_isSelf{false};
     u32 m_health = 10;
 
     f32 m_moveAnimRot = 0;

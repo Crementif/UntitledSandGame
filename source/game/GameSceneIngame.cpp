@@ -58,9 +58,11 @@ void GameSceneIngame::SpawnPlayers()
         // spawn player
         OSReport("Spawning player %08x at %d/%d\n", playerId, playerSpawnPos.x, playerSpawnPos.y);
         Player* player = this->RegisterPlayer(playerId, (f32)playerSpawnPos.x, (f32)playerSpawnPos.y);
-        // is it us?
         if (playerId == ourPlayerId)
+        {
+            player->SetSelfFlag(true);
             m_selfPlayer = player;
+        }
     }
     if (!m_selfPlayer)
         CriticalErrorHandler("Game started without self-player");
@@ -127,7 +129,7 @@ void GameSceneIngame::UpdateMultiplayer()
         Vector2f speed = m_selfPlayer->GetSpeed();
         m_gameClient->SendMovement(pos, speed, m_selfPlayer->GetMovementFlags(), m_selfPlayer->GetDrillAngle());
         if(m_selfPlayer->IsDrilling())
-            m_gameClient->SendDrillingAction(pos + Vector2f(0.0f, -8.0f));
+            m_gameClient->SendDrillingAction(pos + Vector2f(0.0f, -13.0f));
         m_lastMovementBroadcast = OSGetTick();
     }
 

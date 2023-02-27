@@ -17,6 +17,10 @@ void Landmine::Update(float timestep) {
             new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(m_aabb.pos), 8, 2.0f, 80, 20.0f, 20.0f);
             playerIt.second->TakeDamage();
             m_parent->QueueUnregisterObject(this);
+            if(playerIt.second->IsSelf() && playerIt.second->GetPlayerId() == m_owner)
+            {
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
+            }
         }
     }
 }

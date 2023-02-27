@@ -58,6 +58,7 @@ void GameScene::UnregisterObject(struct Object *obj) {
 }
 
 void GameScene::DoUpdates(float timestep) {
+    double start = GetMillisecondTimestamp();
     for (auto& it : m_objectsToUpdate) {
         it->Update(timestep);
     }
@@ -66,6 +67,9 @@ void GameScene::DoUpdates(float timestep) {
         UnregisterObject(m_deletionQueue.back());
         m_deletionQueue.pop_back();
     }
+    char strBuf[64];
+    sprintf(strBuf, "%.04lf", GetMillisecondTimestamp() - start);
+    g_debugStrings.emplace_back(std::string("Objects: ") + strBuf + "ms");
 }
 
 void GameScene::DoDraws() {

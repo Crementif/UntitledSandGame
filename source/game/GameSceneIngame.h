@@ -16,8 +16,6 @@ enum BUILDTYPE
     BUILDTYPE_SPEED_BOOST = 3
 };
 
-extern std::vector<std::string> g_debugStrings;
-
 class GameSceneIngame : public GameScene
 {
 public:
