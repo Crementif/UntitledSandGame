@@ -1,7 +1,4 @@
-#include <experimental/io_context>
 #include "multiplayer.h"
-
-#include <coreinit/debug.h>
 
 bool RelayServer::AcceptConnections() {
     if ((receiving_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)

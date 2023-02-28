@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <cstdarg>
 
+#include <sys/unistd.h>
+
 #include <array>
 #include <unordered_map>
 #include <unordered_set>
