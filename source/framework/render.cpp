@@ -18,6 +18,7 @@
 
 #include "render_data.h"
 #include "../framework/fileformat/TGAFile.h"
+#include "compiler.h"
 
 struct Vertex
 {
@@ -27,26 +28,28 @@ struct Vertex
 
 struct GX2ShaderSet
 {
-    GX2FetchShader fetchShader;
-    GX2VertexShader vertexShader;
-    GX2PixelShader fragmentShader;
+    GX2FetchShader* fetchShader;
+    GX2VertexShader* vertexShader;
+    GX2PixelShader* fragmentShader;
 
     void Prepare()
     {
-        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, fetchShader.program, fetchShader.size);
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, fetchShader->program, fetchShader->size);
     }
 
     void Activate()
     {
-        GX2SetFetchShader(&fetchShader);
-        GX2SetVertexShader(&vertexShader);
-        GX2SetPixelShader(&fragmentShader);
+        GX2SetFetchShader(fetchShader);
+        GX2SetVertexShader(vertexShader);
+        GX2SetPixelShader(fragmentShader);
     }
 };
 
 GX2Sampler sRenderBaseSampler1_linear;
 GX2Sampler sRenderBaseSampler1_nearest;
-GX2ShaderSet sRenderBaseShaders1;
+//GX2ShaderSet sRenderBaseShaders1;
+GX2ShaderSet* sRenderBaseShaders2{nullptr};
+
 
 GX2ColorControlReg sRenderColorControl_noTransparency;
 GX2ColorControlReg sRenderColorControl_transparency;
@@ -92,6 +95,8 @@ void _InitBlendRegs()
             GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
 }
 
+GX2FetchShader sDefaultFetchShader;
+
 void _InitBasicFetchShader()
 {
     GX2AttribStream streams[2];
@@ -117,15 +122,49 @@ void _InitBasicFetchShader()
 
     u32 triangle_FSH_size = GX2CalcFetchShaderSizeEx(2, GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
     void* triangle_FSH_program = MEMAllocFromDefaultHeapEx(triangle_FSH_size, GX2_SHADER_PROGRAM_ALIGNMENT);
-    GX2InitFetchShaderEx(&sRenderBaseShaders1.fetchShader, (u8*)triangle_FSH_program, 2, streams, GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
+    GX2InitFetchShaderEx(&sDefaultFetchShader, (u8*)triangle_FSH_program, 2, streams, GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
 }
+
+bool s_compilerInitialized = false;
 
 void _InitBasicShaders()
 {
+    if(!s_compilerInitialized)
+    {
+        GLSL_Init();
+        s_compilerInitialized = true;
+    }
+
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, triangle_VSH.program, triangle_VSH.size);
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, triangle_PSH.program, triangle_PSH.size);
-    sRenderBaseShaders1.vertexShader = triangle_VSH;
-    sRenderBaseShaders1.fragmentShader = triangle_PSH;
+
+    // create shaders
+    const char* vertexSource = R"(
+        #version 450
+        layout(location = 0) in vec2 attr_pos;
+        layout(location = 1) in vec2 attr_uv;
+        layout(location = 0) out vec2 param_uv;
+        void main()
+        {
+            param_uv = attr_uv;
+            gl_Position = vec4(attr_pos, 0.0, 1.0);
+        })";
+
+    const char* fragmentSource =  R"(
+        #version 450
+        layout(location = 0) in vec2 attr_uv;
+        layout(location = 0) out vec4 out_pixel0;
+        layout(binding=0) uniform sampler2D tex_base;
+        void main()
+        {
+            out_pixel0 = texture(tex_base, attr_uv);
+        }
+    )";
+
+    sRenderBaseShaders2 = Render::CompileShader(vertexSource, fragmentSource);
+
+    //sRenderBaseShaders1.vertexShader = (GX2VertexShader*)&triangle_VSH;
+    //sRenderBaseShaders1.fragmentShader = (GX2PixelShader*)&triangle_PSH;
 }
 
 void _InitBasicRenderResources()
@@ -133,7 +172,6 @@ void _InitBasicRenderResources()
     _InitBasicFetchShader();
     _InitBasicShaders();
     _InitBlendRegs();
-    sRenderBaseShaders1.Prepare();
 
     // init linear sampler
     GX2InitSampler(&sRenderBaseSampler1_linear, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
@@ -214,7 +252,7 @@ void Render::BeginSpriteRendering()
 {
     GX2SetShaderModeEx(GX2_SHADER_MODE_UNIFORM_REGISTER, 48, 64, 0, 0, 200, 192);
     // setup GX2 state for sprite renderer
-    sRenderBaseShaders1.Activate();
+    sRenderBaseShaders2->Activate();
     // use the sprite vertex ringbuffer
     GX2SetAttribBuffer(0, 1024 * 1024, sizeof(Vertex), sVtxRingbuffer.base);
 
@@ -620,4 +658,20 @@ void Render::RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* te
         uint32_t bitmapY = (letter) / (textureDimensions/characterSize);
         RenderSpritePortionScreenRelative(spriteUsed, x+(i*effectiveCharacterWidth), y, bitmapX*characterSize, bitmapY*characterSize, characterSize, characterSize);
     }
+}
+
+GX2ShaderSet* Render::CompileShader(const char* vsSrc, const char* psSrc)
+{
+    GX2VertexShader* vs = GLSL_CompileVertexShader(vsSrc, nullptr, 0);
+    if(!vs)
+        CriticalErrorHandler("Failed to compile vertex shader");
+    GX2PixelShader* ps = GLSL_CompilePixelShader(psSrc, nullptr, 0);
+    if(!ps)
+        CriticalErrorHandler("Failed to compile pixel shader");
+    GX2ShaderSet* shaderSet = new GX2ShaderSet();
+    shaderSet->vertexShader = vs;
+    shaderSet->fragmentShader = ps;
+    shaderSet->fetchShader = &sDefaultFetchShader;
+    shaderSet->Prepare();
+    return shaderSet;
 }

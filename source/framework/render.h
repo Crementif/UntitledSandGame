@@ -51,6 +51,8 @@ public:
     static Vector2i GetScreenSize();
 
     static void RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* text, ...);
+
+    static struct GX2ShaderSet* CompileShader(const char* vsSrc, const char* psSrc);
 protected:
     static Sprite* sBigFontTextureBlack;
     static Sprite* sBigFontTextureWhite;

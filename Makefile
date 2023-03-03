@@ -44,7 +44,7 @@ DRC_SPLASH	:=
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -O2 -ffunction-sections -fdata-sections $(MACHDEP) $(ROMFS_CFLAGS)
+CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -O2 -ffunction-sections -fdata-sections $(MACHDEP) $(ROMFS_CFLAGS)
 
 CFLAGS		+=	$(INCLUDE) -std=gnu++20 -D__WIIU__ -D__WUT__
 

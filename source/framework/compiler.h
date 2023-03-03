@@ -13,7 +13,7 @@ extern "C" {
 }
 #endif
 
-static bool GLSL_Init()
+static inline bool GLSL_Init()
 {
     if (s_glslCompilerModule != nullptr)
         return false;
@@ -35,7 +35,7 @@ static bool GLSL_Init()
     return true;
 }
 
-static bool GLSL_Shutdown()
+static inline bool GLSL_Shutdown()
 {
     if (s_glslCompilerModule == nullptr)
         return false;
