@@ -5,12 +5,12 @@
 #include "Player.h"
 
 #include "../framework/navigation.h"
-#include "../framework/physics/physics.h"
 
 #include "GameServer.h"
 #include "GameClient.h"
 #include "Landmine.h"
 #include "Collectable.h"
+#include "MapPixels.h"
 
 
 GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): GameScene(std::move(client), std::move(server))
@@ -188,6 +188,27 @@ void GameSceneIngame::HandlePlayerCollisions() {
             continue;
         if (m_selfPlayer->GetBoundingBox().Intersects(collectible->GetBoundingBox())) {
             this->m_gameClient->SendPickAction(m_selfPlayer->GetPosition());
+        }
+    }
+
+    // check for collisions with lava
+    Vector2f pos = m_selfPlayer->GetPosition();
+    s32 posX = (s32)(pos.x + 0.5f);
+    s32 posY = (s32)(pos.y + 0.5f);
+    for (s32 y=posY-9; y<=posY+9; y++) {
+        for (s32 x=posX-9; x<=posX+9; x++) {
+            s32 dfx = x - posX;
+            s32 dfy = y - posY;
+            s32 squareDist = dfx * dfx + dfy * dfy;
+            if (squareDist >= 9*9-3)
+                continue;
+            if (this->GetMap()->IsPixelOOB(x, y) )
+                continue;
+            PixelType& pt = this->GetMap()->GetPixel(x, y);
+            if (pt.GetPixelType() == MAP_PIXEL_TYPE::LAVA) {
+                m_selfPlayer->TakeDamage();
+                break;
+            }
         }
     }
 }

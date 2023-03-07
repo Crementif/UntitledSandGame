@@ -36,15 +36,19 @@ public:
 
     u32 GetPlayerHealth() const { return m_health; }
     u32 TakeDamage(u8 damage = 1) {
-        if (m_health > damage)
-            m_health -= damage;
-        else
-            m_health = 0;
+        if (!this->IsInvincible()) {
+            if (m_health > damage)
+                m_health -= damage;
+            else
+                m_health = 0;
 
-        if (m_health == 0)
-            CriticalErrorHandler("Player died!");
+            if (m_health == 0)
+                CriticalErrorHandler("Player died!");
+            m_invincibility = OSGetTime() + OSSecondsToTicks(8);
+        }
         return m_health;
     }
+    bool IsInvincible() const { return m_invincibility >= OSGetTime(); }
     GameClient::GAME_ABILITY GetAbility() const { return m_ability; }
     void GiveAbility(GameClient::GAME_ABILITY ability) {
         m_ability = ability;
@@ -80,7 +84,8 @@ private:
     bool m_isTouchingGround{};
 
     bool m_isSelf{false};
-    u32 m_health = 10;
+    u32 m_health = 3;
+    OSTime m_invincibility = 0;
     GameClient::GAME_ABILITY m_ability = GameClient::GAME_ABILITY::NONE;
 
     f32 m_moveAnimRot = 0;

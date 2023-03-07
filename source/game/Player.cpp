@@ -68,26 +68,27 @@ void Player::SyncMovement(Vector2f pos, Vector2f speed, u8 moveFlags, f32 drillA
     m_drillAngle = drillAngle;
 }
 
-void Player::Draw(u32 layerIndex)
-{
-    // draw body
-    Render::RenderSprite(s_tankBodySprite, m_aabb.pos.x * MAP_PIXEL_ZOOM, m_aabb.pos.y * MAP_PIXEL_ZOOM, s_tankBodySprite->GetWidth(), s_tankBodySprite->GetHeight());
+void Player::Draw(u32 layerIndex) {
+    if (!this->IsInvincible() || (OSTicksToSeconds(OSGetTime()-this->m_invincibility)%2 == 0)) {
+        // draw body
+        Render::RenderSprite(s_tankBodySprite, m_aabb.pos.x * MAP_PIXEL_ZOOM, m_aabb.pos.y * MAP_PIXEL_ZOOM, s_tankBodySprite->GetWidth(), s_tankBodySprite->GetHeight());
 
-    // draw wheels
-    Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x+5.9f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM)-s_tankWheelSprite->GetHeight())+11.0f, s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
-    Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x+21.6f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM)-s_tankWheelSprite->GetHeight())+11.0f, s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
+        // draw wheels
+        Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x + 5.9f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM) - s_tankWheelSprite->GetHeight()) + 11.0f, s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
+        Render::RenderSprite(s_tankWheelSprite, (m_aabb.pos.x + 21.6f) * MAP_PIXEL_ZOOM, (m_aabb.pos.y * MAP_PIXEL_ZOOM) + ((m_aabb.scale.y * MAP_PIXEL_ZOOM) - s_tankWheelSprite->GetHeight()) + 11.0f, s_tankWheelSprite->GetWidth(), s_tankWheelSprite->GetHeight(), m_moveAnimRot);
 
-    // draw drill
-    Vector2f playerCenter(m_aabb.pos.x + m_aabb.scale.x * 0.5f, m_aabb.pos.y + m_aabb.scale.y * 0.58f);
-    m_visualDrillAngle = _InterpolateAngle(m_visualDrillAngle, m_drillAngle, 0.2f);
-    Vector2f drillPos = playerCenter + Vector2f(12.0f, 0.0).Rotate(m_visualDrillAngle);
+        // draw drill
+        Vector2f playerCenter(m_aabb.pos.x + m_aabb.scale.x * 0.5f, m_aabb.pos.y + m_aabb.scale.y * 0.58f);
+        m_visualDrillAngle = _InterpolateAngle(m_visualDrillAngle, m_drillAngle, 0.2f);
+        Vector2f drillPos = playerCenter + Vector2f(12.0f, 0.0).Rotate(m_visualDrillAngle);
 
-    if (m_drillAnimIdx > 30)
-        Render::RenderSprite(s_tankDrill2Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill2Sprite->GetWidth(), s_tankDrill2Sprite->GetHeight(), m_visualDrillAngle);
-    else if (m_drillAnimIdx > 15)
-        Render::RenderSprite(s_tankDrill1Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill1Sprite->GetWidth(), s_tankDrill1Sprite->GetHeight(), m_visualDrillAngle);
-    else
-        Render::RenderSprite(s_tankDrill0Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill0Sprite->GetWidth(), s_tankDrill0Sprite->GetHeight(), m_visualDrillAngle);
+        if (m_drillAnimIdx > 30)
+            Render::RenderSprite(s_tankDrill2Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill2Sprite->GetWidth(), s_tankDrill2Sprite->GetHeight(), m_visualDrillAngle);
+        else if (m_drillAnimIdx > 15)
+            Render::RenderSprite(s_tankDrill1Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill1Sprite->GetWidth(), s_tankDrill1Sprite->GetHeight(), m_visualDrillAngle);
+        else
+            Render::RenderSprite(s_tankDrill0Sprite, drillPos.x * MAP_PIXEL_ZOOM, drillPos.y * MAP_PIXEL_ZOOM, s_tankDrill0Sprite->GetWidth(), s_tankDrill0Sprite->GetHeight(), m_visualDrillAngle);
+    }
 }
 
 Vector2f Player::GetPosition()
