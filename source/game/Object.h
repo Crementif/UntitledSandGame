@@ -51,8 +51,17 @@ public:
     void SetVelocity(float x, float y);
     void AddVelocity(float x, float y);
 protected:
-    bool DoesCornerCollide(Vector2f cornerPos);
-    bool DoesAABBCollide(AABB& aabb);
+    template<typename F>
+    bool DoesAABBCollide(AABB &aabb, F&& collisionFunc) {
+        // check if any of the corners of the bbox collide with the map
+        if (collisionFunc(aabb.GetTopLeft()) ||
+            collisionFunc(aabb.GetTopRight()) ||
+            collisionFunc(aabb.GetBottomLeft()) ||
+            collisionFunc(aabb.GetBottomRight())) {
+            return true;
+        }
+        return false;
+    }
     void SimulatePhysics();
 
     Vector2f m_velocity = {0, 0};

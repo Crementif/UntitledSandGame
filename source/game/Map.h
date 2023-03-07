@@ -90,6 +90,18 @@ union PixelType
         return true;
     }
 
+    bool IsCollideWithSolids() const
+    {
+        if((pixelType&1) == 0)
+            return false; // active pixels are exempt from object collision
+        MAP_PIXEL_TYPE mat = GetPixelType();
+        if(mat == MAP_PIXEL_TYPE::AIR)
+            return false;
+        if(mat == MAP_PIXEL_TYPE::LAVA)
+            return false;
+        return true;
+    }
+
     // has any pixel other than air
     const bool IsFilled() const
     {
@@ -157,6 +169,20 @@ public:
         if(IsPixelOOB(x, y))
             return true;
         return GetPixel(x, y).IsCollideWithObjects();
+    }
+
+    bool DoesPixelCollideWithSolids(s32 x, s32 y)
+    {
+        if(IsPixelOOB(x, y))
+            return true;
+        return GetPixel(x, y).IsCollideWithSolids();
+    }
+
+    bool DoesPixelCollideWithType(s32 x, s32 y, MAP_PIXEL_TYPE type)
+    {
+        if(IsPixelOOB(x, y))
+            return true;
+        return GetPixel(x, y).GetPixelType() == type;
     }
 
     void SimulateTick();

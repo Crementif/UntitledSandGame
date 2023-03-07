@@ -23,50 +23,42 @@ void PhysicsObject::AddVelocity(float x, float y) {
     m_velocity.y += y;
 }
 
-bool PhysicsObject::DoesCornerCollide(Vector2f cornerPos) {
-    // todo: loss of precision, since the position of a corner could be overlapping multiple pixels
-    return m_parent->GetMap()->DoesPixelCollideWithObject((s32)cornerPos.x, (s32)cornerPos.y);
-}
-
-bool PhysicsObject::DoesAABBCollide(AABB &aabb) {
-    // check if any of the corners of the bbox collide with the map
-    if (DoesCornerCollide(aabb.GetTopLeft()) ||
-        DoesCornerCollide(aabb.GetTopRight()) ||
-        DoesCornerCollide(aabb.GetBottomLeft()) ||
-        DoesCornerCollide(aabb.GetBottomRight())) {
-        return true;
-    }
-    return false;
-}
-
 void PhysicsObject::SimulatePhysics() {
+    Map* map = m_parent->GetMap();
+
     AABB newPos = m_aabb + m_velocity;
     // Try moving the entire distance first
-    if (!DoesAABBCollide(newPos)) {
+    if (!DoesAABBCollide(newPos, [map](Vector2f cornerPos) {
+        // todo: loss of precision, since the position of a corner could be overlapping multiple pixels
+        return map->DoesPixelCollideWithSolids((s32)cornerPos.x, (s32)cornerPos.y);
+    })) {
         m_aabb = newPos;
-        return;
     }
-
-    // use binary search to find the distance we can actually move
-    Vector2f moveVec = newPos.pos - m_aabb.pos;
-    Vector2f tryMoveVec = moveVec * 0.5f;
-    bool hasClosestTarget = false;
-    AABB closestTarget = {0, 0, 0,0};
-    for (s32 t=0; t<5; t++) {
-        AABB tmpTarget = newPos + tryMoveVec;
-        if (!DoesAABBCollide(tmpTarget)) {
-            hasClosestTarget = true;
-            closestTarget = tmpTarget;
-            // try moving further
-            tryMoveVec = tryMoveVec + tryMoveVec * 0.5f;
-            continue;
-        }
-        // try a shorter distance
-        tryMoveVec = tryMoveVec * 0.5f;
-    }
-    if (hasClosestTarget)
-        m_aabb = closestTarget;
     else {
-        SetVelocity(0, 0);
+        // use binary search to find the distance we can actually move
+        Vector2f moveVec = newPos.pos - m_aabb.pos;
+        Vector2f tryMoveVec = moveVec * 0.5f;
+        bool hasClosestTarget = false;
+        AABB closestTarget = {0, 0, 0,0};
+        for (s32 t=0; t<5; t++) {
+            AABB tmpTarget = newPos + tryMoveVec;
+            if (!DoesAABBCollide(tmpTarget, [map](Vector2f cornerPos) {
+                // todo: loss of precision, since the position of a corner could be overlapping multiple pixels
+                return map->DoesPixelCollideWithSolids((s32)cornerPos.x, (s32)cornerPos.y);
+            })) {
+                hasClosestTarget = true;
+                closestTarget = tmpTarget;
+                // try moving further
+                tryMoveVec = tryMoveVec + tryMoveVec * 0.5f;
+                continue;
+            }
+            // try a shorter distance
+            tryMoveVec = tryMoveVec * 0.5f;
+        }
+        if (hasClosestTarget)
+            m_aabb = closestTarget;
+        else {
+            SetVelocity(0, 0);
+        }
     }
 }

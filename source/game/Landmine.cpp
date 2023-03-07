@@ -12,6 +12,7 @@ void Landmine::Update(float timestep) {
     this->AddVelocity(0.0f, 1.6f);
     this->SimulatePhysics();
 
+    // check if nearby players that aren't it's owner are in range
     for (auto& playerIt : m_parent->GetPlayers()) {
         if (playerIt.first != this->m_owner && playerIt.second->GetPosition().Distance(this->GetPosition()) < 120.0f) {
             new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(m_aabb.pos), 8, 2.0f, 80, 20.0f, 20.0f);
@@ -19,6 +20,24 @@ void Landmine::Update(float timestep) {
             m_parent->QueueUnregisterObject(this);
             if(playerIt.second->IsSelf() && playerIt.second->GetPlayerId() == m_owner)
             {
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
+            }
+        }
+    }
+
+    // check if landmine is in lava
+    Map* map = m_parent->GetMap();
+    for (auto& playerIt : m_parent->GetPlayers()) {
+        if (!playerIt.second->IsSelf())
+            return;
+
+        if (DoesAABBCollide(m_aabb, [map](Vector2f cornerPos) {
+            return map->DoesPixelCollideWithType((s32) cornerPos.x, (s32) cornerPos.y, MAP_PIXEL_TYPE::LAVA);
+        })) {
+            new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(m_aabb.pos), 8, 2.0f, 80, 20.0f, 20.0f);
+            playerIt.second->TakeDamage();
+            m_parent->QueueUnregisterObject(this);
+            if (playerIt.second->IsSelf() && playerIt.second->GetPlayerId() == m_owner) {
                 m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
             }
         }
