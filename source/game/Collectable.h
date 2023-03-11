@@ -12,6 +12,8 @@ public:
     ~Collectable() override = default;
 
     bool m_hidden = false;
+    bool m_hoverAnimDirUp = false;
+    s32 m_hoverAnim = 0;
     void Draw(u32 layerIndex) override;
     void Update(float timestep) override;
     Vector2f GetPosition() override { return m_aabb.GetCenter(); };

@@ -31,7 +31,7 @@ int main()
 
     TextButton::s_buttonBackdrop = new Sprite("/tex/button_backdrop.tga", true);
     Landmine::s_landmineSprite = new Sprite("/tex/landmine.tga", true);
-    Collectable::s_collectableSprite = new Sprite("/tex/cross.tga", true);
+    Collectable::s_collectableSprite = new Sprite("/tex/ammo.tga", true);
 
     // set polygon mode
     GX2SetPolygonControl(
