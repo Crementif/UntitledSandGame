@@ -12,35 +12,39 @@ void Landmine::Update(float timestep) {
     this->AddVelocity(0.0f, 1.6f);
     this->SimulatePhysics();
 
+    auto triggerExplosion = [this](Player* player) {
+        new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
+
+        if (!m_parent->IsSingleplayer())
+            player->TakeDamage();
+
+        m_parent->QueueUnregisterObject(this);
+        // only send explosion command if the owner of the landmine detects it
+        if (player->IsSelf() && player->GetPlayerId() == m_owner) {
+            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
+        }
+    };
+
     // check if nearby players that aren't it's owner are in range
     for (auto& playerIt : m_parent->GetPlayers()) {
-        if (playerIt.first != this->m_owner && playerIt.second->GetPosition().Distance(this->GetPosition()) < 120.0f) {
-            new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(m_aabb.pos), 8, 2.0f, 80, 20.0f, 20.0f);
-            playerIt.second->TakeDamage();
-            m_parent->QueueUnregisterObject(this);
-            if(playerIt.second->IsSelf() && playerIt.second->GetPlayerId() == m_owner)
-            {
-                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
+        if (m_parent->IsSingleplayer()) {
+            if (playerIt.second->GetPosition().Distance(this->GetPosition()) > 120.0f) {
+                return triggerExplosion(playerIt.second.get());
+            }
+        }
+        else {
+            if (playerIt.first != this->m_owner && playerIt.second->GetPosition().Distance(this->GetPosition()) < 120.0f) {
+                return triggerExplosion(playerIt.second.get());
             }
         }
     }
 
     // check if landmine is in lava
     Map* map = m_parent->GetMap();
-    for (auto& playerIt : m_parent->GetPlayers()) {
-        if (!playerIt.second->IsSelf())
-            return;
-
-        if (DoesAABBCollide(m_aabb, [map](Vector2f cornerPos) {
-            return map->DoesPixelCollideWithType((s32) cornerPos.x, (s32) cornerPos.y, MAP_PIXEL_TYPE::LAVA);
-        })) {
-            new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/ball.tga"), Vector2f(m_aabb.pos), 8, 2.0f, 80, 20.0f, 20.0f);
-            playerIt.second->TakeDamage();
-            m_parent->QueueUnregisterObject(this);
-            if (playerIt.second->IsSelf() && playerIt.second->GetPlayerId() == m_owner) {
-                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
-            }
-        }
+    if (DoesAABBCollide(m_aabb, [map](Vector2f cornerPos) {
+        return map->DoesPixelCollideWithType((s32) cornerPos.x, (s32) cornerPos.y, MAP_PIXEL_TYPE::LAVA);
+    })) {
+        return triggerExplosion(m_parent->GetPlayer());
     }
 }
 

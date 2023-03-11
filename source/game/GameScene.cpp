@@ -20,6 +20,18 @@ const std::unordered_map<PlayerID, std::unique_ptr<Player>>& GameScene::GetPlaye
     return sCurrPlayers;
 }
 
+bool GameScene::IsSingleplayer() const {
+    return sCurrPlayers.size() == 1;
+}
+
+Player* GameScene::GetPlayer() const {
+    for (auto& player : sCurrPlayers) {
+        if (player.second->IsSelf())
+            return player.second.get();
+    }
+    return nullptr;
+}
+
 void GameScene::UnregisterAllPlayers() {
     sCurrPlayers.clear();
 }
