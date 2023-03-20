@@ -12,16 +12,6 @@ To _bit_cast(const From& src) noexcept
     return dst;
 }
 
-enum class GameActionType {
-    GameStart,
-    PlayerInfo
-};
-
-struct GameAction {
-    u32 packetSize;
-    u32 originPlayer;
-};
-
 class PacketBuilder
 {
 public:

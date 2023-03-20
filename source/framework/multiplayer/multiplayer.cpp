@@ -128,9 +128,8 @@ void RelayServer::SendToAllExceptPlayerId(PacketBuilder& pb, u32 playerId)
     {
         if(it.playerId != playerId)
         {
-            OSReport("[Server] Send %d bytes to player %08x\n", (int)pb.GetData().size(), playerId);
+            OSReport("[Server] Send %d bytes to player %08x\n", (int)pb.GetData().size(), it.playerId);
             send(it.socket, data.data(), data.size(), 0);
-            return;
         }
     }
 }
