@@ -82,6 +82,7 @@ void GameSceneIngame::SpawnCollectibles() {
     }
 }
 
+bool showDebugInfo = false;
 std::vector<std::string> g_debugStrings;
 
 void GameSceneIngame::DrawHUD() {
@@ -93,8 +94,13 @@ void GameSceneIngame::DrawHUD() {
         Render::RenderSpritePortionScreenRelative(&m_heartSprite, 20+(i*(m_heartSprite.GetWidth()+20)), 20, 0, 64*(heartsAnimationTicks/5), 64, 64);
     }
 
-    for (u32 i=0; i<g_debugStrings.size(); i++) {
-        Render::RenderText(20, 100+(i*16), 0, 0x00, g_debugStrings[i].c_str());
+    if (pressedStart())
+        showDebugInfo = !showDebugInfo;
+
+    if (showDebugInfo) {
+        for (u32 i = 0; i < g_debugStrings.size(); i++) {
+            Render::RenderText(20, 100 + (i * 16), 0, 0x00, g_debugStrings[i].c_str());
+        }
     }
 }
 
