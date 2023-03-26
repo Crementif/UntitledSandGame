@@ -8,8 +8,10 @@
 
 class Collectable : public Object {
 public:
-    Collectable(GameScene* parent, Vector2f pos): Object(parent, AABB(pos.x-5.0f, pos.y-5.0f, 10.0f, 10.0f), true, DRAW_LAYER_1) {}
-    ~Collectable() override = default;
+    Collectable(GameScene* parent, Vector2f pos): Object(parent, AABB(pos.x-5.0f, pos.y-5.0f, 10.0f, 10.0f), true, DRAW_LAYER_1) {
+    }
+    ~Collectable() override {
+    }
 
     bool m_hidden = false;
     bool m_hoverAnimDirUp = false;

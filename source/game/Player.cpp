@@ -4,7 +4,7 @@
 #include "GameClient.h"
 
 #include "../framework/navigation.h"
-#include "Landmine.h"
+#include "GameSceneMenu.h"
 
 Sprite* s_tankBodySprite{nullptr};
 Sprite* s_tankDrill0Sprite{nullptr};
@@ -69,6 +69,10 @@ void Player::SyncMovement(Vector2f pos, Vector2f speed, u8 moveFlags, f32 drillA
 }
 
 void Player::Draw(u32 layerIndex) {
+    if (this->IsSpectating()) {
+        return;
+    }
+
     if (!this->IsInvincible() || (OSTicksToSeconds(OSGetTime()-this->m_invincibility)%2 == 0)) {
         // draw body
         Render::RenderSprite(s_tankBodySprite, m_aabb.pos.x * MAP_PIXEL_ZOOM, m_aabb.pos.y * MAP_PIXEL_ZOOM, s_tankBodySprite->GetWidth(), s_tankBodySprite->GetHeight());
@@ -162,6 +166,22 @@ void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState,
     }
 }
 
+void Player::HandleLocalPlayerControl_SpectatingMode(struct ButtonState& buttonState, Vector2f leftStick) {
+    std::vector<PlayerID> alivePlayers = {};
+    for (auto& player : this->m_parent->GetPlayers()) {
+        if (!player.second->IsSpectating())
+            alivePlayers.emplace_back(player.first);
+    }
+
+    if (buttonState.buttonA.changedState && buttonState.buttonA.isDown) {
+        if (m_spectatingPlayerIdx < alivePlayers.size()-1)
+            m_spectatingPlayerIdx++;
+        else
+            m_spectatingPlayerIdx = 0;
+    }
+    m_spectatingPlayer = m_parent->GetPlayerById(alivePlayers[m_spectatingPlayerIdx]);
+}
+
 void Player::HandleLocalPlayerControl()
 {
     g_debugStrings.emplace_back("Current Item: "+std::to_string((int)m_ability));
@@ -169,18 +189,26 @@ void Player::HandleLocalPlayerControl()
     ButtonState& buttonState = GetButtonState();
     Vector2f leftStick = getLeftStick();
 
-    if(buttonState.buttonA.isDown)
-        m_moveFlags.isDrilling = true;
-    else
-    {
-        m_moveFlags.isDrilling = false; // probably should have a tiny cooldown?
-        m_drillingDur = 0.0f;
-    }
+    if (!this->IsSpectating()) {
+        if (buttonState.buttonA.isDown)
+            m_moveFlags.isDrilling = true;
+        else {
+            m_moveFlags.isDrilling = false; // probably should have a tiny cooldown?
+            m_drillingDur = 0.0f;
+        }
 
-    if(!m_moveFlags.isDrilling)
-        HandleLocalPlayerControl_WalkMode(buttonState, leftStick);
-    else
-        HandleLocalPlayerControl_DrillMode(buttonState, leftStick);
+        if (!m_moveFlags.isDrilling)
+            HandleLocalPlayerControl_WalkMode(buttonState, leftStick);
+        else
+            HandleLocalPlayerControl_DrillMode(buttonState, leftStick);
+    }
+    else {
+        m_moveFlags.walkingLeft = false;
+        m_moveFlags.walkingRight = false;
+        m_moveFlags.isDrilling = false;
+        m_drillingDur = 0.0f;
+        HandleLocalPlayerControl_SpectatingMode(buttonState, leftStick);
+    }
 }
 
 // "down" is +y
@@ -189,6 +217,11 @@ void Player::HandleLocalPlayerControl()
 void Player::Update(float timestep)
 {
     Map* map = m_parent->GetMap();
+
+    if (IsSpectating()) {
+        Update_SpectatingMode(timestep);
+        return;
+    }
 
     if(m_moveFlags.isDrilling)
     {
@@ -308,6 +341,12 @@ void Player::Update_DrillMode(float timestep)
     m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + 1;
 }
 
+void Player::Update_SpectatingMode(float timestep)
+{
+    if (m_spectatingPlayer != nullptr)
+        UpdatePosition(m_spectatingPlayer->m_pos);
+}
+
 // move player to new position, stop at collisions
 bool Player::SlidePlayerPos(Map* map, Vector2f newPos)
 {
@@ -400,4 +439,9 @@ bool Player::FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, boo
     // all collision checks are true so we are stuck inside the ground
     isStuckInGround = true;
     return false;
+}
+
+void Player::ChangeToSpectator() {
+    m_health = 0;
+    m_spectating = true;
 }

@@ -30,7 +30,7 @@ void GameClient::Update()
 
 void GameClient::ProcessPacket(u8 opcode, PacketParser& pp)
 {
-    OSReport("GameClient: Received opcode 0x%02x\n", (int)opcode);
+    MP_OSReport("[Client] GameClient::ProcessPacket: Received opcode 0x%02x\n", (int)opcode);
     bool r = false;
     switch(opcode)
     {
@@ -66,7 +66,7 @@ void GameClient::ProcessPacket(u8 opcode, PacketParser& pp)
         }
     }
     if(!r)
-        OSReport("GameClient: Received bad packet 0x%02x\n", (int)opcode);
+        OSReport("[Client] GameClient::ProcessPacket: Received bad packet 0x%02x\n", (int)opcode);
 }
 
 bool GameClient::ProcessPacket_Start(PacketParser& pp)
@@ -74,7 +74,7 @@ bool GameClient::ProcessPacket_Start(PacketParser& pp)
     m_gameInfo.levelId = pp.ReadU32();
     m_gameInfo.rngSeed = pp.ReadU32();
     m_gameInfo.ourPlayerId = pp.ReadU32();
-    OSReport("GameClient::ProcessPacket_Start: Our player id: %08x\n", m_gameInfo.ourPlayerId);
+    MP_OSReport("[Client] GameClient::ProcessPacket_Start: Our player id: %08x\n", m_gameInfo.ourPlayerId);
     u32 playerCount = pp.ReadU32();
     m_gameInfo.playerIds.clear();
     for(u32 i=0; i<playerCount; i++)
@@ -102,14 +102,14 @@ bool GameClient::ProcessPacket_Movement(PacketParser& pp)
 bool GameClient::ProcessPacket_Ability(PacketParser& pp)
 {
     PlayerID playerId = pp.ReadU32();
-    u32 ability = pp.ReadU32();
+    GAME_ABILITY ability = (GAME_ABILITY)pp.ReadU32();
     Vector2f pos;
     pos.x = pp.ReadF32();
     pos.y = pp.ReadF32();
     Vector2f velocity;
     velocity.x = pp.ReadF32();
     velocity.y = pp.ReadF32();
-    m_queuedEvents.queueAbility.push_back({playerId, (GAME_ABILITY)ability, pos, velocity});
+    m_queuedEvents.queueAbility.push_back({playerId, ability, pos, velocity});
     return true;
 }
 

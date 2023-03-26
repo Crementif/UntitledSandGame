@@ -6,17 +6,19 @@ GameScene::GameScene(std::unique_ptr<GameClient> client, std::unique_ptr<GameSer
 };
 
 GameScene::~GameScene() {
-    for (class Object* obj : m_objects)
+    while (!m_objects.empty()) {
+        Object* obj = m_objects.back();
         delete obj;
+    }
 
-    delete m_map;
+    delete this->m_map;
 }
 
 Player* GameScene::RegisterPlayer(PlayerID id, f32 playerX, f32 playerY) {
-    return sCurrPlayers.emplace(id, std::make_unique<Player>(this, id, playerX, playerY)).first->second.get();
+    return sCurrPlayers.emplace(id, new Player(this, id, playerX, playerY)).first->second;
 }
 
-const std::unordered_map<PlayerID, std::unique_ptr<Player>>& GameScene::GetPlayers() const {
+const std::unordered_map<PlayerID, Player*>& GameScene::GetPlayers() const {
     return sCurrPlayers;
 }
 
@@ -24,10 +26,18 @@ bool GameScene::IsSingleplayer() const {
     return sCurrPlayers.size() == 1;
 }
 
+Player* GameScene::GetPlayerById(PlayerID id) const {
+    for (auto& player : sCurrPlayers) {
+        if (player.first == id)
+            return player.second;
+    }
+    return nullptr;
+}
+
 Player* GameScene::GetPlayer() const {
     for (auto& player : sCurrPlayers) {
         if (player.second->IsSelf())
-            return player.second.get();
+            return player.second;
     }
     return nullptr;
 }

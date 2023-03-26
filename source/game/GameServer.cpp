@@ -20,7 +20,7 @@ GameServer::~GameServer()
 
 void GameServer::StartGame()
 {
-    OSReport("GameServer::StartGame()\n");
+    MP_OSReport("[Server] GameServer::StartGame()\n");
     // choose a level
     m_levelId = 0;
     // generate a seed
@@ -54,7 +54,7 @@ void GameServer::Update()
 
 void GameServer::ProcessPacket(u32 playerId, u8 opcode, PacketParser& pp)
 {
-    OSReport("GameServer::ProcessPacket playerId %08x opcode %d\n", playerId, (int)opcode);
+    MP_OSReport("[Server] GameServer::ProcessPacket playerId %08x opcode %d\n", playerId, (int)opcode);
     bool r = false;
     switch (opcode)
     {
@@ -75,7 +75,7 @@ void GameServer::ProcessPacket(u32 playerId, u8 opcode, PacketParser& pp)
             break;
     }
     if(!r)
-        OSReport("GameServer::ProcessPacket: Error processing packet opcode %d from player %08x\n", (int)opcode, playerId);
+        OSReport("[Server] GameServer::ProcessPacket: Error processing packet opcode %d from player %08x\n", (int)opcode, playerId);
 }
 
 bool GameServer::ProcessPacket_Movement(u32 playerId, PacketParser& pp)

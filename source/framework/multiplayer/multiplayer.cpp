@@ -62,7 +62,7 @@ void RelayServer::Update()
         int r = recv(client.socket, client.recvBuffer.data() + client.recvIndex, remainingBufferBytes, 0);
         if(r <= 0)
             continue;
-        OSReport("RelayServer::Update r %d\n", r);
+        MP_OSReport("[RelayServer] RelayServer::Update r %d\n", r);
         client.recvIndex += (u32)r;
         // process as many whole packets as available
         while( true ) {
@@ -95,15 +95,11 @@ void RelayServer::SendToAll(PacketBuilder& pb)
     const std::vector<u8>& data = pb.GetData();
     for(auto& it : clients)
     {
-        OSReport("[Server] Send %d bytes to player %08x\n", (int)pb.GetData().size(), it.playerId);
+        MP_OSReport("[RelayServer] Send %d bytes to player %08x\n", (int)pb.GetData().size(), it.playerId);
         send(it.socket, data.data(), data.size(), 0);
         // todo - handle incomplete sends
     }
 }
-
-RelayClient::~RelayClient() {
-    close(conn_socket);
-};
 
 void RelayServer::SendToPlayerId(PacketBuilder& pb, u32 playerId)
 {
@@ -113,7 +109,7 @@ void RelayServer::SendToPlayerId(PacketBuilder& pb, u32 playerId)
     {
         if(it.playerId == playerId)
         {
-            OSReport("[Server] Send %d bytes to player %08x\n", (int)pb.GetData().size(), playerId);
+            MP_OSReport("[RelayServer] Send %d bytes to player %08x\n", (int)pb.GetData().size(), playerId);
             send(it.socket, data.data(), data.size(), 0);
             return;
         }
@@ -128,12 +124,16 @@ void RelayServer::SendToAllExceptPlayerId(PacketBuilder& pb, u32 playerId)
     {
         if(it.playerId != playerId)
         {
-            OSReport("[Server] Send %d bytes to player %08x\n", (int)pb.GetData().size(), it.playerId);
+            MP_OSReport("[RelayServer] Send %d bytes to player %08x\n", (int)pb.GetData().size(), it.playerId);
             send(it.socket, data.data(), data.size(), 0);
         }
     }
 }
 
+
+RelayClient::~RelayClient() {
+    close(conn_socket);
+};
 
 bool RelayClient::ConnectTo(std::string_view address)
 {
@@ -153,7 +153,7 @@ bool RelayClient::ConnectTo(std::string_view address)
         }
         return false;
     }
-    WHBLogPrintf("Connecting to %s", address.data());
+    MP_OSReport("[RelayClient] Connecting to %s", address.data());
     return true;
 };
 
@@ -169,8 +169,8 @@ void RelayClient::SendPacket(PacketBuilder& pb)
     pb.Finalize();
     auto& buf = pb.GetData();
     int r = send(conn_socket, buf.data(), buf.size(), 0);
-    if(r != (s32)buf.size())
-        OSReport("Failed to send full message");
+    if (r != (s32)buf.size())
+        OSReport("[RelayClient] Failed to send full message");
 }
 
 void RelayClient::Update()
@@ -181,7 +181,7 @@ void RelayClient::Update()
     int r = recv(conn_socket, m_recvBuffer.data() + m_recvIndex, bufferBytesRemaining, 0);
     if(r <= 0)
         return;
-    OSReport("[Client] Received %d bytes\n", (int)r);
+    MP_OSReport("[RelayClient] Received %d bytes\n", (int)r);
     m_recvIndex += r;
     while( true )
     {

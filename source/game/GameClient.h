@@ -17,6 +17,7 @@ public:
         BOMB = 2,
         TURBO_DRILL = 3,
         LAVA = 4,
+        DEATH = 5
     };
 
     struct GameSessionInfo

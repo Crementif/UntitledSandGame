@@ -11,6 +11,7 @@
 #include "Landmine.h"
 #include "Collectable.h"
 #include "MapPixels.h"
+#include "GameSceneMenu.h"
 
 
 GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): GameScene(std::move(client), std::move(server))
@@ -37,10 +38,10 @@ void GameSceneIngame::SpawnPlayers()
     m_selfPlayer = nullptr;
 
     const std::vector<Vector2i> spawnpoints = this->GetMap()->GetPlayerSpawnpoints();
-    if(spawnpoints.empty())
+    if (spawnpoints.empty())
         CriticalErrorHandler("Level does not have any spawnpoints");
 
-    OSReport("[GameSceneIngame::SpawnPlayers] Spawning %d players...\n", (int)this->m_gameClient->GetGameSessionInfo().playerIds.size());
+    OSReport("[GameSceneIngame] GameSceneIngame::SpawnPlayers: Spawning %d players...\n", (int)this->m_gameClient->GetGameSessionInfo().playerIds.size());
     PlayerID ourPlayerId = this->m_gameClient->GetGameSessionInfo().ourPlayerId;
     // spawn players
     std::vector<Vector2i> availSpawnpoints = spawnpoints;
@@ -77,7 +78,6 @@ void GameSceneIngame::SpawnCollectibles() {
     for (Vector2i spawnpoint : collectiblesPoints)
     {
         Collectable* collectable = new Collectable(this, {(f32)spawnpoint.x, (f32)spawnpoint.y});
-        this->RegisterObject(collectable);
         m_collectibles.emplace_back(collectable);
     }
 }
@@ -101,6 +101,12 @@ void GameSceneIngame::DrawHUD() {
         for (u32 i = 0; i < g_debugStrings.size(); i++) {
             Render::RenderText(20, 100 + (i * 16), 0, 0x00, g_debugStrings[i].c_str());
         }
+    }
+
+    if (m_selfPlayer->IsSpectating()) {
+        std::string spectatingText = "Press A to spectate next player";
+        const u32 stringWidth = spectatingText.size() * 16;
+        Render::RenderText(1920 - stringWidth - 20, 1080 - (80 * 2), 0, 0x00, spectatingText.c_str());
     }
 }
 
@@ -146,30 +152,52 @@ void GameSceneIngame::UpdateMultiplayer()
     auto eventAbility = m_gameClient->GetAndClearAbilityEvents();
     for (auto& event : eventAbility)
     {
-        new Landmine(this, event.playerId, event.pos.x, event.pos.y);
+        if (event.ability == GameClient::GAME_ABILITY::LANDMINE)
+            new Landmine(this, event.playerId, event.pos.x, event.pos.y);
+        else if (event.ability == GameClient::GAME_ABILITY::DEATH) {
+            this->GetPlayerById(event.playerId)->ChangeToSpectator();
+
+            u32 alivePlayers = 0;
+            Player* winner = nullptr;
+            for (auto& player : players) {
+                if (player.second->GetPlayerHealth() > 0) {
+                    winner = player.second;
+                    alivePlayers++;
+                }
+            }
+
+            if (alivePlayers > 1) {
+                new ExplosiveParticle(this, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(event.pos.x-11.0f, event.pos.y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
+            }
+            else {
+                // todo: show final winner screen
+                OSReport("Game ended, winner: %08x\n", winner->GetPlayerId());
+                GameScene::ChangeTo(new GameSceneMenu());
+                return;
+            }
+        }
     }
     auto eventPicking = m_gameClient->GetAndClearPickingEvents();
     for (auto& event : eventPicking)
     {
-        for (auto& player : this->GetPlayers())
+        Player* player = this->GetPlayerById(event.playerId);
+        if (player == nullptr) {
+            OSReport("Received picking event for unknown player %08x\n", event.playerId);
+            continue;
+        }
+
+        float closestDistance = std::numeric_limits<float>::max();
+        Collectable* closestCollectible = nullptr;
+        for (auto& collectible : this->m_collectibles)
         {
-            if (player.first == event.playerId)
-            {
-                float closestDistance = std::numeric_limits<float>::max();
-                Collectable* closestCollectible = nullptr;
-                for (auto& collectible : this->m_collectibles)
-                {
-                    float distanceToCollectible = collectible->GetPosition().DistanceSquare(player.second->GetPosition());
-                    if (distanceToCollectible < closestDistance) {
-                        closestDistance = collectible->GetPosition().DistanceSquare(player.second->GetPosition());
-                        closestCollectible = collectible;
-                    }
-                }
-                if (closestCollectible != nullptr) {
-                    closestCollectible->Pickup(player.second.get());
-                }
-                break;
+            float distanceToCollectible = collectible->GetPosition().DistanceSquare(player->GetPosition());
+            if (distanceToCollectible < closestDistance) {
+                closestDistance = collectible->GetPosition().DistanceSquare(player->GetPosition());
+                closestCollectible = collectible;
             }
+        }
+        if (closestCollectible != nullptr) {
+            closestCollectible->Pickup(player);
         }
     }
 
@@ -224,7 +252,8 @@ void GameSceneIngame::Draw()
     UpdateMultiplayer();
 
     m_selfPlayer->HandleLocalPlayerControl();
-    HandlePlayerCollisions();
+    if (!m_selfPlayer->IsSpectating())
+        HandlePlayerCollisions();
 
     RunDeterministicSimulationStep();
 

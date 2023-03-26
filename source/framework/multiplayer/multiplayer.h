@@ -4,6 +4,15 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#define ENABLE_MP_DEBUG FALSE
+
+#if ENABLE_MP_DEBUG
+#define MP_OSReport(...) OSReport(__VA_ARGS__)
+#else
+#define MP_OSReport(...) while (false) {}
+#endif
+
+
 template <class To, class From>
 To _bit_cast(const From& src) noexcept
 {

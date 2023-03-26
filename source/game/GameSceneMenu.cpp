@@ -11,8 +11,6 @@
 GameSceneMenu::GameSceneMenu(): GameScene() {
     this->RegisterMap(new Map("menu.tga", 1337));
 
-    Render::SetCameraPosition({3, 3});
-
     m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
     m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, "Host");
     m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, "Join");
@@ -35,6 +33,8 @@ GameSceneMenu::~GameSceneMenu() {
     delete m_sandbox_btn;
     delete m_host_btn;
     delete m_join_btn;
+
+    FSDelClient(m_fsClient, FS_ERROR_FLAG_NONE);
 
     MEMFreeToDefaultHeap(m_fsClient);
 }
@@ -142,6 +142,7 @@ void GameSceneMenu::DrawButtons() {
 }
 
 void GameSceneMenu::Draw() {
+    Render::SetCameraPosition(Vector2f(2, 2) * MAP_PIXEL_ZOOM);
     this->DrawBackground();
     this->DrawButtons();
     if (this->m_state == MenuState::WAIT_FOR_GAME && this->m_gameServer) {

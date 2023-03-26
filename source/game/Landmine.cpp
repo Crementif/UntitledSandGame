@@ -29,12 +29,12 @@ void Landmine::Update(float timestep) {
     for (auto& playerIt : m_parent->GetPlayers()) {
         if (m_parent->IsSingleplayer()) {
             if (playerIt.second->GetPosition().Distance(this->GetPosition()) > 120.0f) {
-                return triggerExplosion(playerIt.second.get());
+                return triggerExplosion(playerIt.second);
             }
         }
         else {
-            if (playerIt.first != this->m_owner && playerIt.second->GetPosition().Distance(this->GetPosition()) < 120.0f) {
-                return triggerExplosion(playerIt.second.get());
+            if (playerIt.first != this->m_owner && !playerIt.second->IsSpectating() && playerIt.second->GetPosition().Distance(this->GetPosition()) < 120.0f) {
+                return triggerExplosion(playerIt.second);
             }
         }
     }

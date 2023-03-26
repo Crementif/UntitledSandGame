@@ -42,17 +42,19 @@ public:
             else
                 m_health = 0;
 
-            if (m_health == 0)
-                CriticalErrorHandler("Player died!");
+            if (m_health == 0) {
+                m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::DEATH, GetPosition(), Vector2f(0.0f, 0.0f));
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
+            }
             m_invincibility = OSGetTime() + OSSecondsToTicks(8);
         }
         return m_health;
     }
     bool IsInvincible() const { return m_invincibility >= OSGetTime(); }
+    bool IsSpectating() const { return m_spectating; }
+    void ChangeToSpectator();
     GameClient::GAME_ABILITY GetAbility() const { return m_ability; }
-    void GiveAbility(GameClient::GAME_ABILITY ability) {
-        m_ability = ability;
-    }
+    void GiveAbility(GameClient::GAME_ABILITY ability) { m_ability = ability; }
 
     Vector2f GetPosition() override;
     Vector2f GetSpeed() { return m_speed; }
@@ -66,14 +68,13 @@ public:
     void HandleLocalPlayerControl();
 
     bool FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, bool& isStuckInGround, bool& isFloatingInAir);
-
-    void HandleCollisions();
-
 private:
     void HandleLocalPlayerControl_WalkMode(struct ButtonState& buttonState, Vector2f leftStick);
     void HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState, Vector2f leftStick);
+    void HandleLocalPlayerControl_SpectatingMode(struct ButtonState& buttonState, Vector2f leftStick);
 
     void Update_DrillMode(float timestep);
+    void Update_SpectatingMode(float timestep);
 
     u32 m_playerId;
 
@@ -86,6 +87,9 @@ private:
     bool m_isSelf{false};
     u32 m_health = 3;
     OSTime m_invincibility = 0;
+    bool m_spectating = false;
+    u32 m_spectatingPlayerIdx = 0;
+    Player* m_spectatingPlayer = nullptr;
     GameClient::GAME_ABILITY m_ability = GameClient::GAME_ABILITY::NONE;
 
     f32 m_moveAnimRot = 0;

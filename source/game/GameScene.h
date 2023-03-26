@@ -27,8 +27,9 @@ public:
     class Map* GetMap() { return m_map; }
 
     void QueueUnregisterObject(class Object* obj);
-    const std::unordered_map<PlayerID, std::unique_ptr<class Player>>& GetPlayers() const;
+    const std::unordered_map<PlayerID, class Player*>& GetPlayers() const;
     Player *GetPlayer() const;
+    Player *GetPlayerById(PlayerID id) const;
     bool IsSingleplayer() const;
     GameClient* GetClient() const { return m_gameClient.get(); };
 protected:
@@ -46,7 +47,7 @@ protected:
 
     class Map* m_map;
 
-    std::unordered_map<PlayerID, std::unique_ptr<class Player>> sCurrPlayers;
+    std::unordered_map<PlayerID, class Player*> sCurrPlayers;
 
     std::vector<class Object*> m_objects;
     std::vector<class Object*> m_objectsToUpdate;
