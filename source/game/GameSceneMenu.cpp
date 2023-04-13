@@ -34,8 +34,8 @@ GameSceneMenu::~GameSceneMenu() {
     delete m_host_btn;
     delete m_join_btn;
 
+    nn::swkbd::Destroy();
     FSDelClient(m_fsClient, FS_ERROR_FLAG_NONE);
-
     MEMFreeToDefaultHeap(m_fsClient);
 }
 
@@ -44,10 +44,13 @@ void GameSceneMenu::HandleInput() {
     bool isTouchValid = false;
     s32 screenX, screenY;
     vpadGetTouchInfo(isTouchValid, screenX, screenY);
-    vpadUpdateSWKBD();
 
+    vpadUpdateSWKBD();
     if (nn::swkbd::IsNeedCalcSubThreadFont()) {
         nn::swkbd::CalcSubThreadFont();
+    }
+    if (nn::swkbd::IsNeedCalcSubThreadPredict()) {
+        nn::swkbd::CalcSubThreadPredict();
     }
 
     if (m_gameServer)

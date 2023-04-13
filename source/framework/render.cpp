@@ -131,8 +131,11 @@ void _InitBasicShaders()
 {
     if(!s_compilerInitialized)
     {
-        GLSL_Init();
-        s_compilerInitialized = true;
+        if (GLSL_Init())
+            s_compilerInitialized = true;
+        else {
+            OSFatal("Error: Place the glslcompiler.rpl in the /wiiu/libs/ folder on your SD card.");
+        }
     }
 
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, triangle_VSH.program, triangle_VSH.size);

@@ -6,6 +6,7 @@
     </sourceRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/build" />
+      <file path="$PROJECT_DIR$/cemu" />
     </excludeRoots>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
