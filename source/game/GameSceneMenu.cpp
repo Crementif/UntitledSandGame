@@ -111,14 +111,23 @@ void GameSceneMenu::HandleInput() {
         else if (m_join_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
             this->m_state = MenuState::WAIT_FOR_INPUT;
 
-            nn::swkbd::AppearArg appearArg = {};
+            nn::swkbd::AppearArg appearArg = {
+                .keyboardArg = {
+                    .configArg = nn::swkbd::ConfigArg(),
+                    .receiverArg = nn::swkbd::ReceiverArg()
+                },
+                .inputFormArg = nn::swkbd::InputFormArg()
+            };
             appearArg.keyboardArg.configArg.keyboardMode = nn::swkbd::KeyboardMode::Numpad;
             appearArg.keyboardArg.configArg.disableNewLine = true;
             appearArg.keyboardArg.configArg.okString = u"Connect";
             appearArg.keyboardArg.configArg.showWordSuggestions = false;
             appearArg.keyboardArg.configArg.languageType = nn::swkbd::LanguageType::English;
+            appearArg.keyboardArg.configArg.numpadCharRight = u'.';
             appearArg.inputFormArg.initialText = u"127.0.0.1";
             appearArg.inputFormArg.hintText = u"Type IP address";
+            appearArg.inputFormArg.maxTextLength = 16;
+            appearArg.inputFormArg.drawInput0Cursor = true;
             if (!nn::swkbd::AppearInputForm(appearArg))
                 OSFatal("nn::swkbd::AppearInputForm failed");
         }

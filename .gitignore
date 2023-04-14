@@ -40,7 +40,7 @@ build/
 # Tools folder
 /cemu/*
 !/cemu/.gitkeep
-!/cemu/cafeLibs/
+!/cemu/cafeLibs/glslcompiler.rpl
 /tools/**
 /tools/**/.gitkeep
 

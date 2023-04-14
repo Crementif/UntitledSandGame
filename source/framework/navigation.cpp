@@ -52,6 +52,7 @@ void vpadGetTouchInfo(bool& isTouchValid, s32& screenX, s32& screenY) {
     // use filtered data which might be smoother?
     if(calibratedTP.touched == 0)
     {
+        vpadBuffer[0].tpNormal = calibratedTP;
         isTouchValid = false;
         return;
     }
@@ -59,6 +60,12 @@ void vpadGetTouchInfo(bool& isTouchValid, s32& screenX, s32& screenY) {
     isTouchValid = true;
     screenX = calibratedTP.x;
     screenY = calibratedTP.y;
+    vpadBuffer[0].tpNormal = {
+        .x = (u16)(calibratedTP.x / 1.5),
+        .y = (u16)(calibratedTP.y / 1.5),
+        .touched = calibratedTP.touched,
+        .validity = calibratedTP.validity,
+    };
 }
 
 void vpadUpdateSWKBD() {

@@ -235,8 +235,8 @@ static bool WindowForegroundAcquire()
         GX2SetDepthBuffer(&gDepthBuffer);
     }
 
-    if (!WHBMountSdCard())
-        return false;
+//    if (!WHBMountSdCard())
+//        return false;
 
     // Initialize GQR2 to GQR5
     asm volatile ("mtspr %0, %1" : : "i" (898), "r" (0x00040004));

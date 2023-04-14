@@ -165,9 +165,8 @@ void _InitBasicShaders()
     )";
 
     sRenderBaseShaders2 = Render::CompileShader(vertexSource, fragmentSource);
-
-    //sRenderBaseShaders1.vertexShader = (GX2VertexShader*)&triangle_VSH;
-    //sRenderBaseShaders1.fragmentShader = (GX2PixelShader*)&triangle_PSH;
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, sRenderBaseShaders2->vertexShader->program, sRenderBaseShaders2->vertexShader->size);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_SHADER, sRenderBaseShaders2->fragmentShader->program, sRenderBaseShaders2->fragmentShader->size);
 }
 
 void _InitBasicRenderResources()
