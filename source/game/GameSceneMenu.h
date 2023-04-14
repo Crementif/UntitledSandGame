@@ -31,6 +31,8 @@ private:
     FSClient* m_fsClient;
 
     MenuState m_state = MenuState::NORMAL;
+    uint32_t m_selectedButton = 0;
+    OSTick m_lastInput = false;
 
     bool m_startSandboxImmediately{false};
     bool m_startPacketSent{false};

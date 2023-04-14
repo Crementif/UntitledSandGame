@@ -8,7 +8,7 @@
 #include "GameServer.h"
 #include "GameClient.h"
 
-GameSceneMenu::GameSceneMenu(): GameScene() {
+GameSceneMenu::GameSceneMenu(): GameScene(), m_lastInput(OSGetTick()) {
     this->RegisterMap(new Map("menu.tga", 1337));
 
     m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
@@ -44,6 +44,15 @@ void GameSceneMenu::HandleInput() {
     bool isTouchValid = false;
     s32 screenX, screenY;
     vpadGetTouchInfo(isTouchValid, screenX, screenY);
+
+    if (navigatedUp() && m_selectedButton > 0 && m_lastInput < OSGetTick()) {
+        m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
+        m_selectedButton--;
+    }
+    else if (navigatedDown() && m_selectedButton < 2 && m_lastInput < OSGetTick()) {
+        m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
+        m_selectedButton++;
+    }
 
     vpadUpdateSWKBD();
     if (nn::swkbd::IsNeedCalcSubThreadFont()) {
@@ -91,10 +100,9 @@ void GameSceneMenu::HandleInput() {
         m_state = MenuState::WAIT_FOR_GAME;
     }
 
-
-    if (isTouchValid && m_state == MenuState::NORMAL)
-    {
-        if (m_sandbox_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
+    if (m_state == MenuState::NORMAL) {
+        Vector2f touchPos = Vector2f{isTouchValid ? (f32)screenX : 0.0f, isTouchValid ? (f32)screenY : 0.0f};
+        if (m_sandbox_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 0 && pressedOk())) {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
 
             this->m_gameServer = std::make_unique<GameServer>();
@@ -102,13 +110,13 @@ void GameSceneMenu::HandleInput() {
 
             this->m_startSandboxImmediately = true;
         }
-        else if (m_host_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
+        else if (m_host_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 1 && pressedOk())) {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
 
             this->m_gameServer = std::make_unique<GameServer>();
             this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
         }
-        else if (m_join_btn->GetBoundingBox().Contains(Vector2f{(f32)screenX, (f32)screenY})) {
+        else if (m_join_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 2 && pressedOk())) {
             this->m_state = MenuState::WAIT_FOR_INPUT;
 
             nn::swkbd::AppearArg appearArg = {
@@ -150,6 +158,9 @@ void GameSceneMenu::DrawBackground() {
 }
 
 void GameSceneMenu::DrawButtons() {
+    m_sandbox_btn->SetSelected(m_selectedButton == 0);
+    m_host_btn->SetSelected(m_selectedButton == 1);
+    m_join_btn->SetSelected(m_selectedButton == 2);
     this->DoDraws();
 }
 

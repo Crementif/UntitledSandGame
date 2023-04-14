@@ -21,4 +21,7 @@ struct ButtonState
 };
 
 ButtonState& GetButtonState();
+bool navigatedUp();
+bool navigatedDown();
 bool pressedStart();
+bool pressedOk();

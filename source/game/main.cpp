@@ -14,6 +14,7 @@
 
 GameScene* GameScene::sActiveScene = nullptr;
 
+Sprite* TextButton::s_buttonSelected = nullptr;
 Sprite* TextButton::s_buttonBackdrop = nullptr;
 Sprite* Landmine::s_landmineSprite = nullptr;
 Sprite* Collectable::s_collectableSprite = nullptr;
@@ -29,6 +30,7 @@ int main()
     Render::Init();
     GLSL_Init();
 
+    TextButton::s_buttonSelected = new Sprite("/tex/button_selected.tga", true);
     TextButton::s_buttonBackdrop = new Sprite("/tex/button_backdrop.tga", true);
     Landmine::s_landmineSprite = new Sprite("/tex/landmine.tga", true);
     Collectable::s_collectableSprite = new Sprite("/tex/ammo.tga", true);
