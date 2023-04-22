@@ -169,10 +169,13 @@ void GameSceneIngame::UpdateMultiplayer()
             if (alivePlayers > 1) {
                 new ExplosiveParticle(this, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(event.pos.x-11.0f, event.pos.y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
             }
+            else if (winner == nullptr) {
+                GameScene::ChangeTo(new GameSceneMenu(MenuScoreboard::DIED));
+                return;
+            }
             else {
-                // todo: show final winner screen
                 OSReport("Game ended, winner: %08x\n", winner->GetPlayerId());
-                GameScene::ChangeTo(new GameSceneMenu());
+                GameScene::ChangeTo(new GameSceneMenu(winner->GetPlayerId() == m_selfPlayer->GetPlayerId() ? MenuScoreboard::WON : MenuScoreboard::LOST));
                 return;
             }
         }

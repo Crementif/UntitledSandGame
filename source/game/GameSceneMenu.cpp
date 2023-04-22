@@ -8,7 +8,7 @@
 #include "GameServer.h"
 #include "GameClient.h"
 
-GameSceneMenu::GameSceneMenu(): GameScene(), m_lastInput(OSGetTick()) {
+GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboard(scoreboard), m_lastInput(OSGetTick()) {
     this->RegisterMap(new Map("menu.tga", 1337));
 
     m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
@@ -168,6 +168,17 @@ void GameSceneMenu::Draw() {
     Render::SetCameraPosition(Vector2f(2, 2) * MAP_PIXEL_ZOOM);
     this->DrawBackground();
     this->DrawButtons();
+
+    if (m_scoreboard == MenuScoreboard::WON) {
+        Render::RenderText(1920/2-((strlen("You won!")*26)/2), 1080/2+14, 1, 0x00, "You won!");
+    }
+    if (m_scoreboard == MenuScoreboard::LOST) {
+        Render::RenderText(1920/2-((strlen("You lost!")*26)/2), 1080/2+14, 1, 0x00, "You lost!");
+    }
+    if (m_scoreboard == MenuScoreboard::DIED) {
+        Render::RenderText(1920/2-((strlen("You died!")*26)/2), 1080/2+14, 1, 0x00, "You died!");
+    }
+
     if (this->m_state == MenuState::WAIT_FOR_GAME && this->m_gameServer) {
         u32 joinedPlayers = this->m_gameServer->GetPlayerCount();
         std::string joinedPlayersText = "Press START to start match with "+std::to_string(joinedPlayers)+" players...";

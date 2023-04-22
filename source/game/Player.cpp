@@ -173,13 +173,18 @@ void Player::HandleLocalPlayerControl_SpectatingMode(struct ButtonState& buttonS
             alivePlayers.emplace_back(player.first);
     }
 
-    if (buttonState.buttonA.changedState && buttonState.buttonA.isDown) {
+    if (buttonState.buttonA.changedState && buttonState.buttonA.isDown && !alivePlayers.empty()) {
         if (m_spectatingPlayerIdx < alivePlayers.size()-1)
             m_spectatingPlayerIdx++;
         else
             m_spectatingPlayerIdx = 0;
     }
-    m_spectatingPlayer = m_parent->GetPlayerById(alivePlayers[m_spectatingPlayerIdx]);
+    if (!alivePlayers.empty())
+        m_spectatingPlayer = m_parent->GetPlayerById(alivePlayers[m_spectatingPlayerIdx]);
+    else {
+        m_spectatingPlayer = nullptr;
+        m_spectatingPlayerIdx = 0;
+    }
 }
 
 void Player::HandleLocalPlayerControl()

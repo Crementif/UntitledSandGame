@@ -12,9 +12,16 @@ enum class MenuState {
     WAIT_FOR_GAME
 };
 
+enum class MenuScoreboard {
+    NORMAL,
+    WON,
+    LOST,
+    DIED
+};
+
 class GameSceneMenu : public GameScene {
 public:
-    GameSceneMenu();
+    GameSceneMenu(MenuScoreboard scoreboard = MenuScoreboard::NORMAL);
     ~GameSceneMenu() override;
 
     void HandleInput() override;
@@ -31,6 +38,7 @@ private:
     FSClient* m_fsClient;
 
     MenuState m_state = MenuState::NORMAL;
+    MenuScoreboard m_scoreboard = MenuScoreboard::NORMAL;
     uint32_t m_selectedButton = 0;
     OSTick m_lastInput = false;
 
