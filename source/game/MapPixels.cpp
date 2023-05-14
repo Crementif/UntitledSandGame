@@ -79,3 +79,16 @@ u32 _GetColorFromPixelType(PixelType& pixelType)
     }
     return 0x12345678;
 }
+
+u32 _CalculateDimColor(u32 color, float dimFactor) {
+    u8 r = (color >> 24) & 0xFF;
+    u8 g = (color >> 16) & 0xFF;
+    u8 b = (color >> 8) & 0xFF;
+    u8 a = color & 0xFF;
+
+    r = std::max(0, static_cast<int>(r * (1 - dimFactor)));
+    g = std::max(0, static_cast<int>(g * (1 - dimFactor)));
+    b = std::max(0, static_cast<int>(b * (1 - dimFactor)));
+
+    return (r << 24) | (g << 16) | (b << 8) | a;
+}

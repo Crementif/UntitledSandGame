@@ -216,24 +216,40 @@ void Map::HandleSynchronizedEvents()
     }
 }
 
+#define DIGGING_RADIUS      11
+#define TRANSITION_RADIUS   14
+#define SIMULATE_RADIUS     15
 void Map::HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos)
 {
     s32 posX = (s32)(pos.x + 0.5f);
     s32 posY = (s32)(pos.y + 0.5f);
-    for(s32 y=posY-9; y<=posY+9; y++)
+    for (s32 y=posY-SIMULATE_RADIUS; y<=posY+SIMULATE_RADIUS; y++)
     {
-        for(s32 x=posX-9; x<=posX+9; x++)
+        for (s32 x=posX-SIMULATE_RADIUS; x<=posX+SIMULATE_RADIUS; x++)
         {
             s32 dfx = x - posX;
             s32 dfy = y - posY;
             s32 squareDist = dfx * dfx + dfy * dfy;
-            if(squareDist >= 9*9-3)
-                continue;
-            if( IsPixelOOB(x, y) )
-                continue;
-            PixelType& pt = GetPixel(x, y);
-            pt.SetPixel(MAP_PIXEL_TYPE::AIR);
-            SetPixelColor(x, y, _GetColorFromPixelType(pt));
+            bool shouldDig = squareDist < (DIGGING_RADIUS*DIGGING_RADIUS-MAP_PIXEL_ZOOM);
+            bool shouldTransition = squareDist < (TRANSITION_RADIUS*TRANSITION_RADIUS-MAP_PIXEL_ZOOM);
+            bool shouldSimulate = squareDist < (SIMULATE_RADIUS*SIMULATE_RADIUS-MAP_PIXEL_ZOOM);
+
+            if (shouldDig && !IsPixelOOB(x, y)) {
+                PixelType& pt = GetPixelNoBoundsCheck(x, y);
+                pt.SetPixel(MAP_PIXEL_TYPE::AIR);
+                SetPixelColor(x, y, _GetColorFromPixelType(pt));
+            }
+            else if (shouldTransition && !IsPixelOOB(x, y)) {
+                PixelType& pt = GetPixelNoBoundsCheck(x, y);
+                u32 existingColor = _CalculateDimColor(_GetColorFromPixelType(pt), 0.6f);
+                pt.SetPixel(MAP_PIXEL_TYPE::AIR);
+                SetPixelColor(x, y, existingColor);
+            }
+            else if (shouldSimulate && !IsPixelOOB(x, y)) {
+                u32 checkX = std::clamp<u32>(x, HOTSPOT_RANGE+1, m_pixelsX-HOTSPOT_RANGE-1);
+                u32 checkY = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
+                CheckVolatileStaticPixelsHotspot(checkX, checkY);
+            }
         }
     }
 }

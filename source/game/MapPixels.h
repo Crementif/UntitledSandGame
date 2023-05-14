@@ -307,3 +307,4 @@ public:
 MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c);
 // format: RRGGBBAA
 u32 _GetColorFromPixelType(PixelType& pixelType);
+u32 _CalculateDimColor(u32 color, float dimFactor);
