@@ -69,7 +69,8 @@ void SimulateMaterial(Map* map, std::vector<T>& pixels)
 
 }
 
-#define HOTSPOT_RANGE   16
+#define HOTSPOT_ATTEMPTS    ((u32)450*1.5)
+#define HOTSPOT_RANGE       ((u32)16)
 
 // check a small rectangle area for pixels that might need reanimation
 bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
@@ -96,8 +97,12 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
         }
         else if(mat == MAP_PIXEL_TYPE::LAVA)
         {
-            if(!GetPixelNoBoundsCheck(px - 1, py+1).IsFilled() || !GetPixelNoBoundsCheck(px, py+1).IsFilled() || !GetPixelNoBoundsCheck(px + 1, py+1).IsFilled())
+            if(!GetPixelNoBoundsCheck(px-1, py+1).IsFilled() || !GetPixelNoBoundsCheck(px, py+1).IsFilled() || !GetPixelNoBoundsCheck(px+1, py+1).IsFilled())
             {
+                hasActivity = true;
+                ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, px, py);
+            }
+            else if (!GetPixelNoBoundsCheck(px-1, py).IsFilled() || !GetPixelNoBoundsCheck(px+1, py).IsFilled()) {
                 hasActivity = true;
                 ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, px, py);
             }
@@ -108,8 +113,8 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
 
 void Map::CheckStaticPixels()
 {
-    u32 boundX = m_pixelsX - 8;
-    u32 boundY = m_pixelsY - 8;
+    u32 boundX = m_pixelsX - (HOTSPOT_RANGE/2);
+    u32 boundY = m_pixelsY - (HOTSPOT_RANGE/2);
 
     auto ClampHotspotCoords = [this](u32& x, u32& y)
     {
@@ -117,14 +122,14 @@ void Map::CheckStaticPixels()
         y = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
     };
 
-    for(u32 i=0; i<450; i++)
+    for(u32 i=0; i<HOTSPOT_ATTEMPTS; i++)
     {
         u32 x = 4 + (this->GetRNGNumber() % boundX);
         u32 y = 4 + (this->GetRNGNumber() % boundY);
         PixelType& pixelType = GetPixelNoBoundsCheck(x, y);
-        if(pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::SAND)
+        if (pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::SAND)
         {
-            if(!GetPixelNoBoundsCheck(x, y+1).IsFilled())
+            if (!GetPixelNoBoundsCheck(x, y+1).IsFilled())
             {
                 // create hotspot
                 u32 hotspotX = x, hotspotY = y;
@@ -132,9 +137,9 @@ void Map::CheckStaticPixels()
                 m_volatilityHotspots.emplace_back(x, y);
             }
         }
-        else if(pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::LAVA)
+        else if (pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::LAVA)
         {
-            if(!GetPixelNoBoundsCheck(x, y+1).IsFilled())
+            if (!GetPixelNoBoundsCheck(x, y+1).IsFilled())
             {
                 u32 hotspotX = x, hotspotY = y;
                 ClampHotspotCoords(hotspotX, hotspotY);
@@ -148,7 +153,7 @@ void Map::CheckStaticPixels()
     {
         if( CheckVolatileStaticPixelsHotspot(hotspotIt->x, hotspotIt->y) )
         {
-            hotspotIt->ttl = 200;
+            hotspotIt->ttl = 150;
         }
         else
         {
@@ -182,6 +187,7 @@ void Map::SimulateTick()
 
     SimulateFlungPixels();
 
+    g_debugStrings.emplace_back("Simulation Tick: " + std::to_string(GetMillisecondTimestamp() - startTime) + "ms");
     m_simulationTick++;
 }
 

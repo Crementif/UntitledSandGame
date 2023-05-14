@@ -173,7 +173,7 @@ public:
             m_moveDelay--;
             return true;
         }
-        m_moveDelay = 4;
+        m_moveDelay = 6;
 
         idleTime++;
 

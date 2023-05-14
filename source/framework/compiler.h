@@ -18,6 +18,7 @@ static inline bool GLSL_Init()
     if (s_glslCompilerModule != nullptr)
         return false;
 
+    // OSGetSystemMode() returns 1 on the Wii U, but 0 on Cemu (wrong implementation). Use that here to use load from Cemu's cafeLibs folder.
     OSDynLoad_Error r = OSDynLoad_Acquire(OSGetSystemMode() == 0 ? "glslcompiler" : "~/wiiu/libs/glslcompiler.rpl", &s_glslCompilerModule);
     OSReport("GLSLCompiler_Init: r = %d\n", r);
     if (r != OS_DYNLOAD_OK)
