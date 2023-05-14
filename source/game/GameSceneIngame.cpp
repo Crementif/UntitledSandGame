@@ -94,6 +94,11 @@ void GameSceneIngame::DrawHUD() {
         Render::RenderSpritePortionScreenRelative(&m_heartSprite, 20+(i*(m_heartSprite.GetWidth()+20)), 20, 0, 64*(heartsAnimationTicks/5), 64, 64);
     }
 
+    Render::RenderSpriteScreenRelative(&m_itemBackdropSprite, 20, 20+64+20, 64, 64);
+    if (m_selfPlayer->GetAbility() == GameClient::GAME_ABILITY::LANDMINE) {
+        Render::RenderSpritePortionScreenRelative(&m_itemLandmineSprite, 20+14, 20+64+20+(64/2)-10, 36, 0, 36, 28);
+    }
+
     if (pressedStart())
         showDebugInfo = !showDebugInfo;
 
