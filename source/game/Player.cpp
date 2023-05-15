@@ -103,13 +103,18 @@ Vector2f Player::GetPosition()
 void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2f leftStick)
 {
     // bomb placing (temporary)
-    if (buttonState.buttonB.changedState && buttonState.buttonB.isDown && m_ability == GameClient::GAME_ABILITY::LANDMINE) {
-        Vector2f slightlyAbove = m_pos;
-        slightlyAbove.y -= 60.0f;
+    if (buttonState.buttonB.changedState && buttonState.buttonB.isDown) {
+        if (m_ability == GameClient::GAME_ABILITY::LANDMINE) {
+            Vector2f slightlyAbove = m_pos;
+            slightlyAbove.y -= 20.0f;
 
-        m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::LANDMINE, {slightlyAbove.x, slightlyAbove.y}, {0.0f, 0.0f});
-        GiveAbility(GameClient::GAME_ABILITY::NONE);
-        //newLandmine->AddVelocity(0.5f, -1.0f);
+            m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::LANDMINE, {slightlyAbove.x, slightlyAbove.y}, {0.0f, 0.0f});
+            GiveAbility(GameClient::GAME_ABILITY::NONE);
+        }
+        else if (m_ability == GameClient::GAME_ABILITY::TURBO_DRILL) {
+            m_turboBoost = OSGetTime() + OSSecondsToTicks(25);
+            GiveAbility(GameClient::GAME_ABILITY::NONE);
+        }
     }
 
     // jumping
@@ -256,7 +261,7 @@ void Player::Update(float timestep)
         {
             m_moveAnimRot -= M_PI_4/10.0f;
             if(m_speed.x > -0.4)
-                m_speed.x -= 0.15f;
+                m_speed.x -= (IsTurboBoosting() ? 0.4f : 0.15f);
 
             if (m_moveAnimRot <= 0.01)
                 m_moveAnimRot = M_TWOPI;
@@ -265,7 +270,7 @@ void Player::Update(float timestep)
         {
             m_moveAnimRot += M_PI_4/10.0f;
             if(m_speed.x < 0.4)
-                m_speed.x += 0.15f;
+                m_speed.x += (IsTurboBoosting() ? 0.4f : 0.15f);
             if (m_moveAnimRot >= M_TWOPI)
                 m_moveAnimRot = 0.0;
         }
@@ -325,7 +330,7 @@ void Player::Update(float timestep)
 
 void Player::Update_DrillMode(float timestep)
 {
-    m_speed = Vector2f(0.4f, 0.0f).Rotate(m_drillAngle);
+    m_speed = Vector2f((IsTurboBoosting() ? 1.0f : 0.4f), 0.0f).Rotate(m_drillAngle);
     Vector2f newPos = m_pos + m_speed;
 
     Map* map = m_parent->GetMap();
@@ -343,7 +348,7 @@ void Player::Update_DrillMode(float timestep)
     else
         m_speed = m_speed * 0.9f;
 
-    m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + 1;
+    m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + (IsTurboBoosting() ? 3 : 1);
 }
 
 void Player::Update_SpectatingMode(float timestep)

@@ -14,10 +14,11 @@ public:
     enum class GAME_ABILITY : u32 {
         NONE = 0,
         LANDMINE = 1,
-        BOMB = 2,
-        TURBO_DRILL = 3,
+        TURBO_DRILL = 2,
+        BOMB = 3,
         LAVA = 4,
-        DEATH = 5
+        JETPACK = 5,
+        DEATH = 6 // special non-collectible ability for the explosion when a player dies
     };
 
     struct GameSessionInfo

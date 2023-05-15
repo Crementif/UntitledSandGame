@@ -32,6 +32,7 @@ private:
     Sprite m_heartSprite{"/tex/heart.tga", true};
     Sprite m_itemBackdropSprite{"/tex/item_background.tga", true};
     Sprite m_itemLandmineSprite{"/tex/landmine.tga", true};
+    Sprite m_itemTurboDrillSprite{"/tex/drill_boost.tga", true};
 
     // player
     class Player* m_selfPlayer{};

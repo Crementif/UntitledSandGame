@@ -24,8 +24,32 @@ void Collectable::Update(float timestep) {
         m_hoverAnimDirUp = false;
 }
 
+constexpr s32 min = 1, max = 2;
+constexpr s32 range = max - min + 1;
+
+static std::unordered_map<u32, u8> counts;
+static s32 lastRepeatedValue = -1;
 void Collectable::Pickup(Player *player) {
     m_hidden = true;
     m_respawnTime = OSGetTime() + OSSecondsToTicks(45);
-    player->GiveAbility(GameClient::GAME_ABILITY::LANDMINE);
+
+    auto pickRandomAbility = [&]() {
+        s32 value;
+        do {
+            value = min + std::rand() % range;
+        } while (counts[value] == 3 && value == lastRepeatedValue);
+
+        if (value != lastRepeatedValue && lastRepeatedValue != -1) {
+            counts[lastRepeatedValue] = 0;
+            lastRepeatedValue = -1;
+        }
+
+        if (counts[value] == 2) {
+            lastRepeatedValue = value;
+        }
+
+        counts[value]++;
+        return (GameClient::GAME_ABILITY)value;
+    };
+    player->GiveAbility(pickRandomAbility());
 }

@@ -98,6 +98,9 @@ void GameSceneIngame::DrawHUD() {
     if (m_selfPlayer->GetAbility() == GameClient::GAME_ABILITY::LANDMINE) {
         Render::RenderSpritePortionScreenRelative(&m_itemLandmineSprite, 20+14, 20+64+20+(64/2)-10, 36, 0, 36, 28);
     }
+    else if (m_selfPlayer->GetAbility() == GameClient::GAME_ABILITY::TURBO_DRILL) {
+        Render::RenderSpriteScreenRelative(&m_itemTurboDrillSprite, 20+16, 20+64+20+(64/2)-9, 32, 32);
+    }
 
     if (pressedStart())
         showDebugInfo = !showDebugInfo;

@@ -52,6 +52,7 @@ public:
     }
     bool IsInvincible() const { return m_invincibility >= OSGetTime(); }
     bool IsSpectating() const { return m_spectating; }
+    bool IsTurboBoosting() const { return m_turboBoost >= OSGetTime(); }
     void ChangeToSpectator();
     GameClient::GAME_ABILITY GetAbility() const { return m_ability; }
     void GiveAbility(GameClient::GAME_ABILITY ability) { m_ability = ability; }
@@ -91,6 +92,7 @@ private:
     u32 m_spectatingPlayerIdx = 0;
     Player* m_spectatingPlayer = nullptr;
     GameClient::GAME_ABILITY m_ability = GameClient::GAME_ABILITY::NONE;
+    OSTime m_turboBoost = 0;
 
     f32 m_moveAnimRot = 0;
 
