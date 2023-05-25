@@ -1,0 +1,22 @@
+#version 450
+layout(location = 0) noperspective in vec2 attr_uv;
+layout(location = 0) out vec4 out_pixel0;
+layout(binding=0) uniform sampler2D tex_base;
+layout(binding=0) uniform sampler2D tex_pixelColorLookup;
+
+void main()
+{
+	//ivec2 pixelMapSize = textureSize(tex_base, 0);
+	//vec2 pixelMapPixelSize = vec2(1.0) / vec2(pixelMapSize);
+
+	vec2 pixelMapSample = texture(tex_base, attr_uv).rg;
+	int pixelType = int(pixelMapSample.r * 255.0f + 0.5);
+	if(pixelType == 0)
+		discard; // dont draw air pixels -> Even if its air, it might be influenced by glow effects
+	
+	int pixelSeed = int(pixelMapSample.g * 255.0f + 0.5);
+	
+	vec4 pixelColor = texelFetch(tex_pixelColorLookup, ivec2(pixelSeed, pixelType), 0);
+	
+	out_pixel0 = pixelColor;
+}

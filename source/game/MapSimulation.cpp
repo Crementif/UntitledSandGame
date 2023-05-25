@@ -20,7 +20,7 @@ void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
             // for non-dynamic pixels we just place them as-is
             //PixelType& pt = GetPixel(x, y);
             //if(!pt.IsFilled())
-            //    pt.SetPixel(materialType);
+            //    pt.SetPixelRGBA8888(materialType);
             // -> bad because static pixels tend to get stuck in the air on stuff like smoke or other temporary/moving pixels
             break;
     }

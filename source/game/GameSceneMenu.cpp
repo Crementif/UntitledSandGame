@@ -142,7 +142,7 @@ void GameSceneMenu::HandleInput() {
     }
 }
 
-void GameSceneMenu::DrawBackground() {
+void GameSceneMenu::SimulateAndDrawLevel() {
     if ((this->GetMap()->GetRNGNumber()&0x7) < 1)
         this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 430, 2);
 
@@ -166,7 +166,8 @@ void GameSceneMenu::DrawButtons() {
 
 void GameSceneMenu::Draw() {
     Render::SetCameraPosition(Vector2f(2, 2) * MAP_PIXEL_ZOOM);
-    this->DrawBackground();
+    this->SimulateAndDrawLevel();
+    Render::SetStateForSpriteRendering();
     this->DrawButtons();
 
     if (m_scoreboard == MenuScoreboard::WON) {

@@ -47,6 +47,9 @@ void WindowExit();
 GX2ColorBuffer* WindowGetColorBuffer();
 GX2DepthBuffer* WindowGetDepthBuffer();
 
+s32 WindowGetWidth();
+s32 WindowGetHeight();
+
 #ifdef __cplusplus
 }
 #endif // __cplusplus

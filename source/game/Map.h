@@ -123,6 +123,7 @@ public:
     MapCell(class Map* map, u32 cellX, u32 cellY);
     void LoadCellFromTGA(class TGALoader& tgaLoader);
 
+    void FlushDrawCache();
     void DrawCell();
 
     void RefreshCellTexture();
@@ -203,8 +204,11 @@ public:
         return (float)v / 65535.0f;
     }
 
-    u32 GetPixelWidth() const { return m_pixelsX; };
-    u32 GetPixelHeight() const { return m_pixelsY; };
+    u32 GetPixelWidth() const { return m_pixelsX; }
+    u32 GetPixelHeight() const { return m_pixelsY; }
+    u32 GetCellsX() const { return m_cellsX; }
+    u32 GetCellsY() const { return m_cellsY; }
+    MapCell* GetCellPtrArray() { return m_cells.data(); }
 
 private:
     void Init(uint32_t width, uint32_t height);
@@ -220,8 +224,6 @@ private:
     u32 m_pixelsX;
     u32 m_pixelsY;
     std::vector<MapCell> m_cells;
-
-    Sprite m_backgroundSprite{"/tex/background_tile_a.tga", false};
 
     std::vector<Vector2i> m_playerSpawnpoints;
     std::vector<Vector2i> m_collectablePoints;

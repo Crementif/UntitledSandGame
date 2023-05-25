@@ -276,6 +276,7 @@ void GameSceneIngame::Draw()
     DrawBackground();
 
     this->GetMap()->Draw();
+    Render::SetStateForSpriteRendering(); // restore sprite drawing state
 
     DoDraws();
     DrawHUD();

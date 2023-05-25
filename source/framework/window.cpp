@@ -446,3 +446,13 @@ GX2DepthBuffer* WindowGetDepthBuffer()
     return &gDepthBuffer;
 }
 
+s32 WindowGetWidth()
+{
+    return gWindowWidth;
+}
+
+s32 WindowGetHeight()
+{
+    return gWindowHeight;
+}
+

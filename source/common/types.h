@@ -134,6 +134,16 @@ struct Vector2f
     f32 y;
 };
 
+struct Rect2D
+{
+    Rect2D(s32 x, s32 y, s32 width, s32 height) : x(x), y(y), width(width), height(height) {}
+
+    s32 x;
+    s32 y;
+    s32 width;
+    s32 height;
+};
+
 struct AABB
 {
     AABB(Vector2f pos, Vector2f scale) : pos(pos), scale(scale) {}

@@ -28,7 +28,7 @@ public:
     void Draw() override;
 
 private:
-    void DrawBackground();
+    void SimulateAndDrawLevel();
     void DrawButtons();
 
     TextButton* m_sandbox_btn;

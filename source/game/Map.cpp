@@ -19,24 +19,8 @@ MAP_PIXEL_TYPE _GeneratePixelAtWorldPos(s32 x, s32 y)
 
 MapCell::MapCell(Map* map, u32 cellX, u32 cellY) : m_cellX(cellX), m_cellY(cellY), m_posX(cellX * MAP_CELL_WIDTH), m_posY(cellY * MAP_CELL_HEIGHT), m_map(map)
 {
-    m_cellSprite = new Sprite(MAP_CELL_WIDTH, MAP_CELL_HEIGHT, true);
+    m_cellSprite = new Sprite(MAP_CELL_WIDTH, MAP_CELL_HEIGHT, false, E_TEXFORMAT::RG88_UNORM);
     m_cellSprite->SetupSampler(false);
-
-    /*
-    s32 py = m_posY;
-    PixelType* pOut = m_pixelArray;
-    for (s32 y = 0; y < MAP_CELL_HEIGHT; y++)
-    {
-        s32 px = m_posX;
-        for (s32 x = 0; x < MAP_CELL_WIDTH; x++)
-        {
-            pOut->SetPixel(_GeneratePixelAtWorldPos(px, py));
-
-            pOut++;
-            px++;
-        }
-        py++;
-    }*/
 }
 
 void MapCell::LoadCellFromTGA(class TGALoader& tgaLoader)
@@ -81,34 +65,6 @@ void MapCell::LoadCellFromTGA(class TGALoader& tgaLoader)
 PixelType& MapCell::GetPixelFromCellCoords(s32 x, s32 y)
 {
     return m_pixelArray[x + y*MAP_CELL_WIDTH];
-}
-
-void MapCell::DrawCell()
-{
-    m_cellSprite->FlushCache();
-    // workaround necessary for Cemu
-    // Cemu texture invalidation heuristics may not always catch pixel updates
-    // so we modify the top left pixel (usually guaranteed to be checked) to coerce an invalidation
-    u8* pixData = (u8*)m_cellSprite->GetTexture()->surface.image;
-    pixData[3] ^= 1;
-
-    Render::RenderSprite(m_cellSprite, m_posX * MAP_PIXEL_ZOOM, m_posY * MAP_PIXEL_ZOOM, MAP_CELL_WIDTH * MAP_PIXEL_ZOOM, MAP_CELL_HEIGHT * MAP_PIXEL_ZOOM);
-}
-
-void MapCell::RefreshCellTexture()
-{
-    s32 idx;
-    PixelType* pTypeIn = m_pixelArray;
-    for(u32 y=0; y<MAP_CELL_HEIGHT; y++)
-    {
-        for(u32 x=0; x<MAP_CELL_WIDTH; x++)
-        {
-            m_cellSprite->SetPixel(x, y, _GetColorFromPixelType(*pTypeIn));
-            pTypeIn++;
-            idx++;
-        }
-    }
-    m_cellSprite->FlushCache();
 }
 
 void Map::Init(uint32_t width, uint32_t height)
@@ -168,7 +124,7 @@ void Map::SetPixelColor(s32 x, s32 y, u32 c)
     s32 relX = x & 0x3F;
     s32 cellY = y >> 6;
     s32 relY = y & 0x3F;
-    m_cells[cellX + cellY * m_cellsX].m_cellSprite->SetPixel(relX, relY, c);
+    m_cells[cellX + cellY * m_cellsX].m_cellSprite->SetPixelRG88(relX, relY, c);
 }
 
 static_assert(MAP_CELL_WIDTH == 64); // hardcoded in GetPixel()
@@ -213,46 +169,6 @@ PixelType& Map::GetPixelNoBoundsCheck(s32 x, s32 y)
 void Map::Update()
 {
 
-}
-
-void Map::Draw()
-{
-    Vector2f camPos = Render::GetCameraPosition();
-    s32 bgTileOffsetX = ((s32)camPos.x-299) / 300;
-    s32 bgTileOffsetY = ((s32)camPos.y-299) / 300;
-
-    for(s32 y=0; y<6; y++)
-    {
-        for(s32 x=0; x<12; x++)
-        {
-            Render::RenderSprite(&m_backgroundSprite, (bgTileOffsetX + x) * 300, (bgTileOffsetY + y) * 300, m_backgroundSprite.GetWidth()*MAP_PIXEL_ZOOM, m_backgroundSprite.GetHeight()*MAP_PIXEL_ZOOM);
-        }
-    }
-
-    // get visible area
-    Vector2f camTopLeft = camPos - Vector2f(1.0f, 1.0f);
-    camTopLeft = camTopLeft / MAP_PIXEL_ZOOM;
-    Vector2i screenSize = Render::GetScreenSize();
-    Vector2f camBottomRight = camPos + Vector2f((f32)screenSize.x + 1.0f, (f32)screenSize.y + 1.0f);
-    camBottomRight = camBottomRight / MAP_PIXEL_ZOOM;
-
-    s32 cx1 = (s32)camTopLeft.x / MAP_CELL_WIDTH;
-    s32 cy1 = (s32)camTopLeft.y / MAP_CELL_HEIGHT;
-    s32 cx2 = ((s32)camBottomRight.x + screenSize.x +  MAP_CELL_WIDTH) / MAP_CELL_WIDTH;
-    s32 cy2 = ((s32)camBottomRight.y + screenSize.y + MAP_CELL_HEIGHT) / MAP_CELL_HEIGHT;
-
-    cx1 = std::clamp<s32>(cx1, 0, m_cellsX-1);
-    cy1 = std::clamp<s32>(cy1, 0, m_cellsY-1);
-    cx2 = std::clamp<s32>(cx2, 0, m_cellsX-1);
-    cy2 = std::clamp<s32>(cy2, 0, m_cellsY-1);
-
-    for(s32 y=cy1; y<=cy2; y++)
-    {
-        for(s32 x=cx1; x<=cx2; x++)
-        {
-            m_cells[x + y * m_cellsX].DrawCell();
-        }
-    }
 }
 
 MAP_PIXEL_TYPE PixelType::GetPixelType() const

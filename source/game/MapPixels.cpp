@@ -17,9 +17,53 @@ MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c)
     return MAP_PIXEL_TYPE::AIR;
 }
 
-// format: RRGGBBAA
+// format: 0xRRGGBBAA
 u32 _GetColorFromPixelType(PixelType& pixelType)
 {
+    auto matType = pixelType.GetPixelType();
+    u32 type = (u8)matType;
+
+    u32 seed = 0;
+    switch(matType)
+    {
+        case MAP_PIXEL_TYPE::AIR:
+            break;
+        case MAP_PIXEL_TYPE::SAND:
+        {
+            seed = rand()%2;
+            break;
+        }
+        case MAP_PIXEL_TYPE::SOIL:
+        {
+            seed = rand()%2;
+            break;
+        }
+        case MAP_PIXEL_TYPE::GRASS:
+        {
+            seed = rand()%2;
+            break;
+        }
+        case MAP_PIXEL_TYPE::LAVA:
+        {
+            seed = rand()%3;
+            break;
+        }
+        case MAP_PIXEL_TYPE::ROCK:
+        {
+            seed = rand()%9;
+            break;
+        }
+        case MAP_PIXEL_TYPE::SMOKE:
+        {
+            seed = rand()%2;
+            break;
+        }
+        case MAP_PIXEL_TYPE::_COUNT:
+            break;
+    }
+    return (type << 24) | (seed << 16);
+
+    /*
     auto matType = pixelType.GetPixelType();
     switch(matType)
     {
@@ -77,7 +121,7 @@ u32 _GetColorFromPixelType(PixelType& pixelType)
         case MAP_PIXEL_TYPE::_COUNT:
             break;
     }
-    return 0x12345678;
+    return 0x12345678;*/
 }
 
 u32 _CalculateDimColor(u32 color, float dimFactor) {

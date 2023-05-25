@@ -332,6 +332,8 @@ void Player::Update_DrillMode(float timestep)
 {
     m_speed = Vector2f((IsTurboBoosting() ? 1.0f : 0.4f), 0.0f).Rotate(m_drillAngle);
     Vector2f newPos = m_pos + m_speed;
+    //Vector2f newPos = m_pos + m_speed * 0.1f;
+
 
     Map* map = m_parent->GetMap();
     newPos.x = std::clamp(newPos.x, 8.0f, (f32)map->GetPixelWidth() - 8.0f);
