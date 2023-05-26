@@ -7,9 +7,13 @@
 #include "GameSceneIngame.h"
 #include "GameServer.h"
 #include "GameClient.h"
+#include "../framework/audio.h"
 
 GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboard(scoreboard), m_lastInput(OSGetTick()) {
     this->RegisterMap(new Map("menu.tga", 1337));
+
+    m_selectAudio = new Audio("/sfx/select.wav");
+    m_startAudio = new Audio("/sfx/start.wav");
 
     m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
     m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, "Host");
@@ -34,6 +38,9 @@ GameSceneMenu::~GameSceneMenu() {
     delete m_host_btn;
     delete m_join_btn;
 
+    delete m_selectAudio;
+    delete m_startAudio;
+
     nn::swkbd::Destroy();
     FSDelClient(m_fsClient, FS_ERROR_FLAG_NONE);
     MEMFreeToDefaultHeap(m_fsClient);
@@ -48,10 +55,14 @@ void GameSceneMenu::HandleInput() {
     if (navigatedUp() && m_selectedButton > 0 && m_lastInput < OSGetTick()) {
         m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
         m_selectedButton--;
+        if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
+        else m_selectAudio->Play();
     }
     else if (navigatedDown() && m_selectedButton < 2 && m_lastInput < OSGetTick()) {
         m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
         m_selectedButton++;
+        if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
+        else m_selectAudio->Play();
     }
 
     vpadUpdateSWKBD();

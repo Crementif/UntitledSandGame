@@ -35,6 +35,9 @@ private:
     TextButton* m_host_btn;
     TextButton* m_join_btn;
 
+    class Audio* m_selectAudio;
+    class Audio* m_startAudio;
+
     FSClient* m_fsClient;
 
     MenuState m_state = MenuState::NORMAL;

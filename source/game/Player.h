@@ -35,21 +35,7 @@ public:
     s32 GetPlayerHeight() const;
 
     u32 GetPlayerHealth() const { return m_health; }
-    u32 TakeDamage(u8 damage = 1) {
-        if (!this->IsInvincible()) {
-            if (m_health > damage)
-                m_health -= damage;
-            else
-                m_health = 0;
-
-            if (m_health == 0) {
-                m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::DEATH, GetPosition(), Vector2f(0.0f, 0.0f));
-                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
-            }
-            m_invincibility = OSGetTime() + OSSecondsToTicks(8);
-        }
-        return m_health;
-    }
+    u32 TakeDamage(u8 damage = 1);
     bool IsInvincible() const { return m_invincibility >= OSGetTime(); }
     bool IsSpectating() const { return m_spectating; }
     bool IsTurboBoosting() const { return m_turboBoost >= OSGetTime(); }
@@ -104,4 +90,10 @@ private:
     // drilling action
     f32 m_drillingDur{0.0f};
     //uint8_t m_isDrilling{}; // slowly ramps up
+
+    // assets
+    class Audio* m_teleportAudio;
+    class Audio* m_deathAudio;
+    class Audio* m_hitAudio;
+    class Audio* m_drillAudio;
 };

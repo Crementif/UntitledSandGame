@@ -5,6 +5,7 @@
 
 #include "../framework/navigation.h"
 #include "GameSceneMenu.h"
+#include "../framework/audio.h"
 
 Sprite* s_tankBodySprite{nullptr};
 Sprite* s_tankDrill0Sprite{nullptr};
@@ -27,10 +28,19 @@ Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(par
         s_tankDrill2Sprite = new Sprite("tex/tank_drill2.tga", true);
         s_tankWheelSprite = new Sprite("tex/tank_wheel.tga", true);
     }
+
+    m_teleportAudio = new Audio("/sfx/teleport.wav");
+    m_deathAudio = new Audio("/sfx/death_explosion.wav");
+    m_hitAudio = new Audio("/sfx/hit.wav");
+    m_drillAudio = new Audio("/sfx/drill.wav");
 }
 
 Player::~Player()
 {
+    delete m_teleportAudio;
+    delete m_deathAudio;
+    delete m_hitAudio;
+    delete m_drillAudio;
 }
 
 // width/height in world pixels
@@ -174,6 +184,9 @@ void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState,
         f32 targetAngle = atan2(leftStick.x, leftStick.y) - M_PI_2;
         m_drillAngle = _MoveAngleTowardsTarget(m_drillAngle, targetAngle, 0.017f);
     }
+
+    if (m_drillAudio->GetState() == Audio::StateEnum::PLAYING) m_drillAudio->Reset();
+    else m_drillAudio->Play();
 }
 
 void Player::HandleLocalPlayerControl_SpectatingMode(struct ButtonState& buttonState, Vector2f leftStick) {
@@ -461,4 +474,25 @@ bool Player::FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, boo
 void Player::ChangeToSpectator() {
     m_health = 0;
     m_spectating = true;
+}
+
+u32 Player::TakeDamage(u8 damage) {
+    if (!this->IsInvincible()) {
+        if (m_health > damage) {
+            m_health -= damage;
+            if (m_health != 0) {
+                m_hitAudio->Play();
+            }
+        }
+        else
+            m_health = 0;
+
+        if (m_health == 0) {
+            m_deathAudio->Play();
+            m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::DEATH, GetPosition(), Vector2f(0.0f, 0.0f));
+            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
+        }
+        m_invincibility = OSGetTime() + OSSecondsToTicks(8);
+    }
+    return m_health;
 }

@@ -2,6 +2,7 @@
 #include "MapPixels.h"
 #include "GameSceneIngame.h"
 #include "MapFlungPixels.h"
+#include "../framework/audio.h"
 
 void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
 {
@@ -210,6 +211,9 @@ void Map::HandleSynchronizedEvents()
                 HandleSynchronizedEvent_Drilling(event.action_drill.playerId, event.action_drill.pos);
                 break;
             case GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION:
+                // todo: find a way to properly clean up a sound... we want to have multiple explosions at the same time probably?
+                // todo: also make audio volume depend on distance to explosion. Same for all other audio bytes probably!
+                (*m_explosionAudios.emplace_back(std::make_unique<Audio*>(new Audio("/sfx/explosion.wav"))))->Play();
                 HandleSynchronizedEvent_Explosion(event.action_explosion.playerId, event.action_explosion.pos, event.action_explosion.radius);
                 break;
         }
