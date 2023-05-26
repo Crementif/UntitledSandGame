@@ -9,6 +9,7 @@
 #include "GameServer.h"
 #include "GameClient.h"
 #include "Landmine.h"
+#include "Missile.h"
 #include "Collectable.h"
 #include "MapPixels.h"
 #include "GameSceneMenu.h"
@@ -101,6 +102,9 @@ void GameSceneIngame::DrawHUD() {
     else if (m_selfPlayer->GetAbility() == GameClient::GAME_ABILITY::TURBO_DRILL) {
         Render::RenderSpriteScreenRelative(&m_itemTurboDrillSprite, 20+16, 20+64+20+(64/2)-9, 32, 32);
     }
+    else if (m_selfPlayer->GetAbility() == GameClient::GAME_ABILITY::MISSILE) {
+        Render::RenderSpriteScreenRelative(&m_missileSprite, 20+16, 20+64+20+(64/2)-9, 32, 32);
+    }
 
     if (pressedStart())
         showDebugInfo = !showDebugInfo;
@@ -162,6 +166,8 @@ void GameSceneIngame::UpdateMultiplayer()
     {
         if (event.ability == GameClient::GAME_ABILITY::LANDMINE)
             new Landmine(this, event.playerId, event.pos.x, event.pos.y);
+        else if (event.ability == GameClient::GAME_ABILITY::MISSILE)
+            new Missile(this, event.playerId, event.pos.x, event.pos.y, event.velocity.x, event.velocity.y);
         else if (event.ability == GameClient::GAME_ABILITY::DEATH) {
             this->GetPlayerById(event.playerId)->ChangeToSpectator();
 

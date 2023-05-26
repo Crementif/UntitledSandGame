@@ -6,6 +6,7 @@
 #include "Landmine.h"
 #include "TextButton.h"
 #include "Collectable.h"
+#include "Missile.h"
 
 #include "../framework/render.h"
 #include "../framework/navigation.h"
@@ -17,6 +18,10 @@ GameScene* GameScene::sActiveScene = nullptr;
 Sprite* TextButton::s_buttonSelected = nullptr;
 Sprite* TextButton::s_buttonBackdrop = nullptr;
 Sprite* Landmine::s_landmineSprite = nullptr;
+Sprite* Missile::s_missile0Sprite = nullptr;
+Sprite* Missile::s_missile1Sprite = nullptr;
+Sprite* Missile::s_missile2Sprite = nullptr;
+Sprite* Missile::s_missile3Sprite = nullptr;
 Sprite* Collectable::s_collectableSprite = nullptr;
 
 #include <chrono>
@@ -33,6 +38,10 @@ int main()
     TextButton::s_buttonSelected = new Sprite("/tex/button_selected.tga", true);
     TextButton::s_buttonBackdrop = new Sprite("/tex/button_backdrop.tga", true);
     Landmine::s_landmineSprite = new Sprite("/tex/landmine.tga", true);
+    Missile::s_missile0Sprite = new Sprite("/tex/missile0.tga", true);
+    Missile::s_missile1Sprite = new Sprite("/tex/missile1.tga", true);
+    Missile::s_missile2Sprite = new Sprite("/tex/missile2.tga", true);
+    Missile::s_missile3Sprite = new Sprite("/tex/missile3.tga", true);
     Collectable::s_collectableSprite = new Sprite("/tex/ammo.tga", true);
 
     // set polygon mode

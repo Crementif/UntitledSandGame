@@ -103,6 +103,11 @@ struct Vector2f
         return sqrt(x*x + y*y);
     }
 
+    f32 AngleTowards(const Vector2f& rhs) const
+    {
+        return atan2f(rhs.y - this->y, rhs.x - this->x);
+    }
+
     Vector2f GetNormalized()
     {
         f32 s = 1.0f / sqrt(LengthSquare());

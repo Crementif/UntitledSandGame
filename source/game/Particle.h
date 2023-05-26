@@ -77,7 +77,6 @@ private:
                 }
             }
         }*/
-
     };
 
     float m_force = 0.0f;
