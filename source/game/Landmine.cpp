@@ -13,7 +13,7 @@ void Landmine::Update(float timestep) {
     this->SimulatePhysics();
 
     auto triggerExplosion = [this](Player* player) {
-        new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
+        new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.8f, 2, 20.0f, 20.0f);
 
         if (!m_parent->IsSingleplayer())
             player->TakeDamage();
@@ -21,7 +21,7 @@ void Landmine::Update(float timestep) {
         m_parent->QueueUnregisterObject(this);
         // only send explosion command if the owner of the landmine detects it
         if (player->IsSelf() && player->GetPlayerId() == m_owner) {
-            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
+            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 50.0f, 0.0f);
         }
     };
 

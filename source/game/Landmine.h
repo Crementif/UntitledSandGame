@@ -18,7 +18,7 @@ private:
     u32 m_owner = 0;
 
     u32 m_animationIdx = 1;
-    void Draw(u32 layerIndex) override;;
+    void Draw(u32 layerIndex) override;
     void Update(float timestep) override;
-    Vector2f GetPosition() override;;
+    Vector2f GetPosition() override;
 };
