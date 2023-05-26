@@ -108,17 +108,17 @@ void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2
             slightlyAbove.y -= 20.0f;
 
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::LANDMINE, {slightlyAbove.x, slightlyAbove.y}, {0.0f, 0.0f});
-            GiveAbility(GameClient::GAME_ABILITY::NONE);
+            GiveAbility(m_parent->isDebugEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::LANDMINE : GameClient::GAME_ABILITY::NONE);
         }
         else if (m_ability == GameClient::GAME_ABILITY::MISSILE) {
             Vector2f shootPosition = m_parent->GetPlayer()->GetPosition() + Vector2f(0.0f, -15.0f) + (Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*20.0f);
             Vector2f shootDirection = Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*6.0f;
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::MISSILE, shootPosition, shootDirection);
-            GiveAbility(GameClient::GAME_ABILITY::MISSILE);
+            GiveAbility(m_parent->isDebugEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::MISSILE : GameClient::GAME_ABILITY::NONE);
         }
         else if (m_ability == GameClient::GAME_ABILITY::TURBO_DRILL) {
             m_turboBoost = OSGetTime() + OSSecondsToTicks(25);
-            GiveAbility(GameClient::GAME_ABILITY::NONE);
+            GiveAbility(m_parent->isDebugEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::TURBO_DRILL : GameClient::GAME_ABILITY::NONE);
         }
     }
 

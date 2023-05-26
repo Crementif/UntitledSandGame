@@ -83,7 +83,6 @@ void GameSceneIngame::SpawnCollectibles() {
     }
 }
 
-bool showDebugInfo = false;
 std::vector<std::string> g_debugStrings;
 
 void GameSceneIngame::DrawHUD() {
@@ -107,9 +106,9 @@ void GameSceneIngame::DrawHUD() {
     }
 
     if (pressedStart())
-        showDebugInfo = !showDebugInfo;
+        m_showDebugInfo = !m_showDebugInfo;
 
-    if (showDebugInfo) {
+    if (m_showDebugInfo) {
         for (u32 i = 0; i < g_debugStrings.size(); i++) {
             Render::RenderText(20, 100 + (i * 16), 0, 0x00, g_debugStrings[i].c_str());
         }

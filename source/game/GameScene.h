@@ -31,6 +31,7 @@ public:
     Player *GetPlayer() const;
     Player *GetPlayerById(PlayerID id) const;
     bool IsSingleplayer() const;
+    bool isDebugEnabled() const { return m_showDebugInfo; }
     GameClient* GetClient() const { return m_gameClient.get(); };
 protected:
     class Player* RegisterPlayer(PlayerID id, f32 playerX, f32 playerY);
@@ -54,4 +55,6 @@ protected:
     std::vector<class Object*> m_drawLayers[NUM_DRAW_LAYERS];
 
     std::vector<class Object*> m_deletionQueue;
+
+    bool m_showDebugInfo = false;
 };
