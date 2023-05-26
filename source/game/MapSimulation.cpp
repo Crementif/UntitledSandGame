@@ -265,6 +265,7 @@ bool _CanMaterialBeFlung(MAP_PIXEL_TYPE mat)
     }
 }
 
+#define EXPLOSION_HOTSPOT_ATTEMPTS 5
 void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius)
 {
     s32 radiusI = (s32)(radius + 0.5f);
@@ -274,18 +275,26 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
     s32 posY = (s32)(pos.y + 0.5f);
     u32 flungCountTracker[(size_t)MAP_PIXEL_TYPE::_COUNT]{}; // keeps track of how many pixels per material need to be flung
 
-    for(s32 y=posY-radiusI; y<=posY+radiusI; y++)
+    for(s32 y=posY-radiusI-1; y<=posY+radiusI+1; y++)
     {
-        for(s32 x=posX-radiusI; x<=posX+radiusI; x++)
+        for(s32 x=posX-radiusI-1; x<=posX+radiusI-1; x++)
         {
             s32 dfx = x - posX;
             s32 dfy = y - posY;
             s32 squareDist = dfx * dfx + dfy * dfy;
-            if(squareDist >= radiusI*radiusI)
+            if(squareDist >= radiusI*radiusI) {
+                if (squareDist <= (radiusI+1)*(radiusI+1) && !IsPixelOOB(x, y)) {
+                    for (uint32_t i=0; i<EXPLOSION_HOTSPOT_ATTEMPTS; i++) {
+                        u32 checkX = std::clamp<u32>(x, HOTSPOT_RANGE+1, m_pixelsX-HOTSPOT_RANGE-1);
+                        u32 checkY = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
+                        CheckVolatileStaticPixelsHotspot(checkX, checkY);
+                    }
+                }
                 continue;
+            }
             if( IsPixelOOB(x, y) )
                 continue;
-            PixelType& pt = GetPixel(x, y);
+            PixelType& pt = GetPixelNoBoundsCheck(x, y);
             MAP_PIXEL_TYPE prevMaterial = pt.GetPixelType();
             pt.SetPixel(MAP_PIXEL_TYPE::AIR);
             SetPixelColor(x, y, _GetColorFromPixelType(pt));
@@ -293,7 +302,7 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
             if((GetRNGNumber()&0xF) < 0x3)
             {
                 SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, x, y);
-                PixelType& pt2 = GetPixel(x, y);
+                PixelType& pt2 = GetPixelNoBoundsCheck(x, y);
                 SetPixelColor(x, y, _GetColorFromPixelType(pt2));
             }
             // decide if the particle should be flung
