@@ -115,6 +115,7 @@ void GameSceneMenu::HandleInput() {
         Vector2f touchPos = Vector2f{isTouchValid ? (f32)screenX : 0.0f, isTouchValid ? (f32)screenY : 0.0f};
         if (m_sandbox_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 0 && pressedOk())) {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
+            m_selectAudio->Play();
 
             this->m_gameServer = std::make_unique<GameServer>();
             this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
@@ -123,12 +124,14 @@ void GameSceneMenu::HandleInput() {
         }
         else if (m_host_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 1 && pressedOk())) {
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
+            m_selectAudio->Play();
 
             this->m_gameServer = std::make_unique<GameServer>();
             this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
         }
         else if (m_join_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 2 && pressedOk())) {
             this->m_state = MenuState::WAIT_FOR_INPUT;
+            m_selectAudio->Play();
 
             nn::swkbd::AppearArg appearArg = {
                 .keyboardArg = {

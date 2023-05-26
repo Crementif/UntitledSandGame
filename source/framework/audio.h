@@ -15,7 +15,6 @@ public:
     ~Audio();
 
     void SetVolume(uint32_t volume);
-    void SetSampleRate(uint32_t sampleRate);
     void Play();
     void Reset();
     void Pause();

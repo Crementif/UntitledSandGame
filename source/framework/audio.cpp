@@ -40,18 +40,6 @@ void Audio::Play() {
         CriticalErrorHandler("Use additional audio objects if you want to play more then one time.");
     }
 
-    // todo: implement check so that a single wav file can only use e.g. 50% of the voices
-//    uint32_t playingVoices = std::count_if(AudioManager::GetInstance().voices.begin(), AudioManager::GetInstance().voices.end(), [](Audio* audio){
-//        if (audio->voiceHandle == nullptr) return false;
-//        AXVoiceBegin(audio->voiceHandle);
-//        bool ret = (bool)AXIsVoiceRunning(audio->voiceHandle);
-//        AXVoiceEnd(audio->voiceHandle);
-//        return ret;
-//    });
-//    if (playingVoices >= ((uint32_t)AXGetMaxVoices()-10)) {
-//        return;
-//    }
-
     if (this->state == StateEnum::PAUSED) {
         this->state = StateEnum::PLAYING;
         AXVoiceBegin(this->voiceHandle);
@@ -83,14 +71,18 @@ void Audio::Play() {
         .dataType = AX_VOICE_FORMAT_LPCM16, // todo: use wav file to determine audio format
         .loopingEnabled = AX_VOICE_LOOP_DISABLED,
         .loopOffset = 0,
-        .endOffset = (uint32_t)this->wavFile->dataBuffer.size(),
+        .endOffset = (uint32_t)this->wavFile->m_dataBuffer.size()/2,
         .currentOffset = 0,
-        .data = (const void *)this->wavFile->dataBuffer.data()
+        .data = (const void *)this->wavFile->m_dataBuffer.data()
     };
     AXSetVoiceOffsets(this->voiceHandle, &this->voiceOffsets);
 
     // todo: don't hardcode 48000
-    this->voiceSource.ratio = (uint32_t)(0x00010000 * ((float)48000 / (float)AXGetInputSamplesPerSec()));
+    this->voiceSource = {
+        .ratio = (uint32_t)(0x00010000 * ((float)48000 / (float)AXGetInputSamplesPerSec())),
+        .currentOffsetFrac = 0,
+        .lastSample = {0, 0, 0, 0}
+    };
     AXSetVoiceSrc(this->voiceHandle, &this->voiceSource);
 
     AXSetVoiceSrcType(this->voiceHandle, AX_VOICE_SRC_TYPE_LINEAR);
