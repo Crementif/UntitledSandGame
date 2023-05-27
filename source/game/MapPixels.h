@@ -119,12 +119,12 @@ public:
             return true;
 
         // try to move either left or right
-        if(!map->GetPixel(x - 1, y+1).IsSolid())
+        if(!map->IsPixelOOB(x-1, y+1) && !map->GetPixelNoBoundsCheck(x - 1, y+1).IsSolid())
         {
             ChangeParticleXY(map, x - 1, y+1);
             return true;
         }
-        if(!map->GetPixel(x + 1, y+1).IsSolid())
+        if(!map->IsPixelOOB(x+1, y+1) && !map->GetPixelNoBoundsCheck(x + 1, y+1).IsSolid())
         {
             ChangeParticleXY(map, x + 1, y+1);
             return true;
@@ -145,21 +145,21 @@ public:
     bool SimulateStep(Map* map) final override
     {
         // try moving down if possible
-        if(!map->GetPixel(x, y+1).IsFilled())
+        if (!map->IsPixelOOB(x, y+1) && !map->GetPixelNoBoundsCheck(x, y+1).IsFilled())
         {
             ChangeParticleXY(map, x, y+1);
             m_xMomentum = -1 + (map->GetRNGNumber()&2);
             m_lavaNoEventTime = 0;
             return true;
         }
-        if(!map->GetPixel(x-1, y+1).IsFilled())
+        if(!map->IsPixelOOB(x-1, y+1) && !map->GetPixelNoBoundsCheck(x-1, y+1).IsFilled())
         {
             ChangeParticleXY(map, x-1, y+1);
             m_xMomentum = -1;
             m_lavaNoEventTime = 0;
             return true;
         }
-        if(!map->GetPixel(x+1, y+1).IsFilled())
+        if(!map->IsPixelOOB(x+1, y+1) && !map->GetPixelNoBoundsCheck(x+1, y+1).IsFilled())
         {
             ChangeParticleXY(map, x+1, y+1);
             m_xMomentum = 1;
@@ -178,14 +178,14 @@ public:
         idleTime++;
 
 
-        if(!map->GetPixel(x-2, y+1).IsFilled())
+        if(!map->IsPixelOOB(x-2, y+1) && !map->GetPixelNoBoundsCheck(x-2, y+1).IsFilled())
         {
             ChangeParticleXY(map, x-2, y+1);
             m_xMomentum = -2;
             m_lavaNoEventTime = 0;
             return true;
         }
-        if(!map->GetPixel(x+2, y+1).IsFilled())
+        if(!map->IsPixelOOB(x+2, y+1) && !map->GetPixelNoBoundsCheck(x+2, y+1).IsFilled())
         {
             ChangeParticleXY(map, x+2, y+1);
             m_xMomentum = 2;
@@ -194,7 +194,7 @@ public:
         }
         // keep momentum and move along x axis
         // if above is free then occasionally spawn a smoke pixel
-        if(!map->GetPixel(x, y-1).IsFilled() && (map->GetRNGNumber()&127) < 1)
+        if(!map->IsPixelOOB(x, y-1) && !map->GetPixelNoBoundsCheck(x, y-1).IsFilled() && (map->GetRNGNumber()&127) < 1)
         {
             map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, x, y-1);
         }
@@ -205,7 +205,7 @@ public:
 
         if(m_xMomentum < 0)
         {
-            if(!map->GetPixel(x-1, y).IsFilled())
+            if(!map->IsPixelOOB(x-1, y) && !map->GetPixelNoBoundsCheck(x-1, y).IsFilled())
                 ChangeParticleXY(map, x-1, y);
             else
                 m_xMomentum = 1;
@@ -213,7 +213,7 @@ public:
         }
         if(m_xMomentum > 0)
         {
-            if(!map->GetPixel(x+1, y).IsFilled())
+            if(!map->IsPixelOOB(x+1, y) && !map->GetPixelNoBoundsCheck(x+1, y).IsFilled())
                 ChangeParticleXY(map, x+1, y);
             else
                 m_xMomentum = -1;

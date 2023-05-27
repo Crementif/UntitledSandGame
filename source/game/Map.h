@@ -169,21 +169,21 @@ public:
     {
         if(IsPixelOOB(x, y))
             return true;
-        return GetPixel(x, y).IsCollideWithObjects();
+        return GetPixelNoBoundsCheck(x, y).IsCollideWithObjects();
     }
 
     bool DoesPixelCollideWithSolids(s32 x, s32 y)
     {
         if(IsPixelOOB(x, y))
             return true;
-        return GetPixel(x, y).IsCollideWithSolids();
+        return GetPixelNoBoundsCheck(x, y).IsCollideWithSolids();
     }
 
     bool DoesPixelCollideWithType(s32 x, s32 y, MAP_PIXEL_TYPE type)
     {
         if(IsPixelOOB(x, y))
             return true;
-        return GetPixel(x, y).GetPixelType() == type;
+        return GetPixelNoBoundsCheck(x, y).GetPixelType() == type;
     }
 
     void SimulateTick();
