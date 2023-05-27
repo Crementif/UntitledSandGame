@@ -1,6 +1,8 @@
 #include "Landmine.h"
 #include "Player.h"
 
+#include "../framework/audio.h"
+
 Landmine::Landmine(GameScene *parent, u32 owner, float x, float y) : PhysicsObject(parent, AABB({x, y}, {(f32)36/MAP_PIXEL_ZOOM, (f32)28/MAP_PIXEL_ZOOM}), DRAW_LAYER_0), m_owner(owner) {
 }
 
@@ -14,6 +16,14 @@ void Landmine::Update(float timestep) {
 
     auto triggerExplosion = [this](Player* player) {
         new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.8f, 2, 20.0f, 20.0f);
+
+        float distance = (m_parent->GetPlayer()->GetPosition().Distance(m_aabb.GetCenter())+0.00000001f)/20.0f;
+        float volume = 20.0f - (distance/100.0f*20.0f);
+
+        Audio* explosionAudio = new Audio("/sfx/explosion.wav");
+        explosionAudio->Play();
+        explosionAudio->SetVolume((u32)volume);
+        explosionAudio->QueueDestroy();
 
         if (!m_parent->IsSingleplayer())
             player->TakeDamage();

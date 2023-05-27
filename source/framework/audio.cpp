@@ -1,33 +1,32 @@
 #include "audio.h"
 
 Audio::Audio(std::string path) {
-    auto foundSound = AudioManager::GetInstance().sounds.find(path);
-    if (foundSound != AudioManager::GetInstance().sounds.end()) {
-        this->wavFile = foundSound->second;
-    }
-    else {
-        this->wavFile = new WavFile(path);
-        AudioManager::GetInstance().sounds.emplace(path, this->wavFile);
-    }
+    const auto& newSound = AudioManager::GetInstance().sounds.try_emplace(path, std::make_unique<WavFile>(path));
+    OSReport("Failed to allocate %u\n", newSound.first->second.get());
+    this->wavFile = newSound.first->second.get();
     this->state = StateEnum::LOADED;
     AudioManager::GetInstance().voices.emplace_back(this);
 }
 
 Audio::~Audio() {
     AudioManager::GetInstance().voices.erase(std::find(AudioManager::GetInstance().voices.begin(), AudioManager::GetInstance().voices.end(), this));
-    delete this->wavFile;
     if (this->voiceHandle != nullptr) AXFreeVoice(this->voiceHandle);
 }
 
 void Audio::SetVolume(uint32_t volume) {
+    if (volume > 100)
+        volume = 100;
+
+    uint32_t volumeConv = ( (0x8000 * volume) / 100 )/100;
+
     AXVoiceDeviceMixData mix[6] = {
         [0] = {.bus = {[0] = {
-            .volume = (uint16_t)(volume >> 16),
-            .delta = (int16_t)(volume & 0xFFFF)
+                .volume = (uint16_t)(volumeConv >> 16),
+                .delta = (int16_t)(volumeConv & 0xFFFF)
         }}},
         [1] = {.bus = {[0] = {
-            .volume = (uint16_t)(volume >> 16),
-            .delta = (int16_t)(volume & 0xFFFF)
+                .volume = (uint16_t)(volumeConv >> 16),
+                .delta = (int16_t)(volumeConv & 0xFFFF)
         }}}
     };
     AXSetVoiceDeviceMix(this->voiceHandle, AX_DEVICE_TYPE_TV, 0, mix);
@@ -65,7 +64,18 @@ void Audio::Play() {
     AXSetVoiceVe(this->voiceHandle, &voiceData);
 
     // set device audio volume
-    this->SetVolume(0x80000000);
+    AXVoiceDeviceMixData mix[6] = {
+            [0] = {.bus = {[0] = {
+                    .volume = (uint16_t)(0x80000000 >> 16),
+                    .delta = (int16_t)(0x80000000 & 0xFFFF)
+            }}},
+            [1] = {.bus = {[0] = {
+                    .volume = (uint16_t)(0x80000000 >> 16),
+                    .delta = (int16_t)(0x80000000 & 0xFFFF)
+            }}}
+    };
+    AXSetVoiceDeviceMix(this->voiceHandle, AX_DEVICE_TYPE_TV, 0, mix);
+    AXSetVoiceDeviceMix(this->voiceHandle, AX_DEVICE_TYPE_DRC, 0, mix);
 
     this->voiceOffsets = {
         .dataType = AX_VOICE_FORMAT_LPCM16, // todo: use wav file to determine audio format
@@ -117,8 +127,19 @@ void Audio::Update() {
     }
 }
 
+void Audio::QueueDestroy() {
+    AudioManager::GetInstance().destroyQueue.emplace_back(this);
+}
+
 void AudioManager::ProcessAudio() {
     for (auto const& voice : this->voices) {
         voice->Update();
+    }
+
+    for (auto it = this->destroyQueue.rbegin(); it != this->destroyQueue.rend(); ++it) {
+        if ((*it)->GetState() == Audio::StateEnum::FINISHED) {
+            this->destroyQueue.erase(std::next(it).base());
+            delete (*it);
+        }
     }
 }

@@ -227,7 +227,6 @@ private:
 
     std::vector<Vector2i> m_playerSpawnpoints;
     std::vector<Vector2i> m_collectablePoints;
-    std::vector<std::unique_ptr<class Audio*>> m_explosionAudios;
 
     class ActivePixelCollection* m_activePixels{nullptr};
     std::vector<class FlungPixel*> m_flungPixels;

@@ -2,6 +2,7 @@
 #include "Map.h"
 #include "Player.h"
 #include "Particle.h"
+#include "../framework/audio.h"
 
 Missile::Missile(GameScene *parent, u32 owner, float x, float y, float volX, float volY) : PhysicsObject(parent, AABB({x, y}, {(f32)32/MAP_PIXEL_ZOOM/4, (f32)32/MAP_PIXEL_ZOOM/4}), DRAW_LAYER_0), m_owner(owner) {
     // the missile will have a constant velocity
@@ -16,6 +17,15 @@ void Missile::Update(float timestep) {
 
     auto triggerExplosion = [this](Player* player) {
         new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
+
+        float distance = (m_parent->GetPlayer()->GetPosition().Distance(this->m_aabb.GetCenter())+0.00000001f)/20.0f;
+        float volume = 20.0f - (distance/100.0f*20.0f);
+
+        Audio* explosionAudio = new Audio("/sfx/explosion.wav");
+        explosionAudio->Play();
+        explosionAudio->SetVolume((u32)volume);
+        explosionAudio->QueueDestroy();
+
 
         for (const auto& nearbyPlayer : m_parent->GetPlayers()) {
             if (nearbyPlayer.second->GetPosition().Distance(this->GetPosition()) < 100.0f && !nearbyPlayer.second->IsSpectating()) {

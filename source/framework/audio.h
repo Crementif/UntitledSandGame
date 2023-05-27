@@ -19,6 +19,7 @@ public:
     void Reset();
     void Pause();
     void Update();
+    void QueueDestroy();
     StateEnum GetState() const { return state; }
 
 private:
@@ -34,9 +35,6 @@ private:
 
 class AudioManager {
     friend class Audio;
-private:
-    std::unordered_map<std::string, WavFile*> sounds;
-    std::vector<Audio*> voices;
 public:
     AudioManager() {
         if (!AXIsInit()) {
@@ -52,8 +50,6 @@ public:
         for (auto& it : voices)
             delete it;
         voices.clear();
-        for (auto& it : sounds)
-            delete it.second;
         sounds.clear();
         if (AXIsInit()) {
             AXQuit();
@@ -66,4 +62,9 @@ public:
         static AudioManager sAudioManager;
         return sAudioManager;
     }
+
+private:
+    std::unordered_map<std::string, std::unique_ptr<WavFile>> sounds;
+    std::vector<Audio*> voices;
+    std::vector<Audio*> destroyQueue;
 };

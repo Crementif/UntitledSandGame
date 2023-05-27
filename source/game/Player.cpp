@@ -33,15 +33,15 @@ Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(par
     m_teleportAudio = new Audio("/sfx/teleport.wav");
     m_deathAudio = new Audio("/sfx/death_explosion.wav");
     m_hitAudio = new Audio("/sfx/hit.wav");
-    m_drillAudio = new Audio("/sfx/drill.wav");
+    m_drillAudio = new Audio("/sfx/drill_3.wav");
 }
 
 Player::~Player()
 {
-    delete m_teleportAudio;
-    delete m_deathAudio;
-    delete m_hitAudio;
-    delete m_drillAudio;
+    m_teleportAudio->QueueDestroy();
+    m_deathAudio->QueueDestroy();
+    m_hitAudio->QueueDestroy();
+    m_drillAudio->QueueDestroy();
 }
 
 // width/height in world pixels
@@ -185,9 +185,6 @@ void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState,
         f32 targetAngle = atan2(leftStick.x, leftStick.y) - M_PI_2;
         m_drillAngle = _MoveAngleTowardsTarget(m_drillAngle, targetAngle, 0.017f);
     }
-
-    if (m_drillAudio->GetState() == Audio::StateEnum::PLAYING) m_drillAudio->Reset();
-    else m_drillAudio->Play();
 }
 
 void Player::HandleLocalPlayerControl_SpectatingMode(struct ButtonState& buttonState, Vector2f leftStick) {
@@ -353,6 +350,13 @@ void Player::Update_DrillMode(float timestep)
     Vector2f newPos = m_pos + m_speed;
     //Vector2f newPos = m_pos + m_speed * 0.1f;
 
+    // change volume depending on distance
+    float distance = (m_parent->GetPlayer()->m_pos.Distance(this->m_pos)+0.00000001f)/10.0f;
+    float volume = 7.0f - (distance/100.0f*7.0f);
+
+    if (m_drillAudio->GetState() == Audio::StateEnum::PLAYING) m_drillAudio->Reset();
+    else m_drillAudio->Play();
+    m_drillAudio->SetVolume((uint32_t)volume);
 
     Map* map = m_parent->GetMap();
     newPos.x = std::clamp(newPos.x, 8.0f, (f32)map->GetPixelWidth() - 8.0f);

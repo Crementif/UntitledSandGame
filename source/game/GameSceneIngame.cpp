@@ -5,6 +5,7 @@
 #include "Player.h"
 
 #include "../framework/navigation.h"
+#include "../framework/audio.h"
 
 #include "GameServer.h"
 #include "GameClient.h"
@@ -180,6 +181,14 @@ void GameSceneIngame::UpdateMultiplayer()
             }
 
             if (alivePlayers > 1) {
+                float distance = (GetPlayer()->GetPosition().Distance(event.pos)+0.00000001f)/20.0f;
+                float volume = 20.0f - (distance/100.0f*20.0f);
+
+                Audio* explosionAudio = new Audio("/sfx/explosion.wav");
+                explosionAudio->Play();
+                explosionAudio->SetVolume((u32)volume);
+                explosionAudio->QueueDestroy();
+
                 new ExplosiveParticle(this, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(event.pos.x-11.0f, event.pos.y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
             }
             else if (winner == nullptr) {

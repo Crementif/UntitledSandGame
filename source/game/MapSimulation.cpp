@@ -213,13 +213,7 @@ void Map::HandleSynchronizedEvents()
             case GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION:
                 // todo: find a way to properly clean up a sound... we want to have multiple explosions at the same time probably?
                 // todo: also make audio volume depend on distance to explosion. Same for all other audio bytes probably!
-                (*m_explosionAudios.emplace_back(std::make_unique<Audio*>(new Audio("/sfx/explosion.wav"))))->Play();
                 HandleSynchronizedEvent_Explosion(event.action_explosion.playerId, event.action_explosion.pos, event.action_explosion.radius);
-                for (auto it = m_explosionAudios.rbegin(); it != m_explosionAudios.rend(); ++it) {
-                    if ((**it)->GetState() == Audio::StateEnum::FINISHED) {
-                        m_explosionAudios.erase(std::next(it).base());
-                    }
-                }
                 break;
         }
     }
