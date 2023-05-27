@@ -6,6 +6,7 @@
 #include "../framework/navigation.h"
 #include "GameSceneMenu.h"
 #include "../framework/audio.h"
+#include "MapPixels.h"
 
 Sprite* s_tankBodySprite{nullptr};
 Sprite* s_tankDrill0Sprite{nullptr};
@@ -218,7 +219,7 @@ void Player::HandleLocalPlayerControl()
     Vector2f leftStick = getLeftStick();
 
     if (!this->IsSpectating()) {
-        if (buttonState.buttonA.isDown)
+        if (buttonState.buttonA.isDown && CheckCanDrill())
             m_moveFlags.isDrilling = true;
         else {
             m_moveFlags.isDrilling = false; // probably should have a tiny cooldown?
@@ -414,6 +415,24 @@ bool Player::SlidePlayerPos(Map* map, Vector2f newPos)
     }
 
     return false; // only partial move possible
+}
+
+bool Player::CheckCanDrill() {
+    // calculate drill head size
+    Vector2f playerCenter(m_aabb.pos.x + m_aabb.scale.x * 0.5f, m_aabb.pos.y + m_aabb.scale.y * 0.58f);
+    float toBeDrilledAngle = _InterpolateAngle(m_visualDrillAngle, m_drillAngle, 0.2f);
+    Vector2f drillPosLeft = playerCenter + (Vector2f(1.0f, 1.5f).Rotate(toBeDrilledAngle).GetNormalized()*14.0f);
+    Vector2f drillPosCenter = playerCenter + (Vector2f(1.0f, 0.0f).Rotate(toBeDrilledAngle).GetNormalized()*14.0f);
+    Vector2f drillPosRight = playerCenter + (Vector2f(1.0f, -1.5f).Rotate(toBeDrilledAngle).GetNormalized()*14.0f);
+
+    Map* map = this->m_parent->GetMap();
+    if (map->IsPixelOOB(drillPosLeft.x, drillPosLeft.y) || map->IsPixelOOB(drillPosCenter.x, drillPosCenter.y) || map->IsPixelOOB(drillPosRight.x, drillPosRight.y)) {
+        return false;
+    }
+    if (!map->GetPixelNoBoundsCheck(drillPosLeft.x, drillPosLeft.y).IsSolid() && !map->GetPixelNoBoundsCheck(drillPosCenter.x, drillPosCenter.y).IsSolid() && !map->GetPixelNoBoundsCheck(drillPosRight.x, drillPosRight.y).IsSolid()) {
+        return false;
+    }
+    return true;
 }
 
 bool Player::DoesPlayerCollideAtPos(f32 posX, f32 posY)

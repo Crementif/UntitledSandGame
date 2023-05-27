@@ -51,6 +51,7 @@ public:
 
     bool SlidePlayerPos(class Map* map, Vector2f newPos); // move player to new position, take collisions into account
     bool DoesPlayerCollideAtPos(f32 posX, f32 posY);
+    bool CheckCanDrill();
 
     void HandleLocalPlayerControl();
 

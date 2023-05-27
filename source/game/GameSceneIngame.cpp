@@ -110,7 +110,7 @@ void GameSceneIngame::DrawHUD() {
 
     if (m_showDebugInfo) {
         for (u32 i = 0; i < g_debugStrings.size(); i++) {
-            Render::RenderText(20, 100 + (i * 16), 0, 0x00, g_debugStrings[i].c_str());
+            Render::RenderText(20, 300 + (i * 16), 0, 0x00, g_debugStrings[i].c_str());
         }
     }
 
