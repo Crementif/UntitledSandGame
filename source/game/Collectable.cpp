@@ -2,6 +2,8 @@
 #include "Player.h"
 #include "Map.h"
 
+#include "../framework/audio.h"
+
 
 void Collectable::Draw(u32 layerIndex) {
     if (!m_hidden) {
@@ -32,6 +34,12 @@ static s32 lastRepeatedValue = -1;
 void Collectable::Pickup(Player *player) {
     m_hidden = true;
     m_respawnTime = OSGetTime() + OSSecondsToTicks(45);
+
+    if (player->IsSelf()) {
+        Audio* pickupAudio = new Audio("/sfx/pickup.wav");
+        pickupAudio->Play();
+        pickupAudio->QueueDestroy();
+    }
 
     auto pickRandomAbility = [&]() {
         s32 value;
