@@ -13,8 +13,8 @@ TOPDIR ?= $(CURDIR)
 # APP_SHORTNAME sets the short name of the application
 # APP_AUTHOR sets the author of the application
 #-------------------------------------------------------------------------------
-APP_NAME		:=	Untitled Sand Game
-APP_SHORTNAME	:=	Sand
+APP_NAME		:=	Tank Trap
+APP_SHORTNAME	:=	Tank Trap
 APP_AUTHOR		:=	I made this :)
 
 include $(DEVKITPRO)/wut/share/wut_rules
@@ -37,9 +37,9 @@ ROMFS		:=	source/assets
 DATA		:=	data
 INCLUDES	:=	include
 CONTENT		:=
-ICON		:=
-TV_SPLASH	:=
-DRC_SPLASH	:=
+ICON		:=	dist/icon.png
+TV_SPLASH	:=	dist/tv-splash.png
+DRC_SPLASH	:=	dist/drc-splash.png
 
 #-------------------------------------------------------------------------------
 # options for code generation

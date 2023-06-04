@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<app version="1">
+  <name>Tank Trap</name>
+  <coder>I Made This :)</coder>
+  <version>1.0</version>
+  <release_date>20200813200000</release_date>
+  <short_description>Tank Battler With Physics</short_description>
+  <long_description>A multiplayer game where you battle against other drill tanks in a dynamic, 2D physics-based terrain with a variety of (explosive) items.</long_description>
+</app>

@@ -33,6 +33,7 @@
 *.elf
 *.rpx
 *.wuhb
+*.wua
 
 # Build folder
 build/

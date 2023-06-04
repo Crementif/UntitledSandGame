@@ -7,6 +7,8 @@
     <excludeRoots>
       <file path="$PROJECT_DIR$/build" />
       <file path="$PROJECT_DIR$/cemu" />
+      <file path="$PROJECT_DIR$/dist" />
+      <file path="$PROJECT_DIR$/tools" />
     </excludeRoots>
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
