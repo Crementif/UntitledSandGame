@@ -77,7 +77,7 @@ GX2SurfaceFormat _GetGX2SurfaceFormat(E_TEXFORMAT texFormat)
     return GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
 }
 
-void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat)
+void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear)
 {
     if (index >= MAX_COLOR_BUFFERS)
         return;
@@ -96,7 +96,11 @@ void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT t
     _GX2InitTexture(m_colorBufferTexture[index], width, height, 1, 1, _GetGX2SurfaceFormat(texFormat), GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_DEFAULT);
     _GX2AllocateTexture(m_colorBufferTexture[index]);
     m_colorBufferTexture[index]->surface.use = (GX2SurfaceUse)(m_colorBufferTexture[index]->surface.use | GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV);
-
+    if(clear)
+    {
+        memset(m_colorBufferTexture[index]->surface.image, 0, m_colorBufferTexture[index]->surface.imageSize);
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, m_colorBufferTexture[index]->surface.image, m_colorBufferTexture[index]->surface.imageSize);
+    }
     // allocate and initialize GX2ColorBuffer
     m_colorBuffer[index] = (GX2ColorBuffer*)malloc(sizeof(GX2ColorBuffer));
     _GX2InitColorBufferFromSurface(m_colorBuffer[index], &m_colorBufferTexture[index]->surface);
@@ -144,10 +148,6 @@ void Framebuffer::ApplyBackbuffer()
 GX2Sampler sRenderBaseSampler1_linear;
 GX2Sampler sRenderBaseSampler1_nearest;
 
-GX2ColorControlReg sRenderColorControl_noTransparency;
-GX2ColorControlReg sRenderColorControl_transparency;
-GX2BlendControlReg sRenderBlendReg_transparency;
-
 struct
 {
   Vertex* base;
@@ -177,17 +177,6 @@ void _InitVtxRingbuffer()
     sVtxRingbuffer.currentWriteIndex = 0;
 }
 
-void _InitBlendRegs()
-{
-    GX2InitColorControlReg(&sRenderColorControl_transparency, GX2_LOGIC_OP_COPY, 0x01, GX2_FALSE, GX2_TRUE);
-    GX2InitColorControlReg(&sRenderColorControl_noTransparency, GX2_LOGIC_OP_COPY, 0x00, GX2_FALSE, GX2_TRUE);
-    GX2InitBlendControlReg(&sRenderBlendReg_transparency,
-            GX2_RENDER_TARGET_0,
-            GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
-            GX2_FALSE, // no separate alpha blend
-            GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
-}
-
 bool s_compilerInitialized = false;
 
 void _InitShaderCompiler()
@@ -206,7 +195,6 @@ void _InitShaderCompiler()
 void _InitBasicRenderResources()
 {
     _InitShaderCompiler();
-    _InitBlendRegs();
 
     // init linear sampler
     GX2InitSampler(&sRenderBaseSampler1_linear, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
@@ -220,8 +208,8 @@ void _InitBasicRenderResources()
 void Render::Init()
 {
     u32 fb_width, fb_height;
-    //WindowInit(1280, 720, &fb_width, &fb_height);
     WindowInit(1920, 1080, &fb_width, &fb_height);
+    RenderState::Init();
     _InitVtxRingbuffer();
     _InitBasicRenderResources();
 }
@@ -287,21 +275,17 @@ Vector2i Render::GetScreenSize()
     return {1920, 1080};
 }
 
-bool sRenderTransparencyMode = false;
-
 ShaderSwitcher Shader_Sprite{"sprite"};
 
 void Render::SetStateForSpriteRendering()
 {
+    RenderState::ReapplyState();
+
     GX2SetShaderModeEx(GX2_SHADER_MODE_UNIFORM_REGISTER, 48, 64, 0, 0, 200, 192);
     // setup GX2 state for sprite renderer
     Shader_Sprite.Activate();
     // use the sprite vertex ringbuffer
     GX2SetAttribBuffer(0, 1024 * 1024, sizeof(Vertex), sVtxRingbuffer.base);
-
-    sRenderTransparencyMode = false;
-    GX2SetBlendControlReg(&sRenderBlendReg_transparency);
-    GX2SetColorControlReg(&sRenderColorControl_noTransparency);
 }
 
 // quad
@@ -424,11 +408,7 @@ void Render::RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeigh
     GX2Texture* tex = sprite->GetTexture();
     u32 baseVertex = _SetupSpriteVertexData<true>((f32)x, (f32)y, (f32)pxWidth, (f32)pxHeight);
 
-    if(sRenderTransparencyMode != sprite->m_hasTransparency)
-    {
-        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
-        sRenderTransparencyMode = sprite->m_hasTransparency;
-    }
+    RenderState::SetTransparencyMode(sprite->m_hasTransparency ? RenderState::E_TRANSPARENCY_MODE::ADDITIVE : RenderState::E_TRANSPARENCY_MODE::OPAQUE);
 
     GX2SetPixelTexture(tex, 0);
     GX2SetPixelSampler(sprite->m_sampler, 0);
@@ -445,11 +425,7 @@ void Render::RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeigh
 
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU_ATTRIBUTE_BUFFER, sVtxRingbuffer.base + baseVertex, (sizeof(Vertex) * 4));
 
-    if(sRenderTransparencyMode != sprite->m_hasTransparency)
-    {
-        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
-        sRenderTransparencyMode = sprite->m_hasTransparency;
-    }
+    RenderState::SetTransparencyMode(sprite->m_hasTransparency ? RenderState::E_TRANSPARENCY_MODE::ADDITIVE : RenderState::E_TRANSPARENCY_MODE::OPAQUE);
 
     GX2SetPixelTexture(tex, 0);
     GX2SetPixelSampler(sprite->m_sampler, 0);
@@ -468,11 +444,7 @@ void Render::RenderSpritePortion(Sprite* sprite, s32 x, s32 y, u32 cx, u32 cy, u
     GX2Texture* tex = sprite->GetTexture();
     u32 baseVertex = _SetupSpriteVertexData<true>((f32)x, (f32)y, (f32)tex->surface.width, (f32)tex->surface.height, (f32)cx/tex->surface.width, (f32)cy/tex->surface.height, (f32)cw/tex->surface.width, (f32)ch/tex->surface.height);
 
-    if(sRenderTransparencyMode != sprite->m_hasTransparency)
-    {
-        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
-        sRenderTransparencyMode = sprite->m_hasTransparency;
-    }
+    RenderState::SetTransparencyMode(sprite->m_hasTransparency ? RenderState::E_TRANSPARENCY_MODE::ADDITIVE : RenderState::E_TRANSPARENCY_MODE::OPAQUE);
 
     GX2SetPixelTexture(tex, 0);
     GX2SetPixelSampler(sprite->m_sampler, 0);
@@ -487,11 +459,7 @@ void Render::RenderSpritePortionScreenRelative(Sprite* sprite, s32 x, s32 y, u32
     GX2Texture* tex = sprite->GetTexture();
     u32 baseVertex = _SetupSpriteVertexData<false>((f32)x, (f32)y, (f32)tex->surface.width, (f32)tex->surface.height, (f32)cx/tex->surface.width, (f32)cy/tex->surface.height, (f32)cw/tex->surface.width, (f32)ch/tex->surface.height);
 
-    if(sRenderTransparencyMode != sprite->m_hasTransparency)
-    {
-        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
-        sRenderTransparencyMode = sprite->m_hasTransparency;
-    }
+    RenderState::SetTransparencyMode(sprite->m_hasTransparency ? RenderState::E_TRANSPARENCY_MODE::ADDITIVE : RenderState::E_TRANSPARENCY_MODE::OPAQUE);
 
     GX2SetPixelTexture(tex, 0);
     GX2SetPixelSampler(sprite->m_sampler, 0);
@@ -505,11 +473,7 @@ void Render::RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y)
     GX2Texture* tex = sprite->GetTexture();
     u32 baseVertex = _SetupSpriteVertexData<false>((f32)x, (f32)y, (f32)tex->surface.width, (f32)tex->surface.height);
 
-    if(sRenderTransparencyMode != sprite->m_hasTransparency)
-    {
-        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
-        sRenderTransparencyMode = sprite->m_hasTransparency;
-    }
+    RenderState::SetTransparencyMode(sprite->m_hasTransparency ? RenderState::E_TRANSPARENCY_MODE::ADDITIVE : RenderState::E_TRANSPARENCY_MODE::OPAQUE);
 
     GX2SetPixelTexture(tex, 0);
     GX2SetPixelSampler(sprite->m_sampler, 0);
@@ -522,11 +486,7 @@ void Render::RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y, s32 pxWidt
     GX2Texture* tex = sprite->GetTexture();
     u32 baseVertex = _SetupSpriteVertexData<false>((f32)x, (f32)y, (f32)pxWidth, (f32)pxHeight);
 
-    if(sRenderTransparencyMode != sprite->m_hasTransparency)
-    {
-        GX2SetColorControlReg(sprite->m_hasTransparency ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
-        sRenderTransparencyMode = sprite->m_hasTransparency;
-    }
+    RenderState::SetTransparencyMode(sprite->m_hasTransparency ? RenderState::E_TRANSPARENCY_MODE::ADDITIVE : RenderState::E_TRANSPARENCY_MODE::OPAQUE);
 
     GX2SetPixelTexture(tex, 0);
     GX2SetPixelSampler(sprite->m_sampler, 0);

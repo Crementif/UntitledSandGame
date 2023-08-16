@@ -9,6 +9,19 @@
 
 #include <coreinit/debug.h>
 
+// shaders
+static ShaderSwitcher s_shaderDrawMap{"draw_map"};
+static ShaderSwitcher s_shaderEnvironmentPass{"environment_pass"};
+
+// framebuffers
+static inline Framebuffer* m_pixelMap;
+static inline Framebuffer* s_environmentMap;
+
+// sprites
+static inline Sprite* m_backgroundSprite;
+static inline Sprite* m_pixelColorLookupMap;
+
+
 bool s_mapRenderingIsIntialized{false};
 
 constexpr s32 MAP_RENDER_VIEW_BORDER = 8; // size of off-screen pixel border. Needed for postprocessing which reads across pixel boundaries
@@ -19,10 +32,15 @@ constexpr static __attribute__ ((aligned (32))) u16 s_idx_data[] =
         0, 1, 2, 2, 1, 3
 };
 
-__attribute__ ((aligned (64))) u32 s_mapDrawUF[4*4] =
+__attribute__ ((aligned (64))) u32 s_mapDrawUFVertex[4 * 4] =
 {
-    // 2 channels xy pos, 2 channels uv coordinates
-    0
+        // 2 channels xy pos, 2 channels uv coordinates
+        0
+};
+
+__attribute__ ((aligned (64))) u32 s_mapDrawUFPixel[4] =
+{
+        // [0]: time, 0, 0, 0
 };
 
 inline u32 EndianSwap_F32(f32 v)
@@ -31,6 +49,9 @@ inline u32 EndianSwap_F32(f32 v)
 }
 
 extern GX2Sampler sRenderBaseSampler1_nearest;
+extern GX2Sampler sRenderBaseSampler1_linear;
+
+static uint64_t launchTime = OSGetTime();
 
 void UpdateMapDrawUniform(s32 pixelMapWidth, s32 pixelMapHeight, f32 xOffset, f32 yOffset)
 {
@@ -51,28 +72,34 @@ void UpdateMapDrawUniform(s32 pixelMapWidth, s32 pixelMapHeight, f32 xOffset, f3
     const f32 uvY2 = 0.0f;
 
     // pos
-    s_mapDrawUF[0*4 + 0] = EndianSwap_F32(x1 + xOffset);
-    s_mapDrawUF[0*4 + 1] = EndianSwap_F32(y1 + yOffset);
-    s_mapDrawUF[1*4 + 0] = EndianSwap_F32(x1 + xOffset);
-    s_mapDrawUF[1*4 + 1] = EndianSwap_F32(y2 + yOffset);
-    s_mapDrawUF[2*4 + 0] = EndianSwap_F32(x2 + xOffset);
-    s_mapDrawUF[2*4 + 1] = EndianSwap_F32(y1 + yOffset);
-    s_mapDrawUF[3*4 + 0] = EndianSwap_F32(x2 + xOffset);
-    s_mapDrawUF[3*4 + 1] = EndianSwap_F32(y2 + yOffset);
+    s_mapDrawUFVertex[0 * 4 + 0] = EndianSwap_F32(x1 + xOffset);
+    s_mapDrawUFVertex[0 * 4 + 1] = EndianSwap_F32(y1 + yOffset);
+    s_mapDrawUFVertex[1 * 4 + 0] = EndianSwap_F32(x1 + xOffset);
+    s_mapDrawUFVertex[1 * 4 + 1] = EndianSwap_F32(y2 + yOffset);
+    s_mapDrawUFVertex[2 * 4 + 0] = EndianSwap_F32(x2 + xOffset);
+    s_mapDrawUFVertex[2 * 4 + 1] = EndianSwap_F32(y1 + yOffset);
+    s_mapDrawUFVertex[3 * 4 + 0] = EndianSwap_F32(x2 + xOffset);
+    s_mapDrawUFVertex[3 * 4 + 1] = EndianSwap_F32(y2 + yOffset);
     // uv
-    s_mapDrawUF[0*4 + 2] = EndianSwap_F32(uvX1);
-    s_mapDrawUF[0*4 + 3] = EndianSwap_F32(uvY1);
-    s_mapDrawUF[1*4 + 2] = EndianSwap_F32(uvX1);
-    s_mapDrawUF[1*4 + 3] = EndianSwap_F32(uvY2);
-    s_mapDrawUF[2*4 + 2] = EndianSwap_F32(uvX2);
-    s_mapDrawUF[2*4 + 3] = EndianSwap_F32(uvY1);
-    s_mapDrawUF[3*4 + 2] = EndianSwap_F32(uvX2);
-    s_mapDrawUF[3*4 + 3] = EndianSwap_F32(uvY2);
+    s_mapDrawUFVertex[0 * 4 + 2] = EndianSwap_F32(uvX1);
+    s_mapDrawUFVertex[0 * 4 + 3] = EndianSwap_F32(uvY1);
+    s_mapDrawUFVertex[1 * 4 + 2] = EndianSwap_F32(uvX1);
+    s_mapDrawUFVertex[1 * 4 + 3] = EndianSwap_F32(uvY2);
+    s_mapDrawUFVertex[2 * 4 + 2] = EndianSwap_F32(uvX2);
+    s_mapDrawUFVertex[2 * 4 + 3] = EndianSwap_F32(uvY1);
+    s_mapDrawUFVertex[3 * 4 + 2] = EndianSwap_F32(uvX2);
+    s_mapDrawUFVertex[3 * 4 + 3] = EndianSwap_F32(uvY2);
 
-    GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_UNIFORM_BLOCK, s_mapDrawUF, sizeof(s_mapDrawUF));
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_UNIFORM_BLOCK, s_mapDrawUFVertex, sizeof(s_mapDrawUFVertex));
+
+    /* update pixel uniform */
+    uint64_t rawTick = OSGetTime();
+    uint64_t time64 = OSTicksToMilliseconds((OSGetTime() - launchTime));
+    float time = (float)time64;
+    time *= 0.001f;
+    s_mapDrawUFPixel[0] = EndianSwap_F32(time);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_UNIFORM_BLOCK, s_mapDrawUFPixel, sizeof(s_mapDrawUFPixel));
 }
-
-static ShaderSwitcher s_shaderDrawMap{"draw_map"};
 
 class MapRenderManager
 {
@@ -85,15 +112,16 @@ public:
         s32 visibleWorldPixelsX = (WindowGetWidth() + (MAP_PIXEL_ZOOM-1)) / MAP_PIXEL_ZOOM;
         s32 visibleWorldPixelsY = (WindowGetHeight() + (MAP_PIXEL_ZOOM-1)) / MAP_PIXEL_ZOOM;
 
+        s32 pixelMapWidth = visibleWorldPixelsX + MAP_RENDER_VIEW_BORDER * 2;
+        s32 pixelMapHeight = visibleWorldPixelsY + MAP_RENDER_VIEW_BORDER * 2;
+
         m_pixelMap = new Framebuffer();
-        m_pixelMap->SetColorBuffer(0, visibleWorldPixelsX + MAP_RENDER_VIEW_BORDER * 2, visibleWorldPixelsY + MAP_RENDER_VIEW_BORDER * 2, E_TEXFORMAT::RG88_UNORM);
+        m_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, true);
+
+        s_environmentMap = new Framebuffer();
+        s_environmentMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RGBA8888_UNORM, true);
 
         InitPixelColorLookupMap();
-    }
-
-    static void Postprocess()
-    {
-
     }
 
     static void DrawBackground()
@@ -132,23 +160,39 @@ public:
                 cellArray[x + y * cellsX].DrawCell();
             }
         }
-
-        Framebuffer::ApplyBackbuffer();
         // restore camera
         Render::SetCameraPosition(cameraPosition);
     }
 
-    // draw map pixels to screen using m_pixelMap
-    static void DrawPixelsToScreen2(Map* map)
+    // handle lava glow and light obstruction by preprocessing the pixel map
+    static void DoEnvironmentPass()
     {
-       // draw fullscreen quad
+        s_environmentMap->Apply();
+
+        s_shaderEnvironmentPass.Activate();
+
+        GX2SetPixelTexture(m_pixelMap->GetColorBufferTexture(0), 0);
+        GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 0);
+
+        // draw fullscreen quad
+        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
+    }
+
+
+    // draw map pixels to screen using m_pixelMap
+    static void DrawPixelsToScreen(Map* map)
+    {
+        Framebuffer::ApplyBackbuffer();
+        // draw fullscreen quad
         s_shaderDrawMap.Activate();
 
         GX2Texture* pixelMapTexture = m_pixelMap->GetColorBufferTexture(0);
         GX2SetPixelTexture(pixelMapTexture, 0);
         GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 0);
-        GX2SetPixelTexture(m_pixelColorLookupMap->GetTexture(), 1);
-        GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 1);
+        GX2SetPixelTexture(s_environmentMap->GetColorBufferTexture(0), 1);
+        GX2SetPixelSampler(&sRenderBaseSampler1_linear, 1);
+        GX2SetPixelTexture(m_pixelColorLookupMap->GetTexture(), 2);
+        GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 2);
 
         // some math magic to allow for 1-pixel-precise scrolling regardless of zoom factor
         const f32 pixelWidth = Framebuffer::GetCurrentPixelWidth()*2.0f;
@@ -167,7 +211,10 @@ public:
         f32 pixelMapPixelHeight = 1.0f / pixelMapHeight;
         UpdateMapDrawUniform(pixelMapWidth, pixelMapHeight, xOffset, yOffset);
 
-        GX2SetVertexUniformBlock(0, sizeof(s_mapDrawUF), s_mapDrawUF);
+        RenderState::SetTransparencyMode(RenderState::E_TRANSPARENCY_MODE::ADDITIVE);
+
+        GX2SetVertexUniformBlock(0, sizeof(s_mapDrawUFVertex), s_mapDrawUFVertex);
+        GX2SetPixelUniformBlock(0, sizeof(s_mapDrawUFPixel), s_mapDrawUFPixel);
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
     }
 
@@ -229,11 +276,6 @@ private:
 
         m_pixelColorLookupMap->FlushCache();
     }
-
-private:
-    static inline Framebuffer* m_pixelMap;
-    static inline Sprite* m_backgroundSprite;
-    static inline Sprite* m_pixelColorLookupMap;
 };
 
 Rect2D _GetVisibleCells(Map* map)
@@ -276,7 +318,8 @@ void Map::Draw()
     Rect2D visibleCells = _GetVisibleCells(this);
 
     MapRenderManager::UpdatePixelMap(this, visibleCells);
-    MapRenderManager::DrawPixelsToScreen2(this);
+    MapRenderManager::DoEnvironmentPass();
+    MapRenderManager::DrawPixelsToScreen(this);
 }
 
 void MapCell::FlushDrawCache()

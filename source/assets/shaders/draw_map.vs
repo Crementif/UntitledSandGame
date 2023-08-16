@@ -10,14 +10,6 @@ layout(binding = 0) uniform uf_data
 void main()
 {
 	int vId = gl_VertexID;
-	int ix = vId&1;
-	int iy = vId>>1;
-
-	//vec2 pos = vec2(ix, iy);
-
-	//param_uv = vec2(ix, iy);
-	//gl_Position = vec4(pos, 0.0, 1.0);
-	
 	vec4 ufSample = coords[vId];
 	param_uv = ufSample.zw;
 	gl_Position = vec4(ufSample.xy, 0.0, 1.0);

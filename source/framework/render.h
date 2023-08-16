@@ -67,7 +67,7 @@ class Framebuffer
     friend class Render;
     static constexpr u32 MAX_COLOR_BUFFERS = 8;
 public:
-    void SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat);
+    void SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear = false);
     void Apply();
     static void ApplyBackbuffer();
     static Framebuffer* GetActiveFramebuffer();
@@ -157,4 +157,19 @@ protected:
     static Sprite* sBigFontTextureWhite;
     static Sprite* sSmallFontTextureBlack;
     static Sprite* sSmallFontTextureWhite;
+};
+
+class RenderState
+{
+public:
+    enum class E_TRANSPARENCY_MODE
+    {
+        OPAQUE,
+        ADDITIVE,
+    };
+
+    static void Init();
+    static void ReapplyState();
+    static void SetTransparencyMode(E_TRANSPARENCY_MODE mode);
+
 };
