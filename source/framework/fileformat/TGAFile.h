@@ -57,7 +57,7 @@ public:
         }
         else if(tgaHeader->bits == 32)
         {
-            // 3 byte format
+            // 4 byte format
             m_tgaData.resize(width * height * 4);
             for(u32 y=0; y<height; y++)
             {

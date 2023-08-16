@@ -53,6 +53,8 @@
 
 #include <romfs-wiiu.h>
 
+#include "CafeGLSLCompiler.h"
+
 #include "types.h"
 
 [[noreturn]]

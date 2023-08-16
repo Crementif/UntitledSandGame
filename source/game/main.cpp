@@ -11,7 +11,6 @@
 #include "../framework/render.h"
 #include "../framework/navigation.h"
 #include "../framework/audio.h"
-#include "../framework/compiler.h"
 
 GameScene* GameScene::sActiveScene = nullptr;
 

@@ -18,7 +18,6 @@
 
 #include "render_data.h"
 #include "../framework/fileformat/TGAFile.h"
-#include "compiler.h"
 
 void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u32 numMips, GX2SurfaceFormat surfaceFormat, GX2SurfaceDim surfaceDim, GX2TileMode tileMode)
 {

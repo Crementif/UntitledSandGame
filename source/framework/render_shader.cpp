@@ -7,8 +7,6 @@
 #include <gx2/utils.h>
 #include <gx2/surface.h>
 
-#include "compiler.h"
-
 static GX2FetchShader s_defaultFetchShader;
 static bool s_fetchShaderInitialized{false};
 
@@ -63,12 +61,17 @@ GX2ShaderSet* GX2ShaderSet::Load(const char *name)
     std::string vsSource = _LoadShaderSource(name, ".vs");
     std::string psSource = _LoadShaderSource(name, ".ps");
 
-    GX2VertexShader* vs = GLSL_CompileVertexShader(vsSource.c_str(), nullptr, 0);
-    if(!vs)
+    char outputBuff[1024];
+    GX2VertexShader* vs = GLSL_CompileVertexShader(vsSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
+    if(!vs) {
+        WHBLogPrintf("Failed to compile vertex shader: %s", outputBuff);
         CriticalErrorHandler("Failed to compile vertex shader");
-    GX2PixelShader* ps = GLSL_CompilePixelShader(psSource.c_str(), nullptr, 0);
-    if(!ps)
+    }
+    GX2PixelShader* ps = GLSL_CompilePixelShader(psSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
+    if(!ps) {
+        WHBLogPrintf("Failed to compile pixel shader: %s", outputBuff);
         CriticalErrorHandler("Failed to compile pixel shader");
+    }
 
     shaderSet->vertexShader = vs;
     shaderSet->fragmentShader = ps;
