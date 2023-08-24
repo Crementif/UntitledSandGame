@@ -143,10 +143,17 @@ else ifneq (,$(wildcard $(TOPDIR)/splash.png))
 	export APP_DRC_SPLASH := $(TOPDIR)/splash.png
 endif
 
-.PHONY: $(BUILD) clean all
+.PHONY: $(BUILD) check_romfs clean all
+
+check_romfs:
+	@newest_file=$$(find $(ROMFS) -type f -newer $(ROMFS) | head -1); \
+	if [ -n "$$newest_file" ]; then \
+		echo "Updating ROMFS timestamp to force romfs rebuild due to newer files..."; \
+		touch $(ROMFS); \
+	fi
 
 #-------------------------------------------------------------------------------
-all: app.romfs.o $(BUILD)
+all: check_romfs $(BUILD)
 
 $(BUILD):
 	@$(shell [ ! -d $(BUILD) ] && mkdir -p $(BUILD))

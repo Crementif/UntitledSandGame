@@ -2,7 +2,6 @@
 
 Audio::Audio(std::string path) {
     const auto& newSound = AudioManager::GetInstance().sounds.try_emplace(path, std::make_unique<WavFile>(path));
-    OSReport("Failed to allocate %u\n", newSound.first->second.get());
     this->wavFile = newSound.first->second.get();
     this->state = StateEnum::LOADED;
     AudioManager::GetInstance().voices.emplace_back(this);
