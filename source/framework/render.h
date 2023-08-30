@@ -15,12 +15,16 @@ struct Vertex
 
 struct GX2ShaderSet
 {
-    static GX2ShaderSet* Load(const char* name);
+    static GX2ShaderSet* Create(const char* name);
     //static void SwitchToShader();
 
+
+    void Load();
     void Prepare();
     void Activate();
 
+    std::string name;
+    OSTime _lastReloadedShader = 0;
     GX2FetchShader* fetchShader;
     GX2VertexShader* vertexShader;
     GX2PixelShader* fragmentShader;
@@ -53,7 +57,7 @@ public:
             m_shaderSet->Activate();
             return;
         }
-        m_shaderSet = GX2ShaderSet::Load(m_name.c_str());
+        m_shaderSet = GX2ShaderSet::Create(m_name.c_str());
         m_shaderSet->Activate();
     }
 

@@ -38,17 +38,25 @@ void _InitDefaultFetchShader()
     GX2InitFetchShaderEx(&s_defaultFetchShader, (u8*)fetchShaderProgramCode, 2, streams, GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
 }
 
-std::string _LoadShaderSource(std::string_view shaderName, std::string_view extension)
+std::string _LoadShaderSource(std::string_view shaderPath)
 {
-    std::string name = std::string(shaderName).append(extension);
-    std::ifstream fs((std::string("romfs:/shaders/") + name).c_str(), std::ios::in | std::ios::binary);
-    if(!fs.is_open())
-        CriticalErrorHandler("Failed to open file shaders/%s\n", name.c_str());
+    std::ifstream fs(std::string(shaderPath).c_str(), std::ios::in | std::ios::binary);
+    if (!fs.is_open()) {
+        OSReport("Failed to open shader file from %s\n", std::string(shaderPath).c_str());
+        return "";
+    }
     std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
     return std::string{data.begin(), data.end()};
 }
 
-GX2ShaderSet* GX2ShaderSet::Load(const char *name)
+GX2ShaderSet* GX2ShaderSet::Create(const char *name) {
+    GX2ShaderSet* shaderSet = new GX2ShaderSet();
+    shaderSet->name = name;
+    shaderSet->Load();
+    return shaderSet;
+}
+
+void GX2ShaderSet::Load()
 {
     if(!s_fetchShaderInitialized)
     {
@@ -56,28 +64,39 @@ GX2ShaderSet* GX2ShaderSet::Load(const char *name)
         s_fetchShaderInitialized = true;
     }
 
-    GX2ShaderSet* shaderSet = new GX2ShaderSet();
-
-    std::string vsSource = _LoadShaderSource(name, ".vs");
-    std::string psSource = _LoadShaderSource(name, ".ps");
+    std::string vsSource = _LoadShaderSource(std::string("TankTrap/shaders/") + name + ".vs");
+    std::string psSource = _LoadShaderSource(std::string("TankTrap/shaders/") + name + ".ps");
+    if (vsSource.empty() || psSource.empty()) {
+        vsSource = _LoadShaderSource(std::string("romfs:/shaders/") + name + ".vs");
+        psSource = _LoadShaderSource(std::string("romfs:/shaders/") + name + ".ps");
+    }
+    else {
+        OSReport("Loaded shader %s from SD card\n", name.c_str());
+    }
 
     char outputBuff[1024];
     GX2VertexShader* vs = GLSL_CompileVertexShader(vsSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
     if(!vs) {
         WHBLogPrintf("Failed to compile vertex shader: %s", outputBuff);
-        CriticalErrorHandler("Failed to compile vertex shader");
+        if (this->vertexShader)
+            CriticalErrorHandler("Failed to compile vertex shader");
+        else
+            return;
     }
     GX2PixelShader* ps = GLSL_CompilePixelShader(psSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
     if(!ps) {
         WHBLogPrintf("Failed to compile pixel shader: %s", outputBuff);
-        CriticalErrorHandler("Failed to compile pixel shader");
+        if (this->fragmentShader == nullptr)
+            CriticalErrorHandler("Failed to compile pixel shader");
+        else
+            return;
     }
 
-    shaderSet->vertexShader = vs;
-    shaderSet->fragmentShader = ps;
-    shaderSet->fetchShader = &s_defaultFetchShader;
-    shaderSet->Prepare();
-    return shaderSet;
+    this->vertexShader = vs;
+    this->fragmentShader = ps;
+    this->fetchShader = &s_defaultFetchShader;
+    this->Prepare();
+    this->_lastReloadedShader = OSGetTime();
 }
 
 void GX2ShaderSet::Prepare()
@@ -89,6 +108,11 @@ void GX2ShaderSet::Prepare()
 
 void GX2ShaderSet::Activate()
 {
+    // you can tweak these settings to disallow certain shaders and the reload time
+    if (this->name != "sprite" && (_lastReloadedShader + (OSTime)OSSecondsToTicks(5)) <= OSGetTime()) {
+        this->Load();
+    }
+
     GX2SetFetchShader(fetchShader);
     GX2SetVertexShader(vertexShader);
     GX2SetPixelShader(fragmentShader);
