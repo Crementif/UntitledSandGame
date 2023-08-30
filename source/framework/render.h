@@ -69,6 +69,7 @@ class Framebuffer
 public:
     void SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear = false);
     void Apply();
+
     static void ApplyBackbuffer();
     static Framebuffer* GetActiveFramebuffer();
 
@@ -131,6 +132,7 @@ public:
     static void Init();
     static void Shutdown();
     static void BeginFrame();
+    static void DoPostProcessing();
     static bool IsRunning();
     static void SwapBuffers();
 

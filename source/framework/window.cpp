@@ -22,8 +22,10 @@ static void*            gTvScanBuffer         = NULL;
 static void*            gDrcScanBuffer        = NULL;
 static GX2ColorBuffer   gColorBuffer;
 static void*            gColorBufferImageData = NULL;
+static GX2Texture       gColorBufferTexture;
 static GX2DepthBuffer   gDepthBuffer;
 static void*            gDepthBufferImageData = NULL;
+static GX2Texture       gDepthBufferTexture;
 static MEMHeapHandle    gMEM1HeapHandle       = NULL;
 static MEMHeapHandle    gFgHeapHandle         = NULL;
 
@@ -32,6 +34,31 @@ static bool gIsRunning = false;
 
 static u32 gWindowWidth = 0;
 static u32 gWindowHeight = 0;
+
+
+void _GX2InitTextureFromColorBuffer(GX2Texture* texture, GX2ColorBuffer* colorBuffer)
+{
+    memset(texture, 0, sizeof(GX2Texture));
+    texture->surface = colorBuffer->surface;
+    texture->viewFirstSlice = 0;
+    texture->viewNumSlices = 1;
+    texture->viewFirstMip = 0;
+    texture->viewNumMips = 1;
+    texture->compMap = 0x0010203;
+    GX2InitTextureRegs(texture);
+}
+
+void _GX2InitTextureFromDepthBuffer(GX2Texture* texture, GX2DepthBuffer* depthBuffer)
+{
+    memset(texture, 0, sizeof(GX2Texture));
+    texture->surface = depthBuffer->surface;
+    texture->viewFirstSlice = 0;
+    texture->viewNumSlices = 1;
+    texture->viewFirstMip = 0;
+    texture->viewNumMips = 1;
+    texture->compMap = 0x0010203;
+    GX2InitTextureRegs(texture);
+}
 
 static bool WindowForegroundAcquire()
 {
@@ -183,6 +210,12 @@ static bool WindowForegroundAcquire()
 
     gColorBuffer.surface.image = gColorBufferImageData;
 
+    // Initialize color buffer texture
+    _GX2InitTextureFromColorBuffer(&gColorBufferTexture, &gColorBuffer);
+    gColorBufferTexture.surface.use = (GX2SurfaceUse)(gColorBufferTexture.surface.use | GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV);
+    memset(gColorBufferTexture.surface.image, 0, gColorBufferTexture.surface.imageSize);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, gColorBufferTexture.surface.image, gColorBufferTexture.surface.imageSize);
+
     // Flush allocated buffer from CPU cache
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU, gColorBufferImageData, gColorBuffer.surface.imageSize);
 
@@ -219,6 +252,11 @@ static bool WindowForegroundAcquire()
         return false;
 
     gDepthBuffer.surface.image = gDepthBufferImageData;
+
+    // Initialize depth buffer texture
+    _GX2InitTextureFromDepthBuffer(&gDepthBufferTexture, &gDepthBuffer);
+    memset(gDepthBufferTexture.surface.image, 0, gDepthBufferTexture.surface.imageSize);
+    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, gDepthBufferTexture.surface.image, gDepthBufferTexture.surface.imageSize);
 
     // Flush allocated buffer from CPU cache
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU, gDepthBufferImageData, gDepthBuffer.surface.imageSize);
@@ -444,6 +482,16 @@ GX2ColorBuffer* WindowGetColorBuffer()
 GX2DepthBuffer* WindowGetDepthBuffer()
 {
     return &gDepthBuffer;
+}
+
+GX2Texture* WindowGetColorBufferTexture()
+{
+    return &gColorBufferTexture;
+}
+
+GX2Texture* WindowGetDepthBufferTexture()
+{
+    return &gDepthBufferTexture;
 }
 
 s32 WindowGetWidth()

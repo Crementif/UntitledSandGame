@@ -34,6 +34,7 @@ private:
     TextButton* m_sandbox_btn;
     TextButton* m_host_btn;
     TextButton* m_join_btn;
+    TextButton* m_crt_btn;
 
     class Audio* m_selectAudio;
     class Audio* m_startAudio;

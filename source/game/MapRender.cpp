@@ -12,7 +12,6 @@
 // shaders
 static ShaderSwitcher s_shaderDrawMap{"draw_map"};
 static ShaderSwitcher s_shaderEnvironmentPass{"environment_pass"};
-static ShaderSwitcher s_shaderCrtPass{"crt"};
 
 // framebuffers
 static inline Framebuffer* m_pixelMap;
@@ -240,17 +239,6 @@ public:
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
     }
 
-    static void drawCRTFilter(Map* map)
-    {
-        Framebuffer::ApplyBackbuffer();
-
-        s_shaderCrtPass.Activate();
-
-        GX2SetVertexUniformBlock(0, sizeof(s_mapDrawUFVertex), s_mapDrawUFVertex);
-        GX2SetPixelUniformBlock(0, sizeof(s_mapDrawUFPixel), s_mapDrawUFPixel);
-        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
-    }
-
 private:
     static void InitPixelColorLookupMap()
     {
@@ -353,7 +341,6 @@ void Map::Draw()
     MapRenderManager::UpdatePixelMap(this, visibleCells);
     MapRenderManager::DoEnvironmentPass();
     MapRenderManager::DrawPixelsToScreen(this);
-    // MapRenderManager::DrawCrt(this);
 }
 
 void MapCell::FlushDrawCache()

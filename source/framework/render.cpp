@@ -18,6 +18,10 @@
 
 #include "render_data.h"
 #include "../framework/fileformat/TGAFile.h"
+#include "../game/GameScene.h"
+
+ShaderSwitcher Shader_CRT{"crt"};
+Framebuffer* postProcessingBuffer = nullptr;
 
 void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u32 numMips, GX2SurfaceFormat surfaceFormat, GX2SurfaceDim surfaceDim, GX2TileMode tileMode)
 {
@@ -134,7 +138,7 @@ void Framebuffer::ApplyBackbuffer()
 {
     s32 width = WindowGetWidth();
     s32 height = WindowGetHeight();
-    GX2SetColorBuffer(WindowGetColorBuffer(), (GX2RenderTarget)0);
+    GX2SetColorBuffer(WindowGetColorBuffer(), GX2_RENDER_TARGET_0);
     GX2SetDepthBuffer(WindowGetDepthBuffer());
 
     GX2SetViewport(0, 0, width, height, 0.0f, 1.0f);
@@ -231,6 +235,24 @@ void Render::BeginFrame()
     WindowMakeContextCurrent();
 }
 
+constexpr static __attribute__ ((aligned (32))) u16 s_idx_data[] =
+{
+    0, 1, 2, 2, 1, 3
+};
+
+void Render::DoPostProcessing() {
+    if (GameScene::IsCrtFilterEnabled()) {
+        Framebuffer::ApplyBackbuffer();
+
+        Shader_CRT.Activate();
+
+        GX2SetPixelTexture(WindowGetColorBufferTexture(), 0);
+        GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 0);
+
+        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
+    }
+}
+
 void Render::SwapBuffers()
 {
     WindowSwapBuffers();
@@ -287,11 +309,6 @@ void Render::SetStateForSpriteRendering()
     // use the sprite vertex ringbuffer
     GX2SetAttribBuffer(0, 1024 * 1024, sizeof(Vertex), sVtxRingbuffer.base);
 }
-
-// quad
-const u16 s_idx_data[] = {
-        0, 1, 2, 2, 1, 3
-};
 
 template<bool TUseCamPos, bool TInvalidate = true>
 u32 _SetupSpriteVertexData(f32 x, f32 y, f32 spriteWidth, f32 spriteHeight)

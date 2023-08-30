@@ -46,6 +46,8 @@ void WindowExit();
 
 GX2ColorBuffer* WindowGetColorBuffer();
 GX2DepthBuffer* WindowGetDepthBuffer();
+GX2Texture* WindowGetColorBufferTexture();
+GX2Texture* WindowGetDepthBufferTexture();
 
 s32 WindowGetWidth();
 s32 WindowGetHeight();

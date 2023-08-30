@@ -9,6 +9,8 @@
 #include "GameClient.h"
 #include "../framework/audio.h"
 
+bool GameScene::s_showCrtFilter = true;
+
 GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboard(scoreboard), m_lastInput(OSGetTick()) {
     this->RegisterMap(new Map("menu.tga", 1337));
 
@@ -18,6 +20,7 @@ GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboa
     m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
     m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, "Host");
     m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, "Join");
+    m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_showCrtFilter ? "Filter: ON" : "Filter: OFF");
 
     m_fsClient = (FSClient*)MEMAllocFromDefaultHeap(sizeof(FSClient));
     FSAddClient(m_fsClient, FS_ERROR_FLAG_NONE);
@@ -37,6 +40,7 @@ GameSceneMenu::~GameSceneMenu() {
     delete m_sandbox_btn;
     delete m_host_btn;
     delete m_join_btn;
+    delete m_crt_btn;
 
     delete m_selectAudio;
     delete m_startAudio;
@@ -58,7 +62,7 @@ void GameSceneMenu::HandleInput() {
         if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
         else m_selectAudio->Play();
     }
-    else if (navigatedDown() && m_selectedButton < 2 && m_lastInput < OSGetTick()) {
+    if (navigatedDown() && m_selectedButton < 3 && m_lastInput < OSGetTick()) {
         m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
         m_selectedButton++;
         if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
@@ -153,6 +157,13 @@ void GameSceneMenu::HandleInput() {
             if (!nn::swkbd::AppearInputForm(appearArg))
                 OSFatal("nn::swkbd::AppearInputForm failed");
         }
+        else if ((m_crt_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 3 && pressedOk())) && m_lastInput < OSGetTick()) {
+            m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
+
+            delete m_crt_btn;
+            s_showCrtFilter = !s_showCrtFilter;
+            m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_showCrtFilter ? "Filter: ON": "Filter: OFF");
+        }
     }
 }
 
@@ -175,6 +186,7 @@ void GameSceneMenu::DrawButtons() {
     m_sandbox_btn->SetSelected(m_selectedButton == 0);
     m_host_btn->SetSelected(m_selectedButton == 1);
     m_join_btn->SetSelected(m_selectedButton == 2);
+    m_crt_btn->SetSelected(m_selectedButton == 3);
     this->DoDraws();
 }
 
