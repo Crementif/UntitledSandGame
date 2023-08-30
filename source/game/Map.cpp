@@ -94,7 +94,7 @@ Map::Map(const char* filename, u32 rngSeed)
     m_rng.SetSeed(rngSeed);
     double startTime = GetMillisecondTimestamp();
     OSReport("Level load - Phase 1\n");
-    auto mapData = LoadFileToMem(std::string("level/").append(filename));
+    auto mapData = LoadFileToMem(std::string("levels/").append(filename));
     if(mapData.empty())
         OSReport("Unable to load map file");
     OSReport("Level load - Phase 2\n");
