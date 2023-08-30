@@ -1,5 +1,7 @@
 #version 450
+
 layout(location = 0) out vec2 param_uv;
+
 void main()
 {
 	int vId = gl_VertexID;

@@ -12,6 +12,7 @@
 // shaders
 static ShaderSwitcher s_shaderDrawMap{"draw_map"};
 static ShaderSwitcher s_shaderEnvironmentPass{"environment_pass"};
+static ShaderSwitcher s_shaderCrtPass{"crt"};
 
 // framebuffers
 static inline Framebuffer* m_pixelMap;
@@ -32,10 +33,19 @@ constexpr static __attribute__ ((aligned (32))) u16 s_idx_data[] =
         0, 1, 2, 2, 1, 3
 };
 
-__attribute__ ((aligned (64))) u32 s_mapDrawUFVertex[4 * 4] =
+__attribute__ ((aligned (64))) u32 s_mapDrawUFVertex[4 * 4 + 4] =
 {
-        // 2 channels xy pos, 2 channels uv coordinates
-        0
+        // [0]: 2 channels xy pos, 2 channels uv coordinates
+        0, 0, 0, 0,
+        // [1]: 2 channels xy pos, 2 channels uv coordinates
+        0, 0, 0, 0,
+        // [2]: 2 channels xy pos, 2 channels uv coordinates
+        0, 0, 0, 0,
+        // [3]: 2 channels xy pos, 2 channels uv coordinates
+        0, 0, 0, 0,
+
+        // [4]: render bounds top left xy, render bounds size xy
+        0, 0, 0, 0,
 };
 
 __attribute__ ((aligned (64))) u32 s_mapDrawUFPixel[4] =
@@ -53,18 +63,21 @@ extern GX2Sampler sRenderBaseSampler1_linear;
 
 static uint64_t launchTime = OSGetTime();
 
-void UpdateMapDrawUniform(s32 pixelMapWidth, s32 pixelMapHeight, f32 xOffset, f32 yOffset)
+void UpdateMapDrawUniform(f32 xOffset, f32 yOffset, AABB ws_cameraBounds, f32 ws_worldWidth, f32 ws_worldHeight)
 {
     const f32 pixelWidth = Framebuffer::GetCurrentPixelWidth()*2.0f;
     const f32 pixelHeight = Framebuffer::GetCurrentPixelHeight()*2.0f;
 
-    // note that pixelMapWidth already includes MAP_RENDER_VIEW_BORDER
-    // since the border is the same width around the image, the easiest way to render the pixelmap is to center it on the screen
-    const f32 x1 = -pixelWidth * (f32)((int)(pixelMapWidth/2)) * (f32)MAP_PIXEL_ZOOM;
-    const f32 y1 = -pixelHeight * (f32)((int)(pixelMapHeight/2)) * (f32)MAP_PIXEL_ZOOM;
+    // render bounds = camera bounds but includes overshoot (MAP_RENDER_VIEW_BORDER) to allow for postprocessing (lava glow) beyond screen edges
+    AABB ws_renderBounds = AABB(ws_cameraBounds.pos.x - (f32)(MAP_RENDER_VIEW_BORDER * MAP_PIXEL_ZOOM), ws_cameraBounds.pos.y - (f32)(MAP_RENDER_VIEW_BORDER * MAP_PIXEL_ZOOM), ws_cameraBounds.scale.x + (f32)(MAP_RENDER_VIEW_BORDER * MAP_PIXEL_ZOOM) * 2.0f, ws_cameraBounds.scale.y + (f32)(MAP_RENDER_VIEW_BORDER * MAP_PIXEL_ZOOM) * 2.0f);
+    AABB px_renderBounds = ws_renderBounds / (f32)MAP_PIXEL_ZOOM;
 
-    const f32 x2 = x1 + pixelWidth * (f32)pixelMapWidth * (f32)MAP_PIXEL_ZOOM;
-    const f32 y2 = y1 + pixelHeight * (f32)pixelMapHeight * (f32)MAP_PIXEL_ZOOM;
+    // since the border is the same width around the image, the easiest way to render the pixel map is to center it on the screen
+    const f32 x1 = -pixelWidth * (f32)((int)(px_renderBounds.scale.x/2)) * (f32)MAP_PIXEL_ZOOM;
+    const f32 y1 = -pixelHeight * (f32)((int)(px_renderBounds.scale.y/2)) * (f32)MAP_PIXEL_ZOOM;
+
+    const f32 x2 = x1 + pixelWidth * (f32)px_renderBounds.scale.x * (f32)MAP_PIXEL_ZOOM;
+    const f32 y2 = y1 + pixelHeight * (f32)px_renderBounds.scale.y * (f32)MAP_PIXEL_ZOOM;
 
     const f32 uvX1 = 0.0f;
     const f32 uvX2 = 1.0f;
@@ -89,10 +102,16 @@ void UpdateMapDrawUniform(s32 pixelMapWidth, s32 pixelMapHeight, f32 xOffset, f3
     s_mapDrawUFVertex[2 * 4 + 3] = EndianSwap_F32(uvY1);
     s_mapDrawUFVertex[3 * 4 + 2] = EndianSwap_F32(uvX2);
     s_mapDrawUFVertex[3 * 4 + 3] = EndianSwap_F32(uvY2);
+    // normalized render bounds (divided by map/world size)
+    s_mapDrawUFVertex[4 * 4 + 0] = EndianSwap_F32(ws_renderBounds.GetTopLeft().x / ws_worldWidth);
+    s_mapDrawUFVertex[4 * 4 + 1] = EndianSwap_F32(ws_renderBounds.GetTopLeft().y / ws_worldHeight);
+    s_mapDrawUFVertex[4 * 4 + 2] = EndianSwap_F32(ws_renderBounds.scale.x / ws_worldWidth);
+    s_mapDrawUFVertex[4 * 4 + 3] = EndianSwap_F32(ws_renderBounds.scale.y / ws_worldHeight);
+
 
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_UNIFORM_BLOCK, s_mapDrawUFVertex, sizeof(s_mapDrawUFVertex));
 
-    /* update pixel uniform */
+    // update pixel uniform
     uint64_t rawTick = OSGetTime();
     uint64_t time64 = OSTicksToMilliseconds((OSGetTime() - launchTime));
     float time = (float)time64;
@@ -180,7 +199,7 @@ public:
 
 
     // draw map pixels to screen using m_pixelMap
-    static void DrawPixelsToScreen(Map* map)
+    static void DrawPixelsToScreen(Map *map)
     {
         Framebuffer::ApplyBackbuffer();
         // draw fullscreen quad
@@ -202,16 +221,30 @@ public:
         s32 pixelY = (s32)camPos.y;
         s32 subscrollX = pixelX % MAP_PIXEL_ZOOM;
         s32 subscrollY = pixelY % MAP_PIXEL_ZOOM;
-        f32 xOffset = pixelWidth * -(f32)subscrollX * 0.66f; // why 0.66?
-        f32 yOffset = pixelHeight * 0.5f * (f32)subscrollY;
+        f32 gridOffsetX = pixelWidth * -(f32)subscrollX * 0.66f; // why 0.66?
+        f32 gridOffsetY = pixelHeight * 0.5f * (f32)subscrollY;
 
         s32 pixelMapWidth = pixelMapTexture->surface.width;
         s32 pixelMapHeight = pixelMapTexture->surface.height;
         f32 pixelMapPixelWidth = 1.0f / pixelMapWidth;
         f32 pixelMapPixelHeight = 1.0f / pixelMapHeight;
-        UpdateMapDrawUniform(pixelMapWidth, pixelMapHeight, xOffset, yOffset);
+
+        AABB cameraBounds = AABB(Render::GetCameraPosition().x, Render::GetCameraPosition().y, (f32)Render::GetScreenSize().x, (f32)Render::GetScreenSize().y);
+
+        UpdateMapDrawUniform(gridOffsetX, gridOffsetY, cameraBounds, (f32)map->GetPixelWidth() * MAP_PIXEL_ZOOM, (f32)map->GetPixelHeight() * MAP_PIXEL_ZOOM);
 
         RenderState::SetTransparencyMode(RenderState::E_TRANSPARENCY_MODE::ADDITIVE);
+
+        GX2SetVertexUniformBlock(0, sizeof(s_mapDrawUFVertex), s_mapDrawUFVertex);
+        GX2SetPixelUniformBlock(0, sizeof(s_mapDrawUFPixel), s_mapDrawUFPixel);
+        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
+    }
+
+    static void drawCRTFilter(Map* map)
+    {
+        Framebuffer::ApplyBackbuffer();
+
+        s_shaderCrtPass.Activate();
 
         GX2SetVertexUniformBlock(0, sizeof(s_mapDrawUFVertex), s_mapDrawUFVertex);
         GX2SetPixelUniformBlock(0, sizeof(s_mapDrawUFPixel), s_mapDrawUFPixel);
@@ -320,6 +353,7 @@ void Map::Draw()
     MapRenderManager::UpdatePixelMap(this, visibleCells);
     MapRenderManager::DoEnvironmentPass();
     MapRenderManager::DrawPixelsToScreen(this);
+    // MapRenderManager::DrawCrt(this);
 }
 
 void MapCell::FlushDrawCache()

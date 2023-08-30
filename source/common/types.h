@@ -185,7 +185,12 @@ struct AABB
     // move origin of aabb by vector
     AABB operator+(const Vector2f& rhs) const
     {
-        return AABB(this->pos.x + rhs.x, this->pos.y + rhs.y, this->scale.x, this->scale.y);
+        return {this->pos.x + rhs.x, this->pos.y + rhs.y, this->scale.x, this->scale.y};
+    }
+
+    AABB operator/(const float& rhs) const
+    {
+        return {this->pos.x / rhs, this->pos.y / rhs, this->scale.x / rhs, this->scale.y / rhs};
     }
 
     Vector2f pos; // left upper corner
