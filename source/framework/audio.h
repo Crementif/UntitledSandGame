@@ -18,19 +18,21 @@ public:
     void Play();
     void Reset();
     void Pause();
+    void SetLooping(bool looping);
     void Update();
     void QueueDestroy();
-    StateEnum GetState() const { return state; }
+    [[nodiscard]] StateEnum GetState() const { return m_state; }
 
 private:
-    AXVoice* voiceHandle = nullptr;
-    AXVoiceSrc voiceSource;
-    AXVoiceOffsets voiceOffsets;
+    AXVoice* m_voiceHandle = nullptr;
+    AXVoiceSrc m_voiceSource;
+    AXVoiceOffsets m_voiceOffsets;
 
-    WavFile* wavFile = nullptr;
-    StateEnum state;
+    uint32_t m_volume = 100;
+    WavFile* m_wavFile = nullptr;
+    StateEnum m_state;
 
-    static constexpr uint32_t priority = 31;
+    static constexpr uint32_t s_priority = 31;
 };
 
 class AudioManager {
@@ -39,8 +41,8 @@ public:
     AudioManager() {
         if (!AXIsInit()) {
             AXInitParams params{
-                    .renderer = AX_INIT_RENDERER_48KHZ,
-                    .pipeline = AX_INIT_PIPELINE_SINGLE
+                .renderer = AX_INIT_RENDERER_48KHZ,
+                .pipeline = AX_INIT_PIPELINE_SINGLE
             };
             AXInitWithParams(&params);
         }

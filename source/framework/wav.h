@@ -61,7 +61,7 @@ public:
             // Keep reading chunks until we find the 'data' chunk
         } while (!(chunkHeader.data[0] == 'd' && chunkHeader.data[1] == 'a' && chunkHeader.data[2] == 't' && chunkHeader.data[3] == 'a'));
 
-        WHBLogPrintf("Load .wav file that's %u bytes long", _swapU32(chunkHeader.subchunkSize));
+        WHBLogPrintf("Load .wav file from %s that's %u bytes long", path.c_str(), _swapU32(chunkHeader.subchunkSize));
         m_dataBuffer.resize(_swapU32(chunkHeader.subchunkSize), 0);
         soundFile.read((char*)m_dataBuffer.data(), (int32_t)m_dataBuffer.size());
 

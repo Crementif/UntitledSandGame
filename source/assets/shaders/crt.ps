@@ -149,8 +149,4 @@ void main()
     out_pixel0.rgb = Tri(pos);
     out_pixel0.a = 1.0f;
     out_pixel0.rgb = ToSrgb(out_pixel0.rgb);
-
-    //vec4 px = texture(tex_renderedMap, ss_uv);
-    //out_pixel0 = vec4(px.rgba);//, 1.0f);
-    //out_pixel0 = vec4(mod(ss_uv.x, 1.0f), mod(ss_uv.y, 1.0f), 0.0f, 1.0f);
 }

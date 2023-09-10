@@ -96,5 +96,16 @@ private:
     class Audio* m_teleportAudio;
     class Audio* m_deathAudio;
     class Audio* m_hitAudio;
-    class Audio* m_drillAudio;
+
+    enum class DrillAudioState {
+        STARTING,
+        STARTED,
+        MOVING,
+        STOPPING,
+        STOPPED,
+    };
+    DrillAudioState m_drillAudioState = DrillAudioState::STOPPED;
+    class Audio* m_drillStartAudio;
+    class Audio* m_drillMoveAudio;
+    class Audio* m_drillStopAudio;
 };
