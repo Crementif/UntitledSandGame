@@ -2,6 +2,7 @@
 
 #include "../common/types.h"
 #include "Object.h"
+#include "../framework/navigation.h"
 
 class Player: public Object
 {
@@ -58,9 +59,10 @@ public:
     bool FindAdjustedGroundHeight(f32 posX, f32 posY, f32& groundHeight, bool& isStuckInGround, bool& isFloatingInAir);
 private:
     void HandleLocalPlayerControl_WalkMode(struct ButtonState& buttonState, Vector2f leftStick);
-    void HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState, Vector2f leftStick);
+    void HandleLocalPlayerControl_DrillMode(float timestep, ButtonState &buttonState, Vector2f leftStick);
     void HandleLocalPlayerControl_SpectatingMode(struct ButtonState& buttonState, Vector2f leftStick);
 
+    void Update_MovementSFX(float timestep);
     void Update_DrillMode(float timestep);
     void Update_SpectatingMode(float timestep);
 

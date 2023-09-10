@@ -4,6 +4,7 @@
 
 #include "../framework/fileformat/TGAFile.h"
 #include <coreinit/debug.h>
+#include "../framework/Audio.h"
 
 MAP_PIXEL_TYPE _GeneratePixelAtWorldPos(s32 x, s32 y)
 {
@@ -111,6 +112,11 @@ Map::Map(const char* filename, u32 rngSeed)
     char strBuf[64];
     sprintf(strBuf, "%.04lf", dur);
     OSReport("Level loaded in %sms\n", strBuf);
+
+    m_lavaHiss0Audio = new Audio("/sfx/lava_hiss0.wav");
+    m_lavaHiss1Audio = new Audio("/sfx/lava_hiss1.wav");
+    m_lavaHiss2Audio = new Audio("/sfx/lava_hiss2.wav");
+    m_lavaHiss3Audio = new Audio("/sfx/lava_hiss3.wav");
 }
 
 Map::~Map()
@@ -168,7 +174,6 @@ PixelType& Map::GetPixelNoBoundsCheck(s32 x, s32 y)
 
 void Map::Update()
 {
-
 }
 
 MAP_PIXEL_TYPE PixelType::GetPixelType() const

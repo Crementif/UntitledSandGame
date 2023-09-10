@@ -3,6 +3,7 @@
 #include "GameSceneIngame.h"
 #include "MapFlungPixels.h"
 #include "../framework/audio.h"
+#include "Player.h"
 
 void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
 {
@@ -78,6 +79,8 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
 {
     // randomly check a few pixels in each cell to see if we need to simulate them due to surrounding conditions changing
     bool hasActivity = false;
+    bool hasLavaActivity = false;
+    bool hasLava = false;
     for(u32 i=0; i<25; i++)
     {
         u32 rdX = this->GetRNGNumber() % (HOTSPOT_RANGE*2);
@@ -98,17 +101,43 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
         }
         else if(mat == MAP_PIXEL_TYPE::LAVA)
         {
+            hasLava = true;
             if(!GetPixelNoBoundsCheck(px-1, py+1).IsFilled() || !GetPixelNoBoundsCheck(px, py+1).IsFilled() || !GetPixelNoBoundsCheck(px+1, py+1).IsFilled())
             {
                 hasActivity = true;
+                hasLavaActivity = true;
                 ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, px, py);
             }
             else if (!GetPixelNoBoundsCheck(px-1, py).IsFilled() || !GetPixelNoBoundsCheck(px+1, py).IsFilled()) {
                 hasActivity = true;
+                hasLavaActivity = true;
                 ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, px, py);
             }
         }
     }
+
+    if (hasLava) {
+        Vector2f centerPos = Vector2f(GetPixelWidth()/2, GetPixelHeight()/2);
+
+        Player* player = GameScene::sActiveScene->GetPlayer();
+        if (player != nullptr) {
+            centerPos = player->GetPosition();
+        }
+
+        float distanceToPlayer = Vector2f(x, y).Distance(centerPos);
+        if (distanceToPlayer <= 180.0f && (m_lastLavaHiss + (OSTime)OSSecondsToTicks(5)) <= OSGetTime()) {
+            g_debugStrings.emplace_back("Distance: "+std::to_string(distanceToPlayer) + " Center: " + std::to_string(centerPos.x) + ", " + std::to_string(centerPos.y) + " LavaPos: " + std::to_string(x) + ", " + std::to_string(y));
+
+            if (m_currLavaHiss == 0) m_lavaHiss0Audio->Play();
+            else if (m_currLavaHiss == 1) m_lavaHiss1Audio->Play();
+            else if (m_currLavaHiss == 2) m_lavaHiss2Audio->Play();
+            else if (m_currLavaHiss == 3) m_lavaHiss3Audio->Play();
+
+            m_currLavaHiss = (m_currLavaHiss + 1) % 4;
+            m_lastLavaHiss = OSGetTime();
+        }
+    }
+
     return hasActivity;
 }
 

@@ -3,7 +3,6 @@
 #include "Map.h"
 #include "GameClient.h"
 
-#include "../framework/navigation.h"
 #include "GameSceneMenu.h"
 #include "../framework/audio.h"
 #include "MapPixels.h"
@@ -181,9 +180,9 @@ void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2
         m_drillAngle = atan2(leftStick.x, leftStick.y) - M_PI_2;
 }
 
-void Player::HandleLocalPlayerControl_DrillMode(struct ButtonState& buttonState, Vector2f leftStick)
+void Player::HandleLocalPlayerControl_DrillMode(float timestep, struct ButtonState &buttonState, Vector2f leftStick)
 {
-    m_drillingDur += 1000.0f / 60.0f;
+    m_drillingDur += timestep;
     // drill arm can be controlled freely when not drilling
     if( leftStick.Length() > 0.1f)
     {
@@ -228,64 +227,10 @@ void Player::HandleLocalPlayerControl()
             m_drillingDur = 0.0f;
         }
 
-        if (m_drillAudioState == DrillAudioState::STOPPING && m_drillStopAudio->GetState() == Audio::StateEnum::FINISHED) {
-            m_drillAudioState = DrillAudioState::STOPPED;
-            // OSReport("Changing DrillAudioState to STOPPED\n");
-        }
-        if (m_drillAudioState == DrillAudioState::STARTING && m_drillStartAudio->GetState() == Audio::StateEnum::FINISHED) {
-            m_drillAudioState = DrillAudioState::STARTED;
-            // OSReport("Changing DrillAudioState to STARTED\n");
-        }
-
-        if (m_moveFlags.isDrilling) {
-            m_drillMoveAudio->SetLooping(true);
-            // start drill audio
-            if (m_drillAudioState == DrillAudioState::STOPPED) {
-                m_drillAudioState = DrillAudioState::STARTING;
-                m_drillStartAudio->Play();
-                // OSReport("Drill start audio\n");
-            }
-            // start moving loop when drill has started
-            else if (m_drillAudioState == DrillAudioState::STARTED) {
-                m_drillAudioState = DrillAudioState::MOVING;
-                m_drillMoveAudio->Play();
-                // OSReport("Drill move audio\n");
-            }
-            // continue moving loop if drill is already moving
-            else if (m_drillAudioState == DrillAudioState::MOVING && m_drillMoveAudio->GetState() != Audio::StateEnum::PLAYING) {
-                m_drillMoveAudio->Play();
-                // OSReport("Continuing drill move audio\n");
-            }
-            // continue moving loop again if drill temporarily stopped
-            else if (m_drillAudioState == DrillAudioState::STOPPING && m_drillStopAudio->GetState() != Audio::StateEnum::FINISHED) {
-                m_drillAudioState = DrillAudioState::MOVING;
-                m_drillMoveAudio->Play();
-                // Reset drill stopping audio to beginning
-                m_drillStopAudio->Reset();
-                m_drillStopAudio->Pause();
-                //OSReport("Doing dirty restart of move loop after stopping audio got interrupted\n");
-            }
-        }
-        else {
-            m_drillMoveAudio->SetLooping(false);
-            // stop drill audio if player was moving
-            if (m_drillAudioState == DrillAudioState::MOVING && m_drillMoveAudio->GetState() != Audio::StateEnum::PLAYING) {
-                m_drillAudioState = DrillAudioState::STOPPING;
-                m_drillStopAudio->Play();
-                // OSReport("Drill stop audio from moving state\n");
-            }
-            // stop drill audio if player was starting
-            if (m_drillAudioState == DrillAudioState::STARTING && m_drillStopAudio->GetState() != Audio::StateEnum::PLAYING) {
-                m_drillAudioState = DrillAudioState::STOPPING;
-                m_drillStopAudio->Play();
-                // OSReport("Drill stop audio from starting state\n");
-            }
-        }
-
         if (!m_moveFlags.isDrilling)
             HandleLocalPlayerControl_WalkMode(buttonState, leftStick);
         else
-            HandleLocalPlayerControl_DrillMode(buttonState, leftStick);
+            HandleLocalPlayerControl_DrillMode(1000.0f/60.0f, buttonState, leftStick);
     }
     else {
         m_moveFlags.walkingLeft = false;
@@ -307,6 +252,8 @@ void Player::Update(float timestep)
         Update_SpectatingMode(timestep);
         return;
     }
+
+    Update_MovementSFX(timestep);
 
     if(m_moveFlags.isDrilling)
     {
@@ -403,10 +350,60 @@ void Player::Update(float timestep)
     }
 }
 
-void Player::Update_DrillMode(float timestep)
-{
-    m_speed = Vector2f((IsTurboBoosting() ? 1.0f : 0.4f), 0.0f).Rotate(m_drillAngle);
-    Vector2f newPos = m_pos + m_speed;
+void Player::Update_MovementSFX(float timestep) {
+    if (m_drillAudioState == DrillAudioState::STOPPING && m_drillStopAudio->GetState() == Audio::StateEnum::FINISHED) {
+        m_drillAudioState = DrillAudioState::STOPPED;
+        // OSReport("Changing DrillAudioState to STOPPED\n");
+    }
+    if (m_drillAudioState == DrillAudioState::STARTING && m_drillStartAudio->GetState() == Audio::StateEnum::FINISHED) {
+        m_drillAudioState = DrillAudioState::STARTED;
+        // OSReport("Changing DrillAudioState to STARTED\n");
+    }
+
+    if (m_moveFlags.isDrilling) {
+        m_drillMoveAudio->SetLooping(true);
+        // start drill audio
+        if (m_drillAudioState == DrillAudioState::STOPPED) {
+            m_drillAudioState = DrillAudioState::STARTING;
+            m_drillStartAudio->Play();
+            // OSReport("Drill start audio\n");
+        }
+            // start moving loop when drill has started
+        else if (m_drillAudioState == DrillAudioState::STARTED) {
+            m_drillAudioState = DrillAudioState::MOVING;
+            m_drillMoveAudio->Play();
+            // OSReport("Drill move audio\n");
+        }
+            // continue moving loop if drill is already moving
+        else if (m_drillAudioState == DrillAudioState::MOVING && m_drillMoveAudio->GetState() != Audio::StateEnum::PLAYING) {
+            m_drillMoveAudio->Play();
+            // OSReport("Continuing drill move audio\n");
+        }
+            // continue moving loop again if drill temporarily stopped
+        else if (m_drillAudioState == DrillAudioState::STOPPING && m_drillStopAudio->GetState() != Audio::StateEnum::FINISHED) {
+            m_drillAudioState = DrillAudioState::MOVING;
+            m_drillMoveAudio->Play();
+            // Reset drill stopping audio to beginning
+            m_drillStopAudio->Reset();
+            m_drillStopAudio->Pause();
+            //OSReport("Doing dirty restart of move loop after stopping audio got interrupted\n");
+        }
+    }
+    else {
+        m_drillMoveAudio->SetLooping(false);
+        // stop drill audio if player was moving
+        if (m_drillAudioState == DrillAudioState::MOVING && m_drillMoveAudio->GetState() != Audio::StateEnum::PLAYING) {
+            m_drillAudioState = DrillAudioState::STOPPING;
+            m_drillStopAudio->Play();
+            // OSReport("Drill stop audio from moving state\n");
+        }
+        // stop drill audio if player was starting
+        if (m_drillAudioState == DrillAudioState::STARTING && m_drillStopAudio->GetState() != Audio::StateEnum::PLAYING) {
+            m_drillAudioState = DrillAudioState::STOPPING;
+            m_drillStopAudio->Play();
+            // OSReport("Drill stop audio from starting state\n");
+        }
+    }
 
     // change volume depending on distance
     float distance = (m_parent->GetPlayer()->m_pos.Distance(this->m_pos)+0.00000001f)/10.0f;
@@ -415,6 +412,12 @@ void Player::Update_DrillMode(float timestep)
     m_drillStartAudio->SetVolume((uint32_t)volume);
     m_drillMoveAudio->SetVolume((uint32_t)volume);
     m_drillStopAudio->SetVolume((uint32_t)volume);
+}
+
+void Player::Update_DrillMode(float timestep)
+{
+    m_speed = Vector2f((IsTurboBoosting() ? 1.0f : 0.4f), 0.0f).Rotate(m_drillAngle);
+    Vector2f newPos = m_pos + m_speed;
 
     Map* map = m_parent->GetMap();
     newPos.x = std::clamp(newPos.x, 8.0f, (f32)map->GetPixelWidth() - 8.0f);

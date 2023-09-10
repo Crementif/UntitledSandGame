@@ -245,4 +245,11 @@ private:
     };
 
     std::vector<StaticVolatilityHotSpot> m_volatilityHotspots;
+
+    uint32_t m_currLavaHiss = 0;
+    OSTime m_lastLavaHiss = 0;
+    class Audio* m_lavaHiss0Audio = nullptr;
+    class Audio* m_lavaHiss1Audio = nullptr;
+    class Audio* m_lavaHiss2Audio = nullptr;
+    class Audio* m_lavaHiss3Audio = nullptr;
 };
