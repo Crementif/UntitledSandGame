@@ -278,7 +278,7 @@ void Player::Update(float timestep)
         {
             m_moveAnimRot -= M_PI_4/10.0f;
             if(m_speed.x > -0.4)
-                m_speed.x -= (IsTurboBoosting() ? 0.4f : 3.0f);
+                m_speed.x -= (IsTurboBoosting() ? 0.4f : 0.15f);
 
             if (m_moveAnimRot <= 0.01)
                 m_moveAnimRot = M_TWOPI;
@@ -287,7 +287,7 @@ void Player::Update(float timestep)
         {
             m_moveAnimRot += M_PI_4/10.0f;
             if(m_speed.x < 0.4)
-                m_speed.x += (IsTurboBoosting() ? 0.4f : 3.0f);
+                m_speed.x += (IsTurboBoosting() ? 0.4f : 0.15f);
             if (m_moveAnimRot >= M_TWOPI)
                 m_moveAnimRot = 0.0;
         }
@@ -347,7 +347,7 @@ void Player::Update(float timestep)
 
 void Player::Update_DrillMode(float timestep)
 {
-    m_speed = Vector2f((IsTurboBoosting() ? 1.0f : 4.0f), 0.0f).Rotate(m_drillAngle);
+    m_speed = Vector2f((IsTurboBoosting() ? 1.0f : 0.4f), 0.0f).Rotate(m_drillAngle);
     Vector2f newPos = m_pos + m_speed;
     //Vector2f newPos = m_pos + m_speed * 0.1f;
 
@@ -365,7 +365,7 @@ void Player::Update_DrillMode(float timestep)
 
     UpdatePosition(Vector2f(newPos.x, newPos.y));
 
-    if(!DoesPlayerCollideAtPos(newPos.x, newPos.y + 2.0f) && false)
+    if(!DoesPlayerCollideAtPos(newPos.x, newPos.y + 2.0f))
     {
         // falling!
         m_speed.x = m_speed.x * 0.9f;
