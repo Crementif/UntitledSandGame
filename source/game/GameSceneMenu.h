@@ -44,7 +44,7 @@ private:
     MenuState m_state = MenuState::NORMAL;
     MenuScoreboard m_scoreboard = MenuScoreboard::NORMAL;
     uint32_t m_selectedButton = 0;
-    OSTick m_lastInput = false;
+    OSTime m_lastInput = 0;
 
     bool m_startSandboxImmediately{false};
     bool m_startPacketSent{false};

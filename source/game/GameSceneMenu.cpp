@@ -11,7 +11,7 @@
 
 bool GameScene::s_showCrtFilter = true;
 
-GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboard(scoreboard), m_lastInput(OSGetTick()) {
+GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboard(scoreboard) {
     this->RegisterMap(new Map("menu.tga", 1337));
 
     m_selectAudio = new Audio("/sfx/select.wav");
@@ -56,14 +56,15 @@ void GameSceneMenu::HandleInput() {
     s32 screenX, screenY;
     vpadGetTouchInfo(isTouchValid, screenX, screenY);
 
-    if (navigatedUp() && m_selectedButton > 0 && m_lastInput < OSGetTick()) {
-        m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
+    const bool activeInputDebounce = (m_lastInput + (OSTime)OSMillisecondsToTicks(600)) >= OSGetTime();
+    if (navigatedUp() && m_selectedButton > 0 && !activeInputDebounce) {
+        m_lastInput = OSGetTime();
         m_selectedButton--;
         if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
         else m_selectAudio->Play();
     }
-    if (navigatedDown() && m_selectedButton < 3 && m_lastInput < OSGetTick()) {
-        m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
+    else if (navigatedDown() && m_selectedButton < 3 && !activeInputDebounce) {
+        m_lastInput = OSGetTime();
         m_selectedButton++;
         if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
         else m_selectAudio->Play();
@@ -79,13 +80,11 @@ void GameSceneMenu::HandleInput() {
 
     if (m_gameServer)
         m_gameServer->Update();
-    if (m_gameClient)
-    {
+    if (m_gameClient) {
         m_gameClient->Update();
         if (m_gameClient->GetGameState() == GameClient::GAME_STATE::STATE_INGAME)
             GameScene::ChangeTo(new GameSceneIngame(std::move(m_gameClient), std::move(m_gameServer)));
     }
-
 
     // Client-specific states
     bool pressedOkButton = false;
@@ -116,10 +115,15 @@ void GameSceneMenu::HandleInput() {
     }
 
     if (m_state == MenuState::NORMAL) {
+        if (activeInputDebounce)
+            return;
+
         Vector2f touchPos = Vector2f{isTouchValid ? (f32)screenX : 0.0f, isTouchValid ? (f32)screenY : 0.0f};
         if (m_sandbox_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 0 && pressedOk())) {
+            m_lastInput = OSGetTime();
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
-            m_selectAudio->Play();
+            if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
+            else m_selectAudio->Play();
 
             this->m_gameServer = std::make_unique<GameServer>();
             this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
@@ -127,15 +131,19 @@ void GameSceneMenu::HandleInput() {
             this->m_startSandboxImmediately = true;
         }
         else if (m_host_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 1 && pressedOk())) {
+            m_lastInput = OSGetTime();
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
-            m_selectAudio->Play();
+            if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
+            else m_selectAudio->Play();
 
             this->m_gameServer = std::make_unique<GameServer>();
             this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
         }
         else if (m_join_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 2 && pressedOk())) {
+            m_lastInput = OSGetTime();
             this->m_state = MenuState::WAIT_FOR_INPUT;
-            m_selectAudio->Play();
+            if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
+            else m_selectAudio->Play();
 
             nn::swkbd::AppearArg appearArg = {
                 .keyboardArg = {
@@ -157,8 +165,10 @@ void GameSceneMenu::HandleInput() {
             if (!nn::swkbd::AppearInputForm(appearArg))
                 OSFatal("nn::swkbd::AppearInputForm failed");
         }
-        else if ((m_crt_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 3 && pressedOk())) && m_lastInput < OSGetTick()) {
-            m_lastInput = OSGetTick() + OSMillisecondsToTicks(400);
+        else if (m_crt_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 3 && pressedOk())) {
+            m_lastInput = OSGetTime();
+            if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
+            else m_selectAudio->Play();
 
             delete m_crt_btn;
             s_showCrtFilter = !s_showCrtFilter;

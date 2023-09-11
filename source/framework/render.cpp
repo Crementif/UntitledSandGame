@@ -658,9 +658,13 @@ Sprite* Render::sSmallFontTextureWhite = nullptr;
 void Render::RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* text, ...) {
     if (sBigFontTextureBlack == nullptr) {
         sBigFontTextureBlack = new Sprite("font/source-code-pro-black.tga", true);
+        sBigFontTextureBlack->SetupSampler(false);
         sBigFontTextureWhite = new Sprite("font/source-code-pro-white.tga", true);
+        sBigFontTextureWhite->SetupSampler(false);
         sSmallFontTextureBlack = new Sprite("font/source-code-pro-small-black.tga", true);
+        sSmallFontTextureBlack->SetupSampler(false);
         sSmallFontTextureWhite = new Sprite("font/source-code-pro-small-white.tga", true);
+        sSmallFontTextureWhite->SetupSampler(false);
     }
 
     va_list args;
