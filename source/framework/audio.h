@@ -31,6 +31,7 @@ private:
     uint32_t m_volume = 100;
     WavFile* m_wavFile = nullptr;
     StateEnum m_state;
+    std::string m_path;
 
     static constexpr uint32_t s_priority = 31;
 };

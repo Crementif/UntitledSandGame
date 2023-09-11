@@ -232,6 +232,7 @@ private:
     std::vector<class FlungPixel*> m_flungPixels;
 
     LCGRng m_rng;
+    LCGRng m_nonDeterministicRng;
     u32 m_simulationTick{0};
 
     // static volatility hotspots

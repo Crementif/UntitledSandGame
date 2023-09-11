@@ -2,8 +2,10 @@
 
 Audio::Audio(std::string path) {
     const auto& newSound = AudioManager::GetInstance().sounds.try_emplace(path, std::make_unique<WavFile>(path));
+
     this->m_wavFile = newSound.first->second.get();
     this->m_state = StateEnum::LOADED;
+    this->m_path = path;
     AudioManager::GetInstance().voices.emplace_back(this);
 }
 
@@ -33,7 +35,7 @@ void Audio::SetVolume(uint32_t volume) {
 void Audio::Play() {
     // Handle special states
     if (this->m_state == StateEnum::PLAYING) {
-        CriticalErrorHandler("Use additional audio objects if you want to play more then one time.");
+        CriticalErrorHandler("Use additional audio objects for sound effect \"%s\" if you want to play more then one time", this->m_path.c_str());
     }
 
     if (this->m_state == StateEnum::PAUSED) {

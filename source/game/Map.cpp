@@ -172,8 +172,32 @@ PixelType& Map::GetPixelNoBoundsCheck(s32 x, s32 y)
     return m_cells[cellX + cellY * m_cellsX].GetPixelFromCellCoords(relX, relY);
 }
 
+constexpr u32 LAVA_HISS_ATTEMPTS = 2;
 void Map::Update()
 {
+    if ((m_lastLavaHiss + (OSTime)OSSecondsToTicks(5)) >= OSGetTime())
+        return;
+
+    for (u32 i = 0; i < LAVA_HISS_ATTEMPTS; i++)
+    {
+        u32 ss_x = m_nonDeterministicRng.GetNext() % (u32)(Render::GetScreenSize().x / MAP_PIXEL_ZOOM);
+        u32 ws_x = std::clamp<u32>(ss_x + (u32)(Render::GetCameraPosition().x / MAP_PIXEL_ZOOM), 0, GetPixelWidth()-1);
+        u32 ss_y = m_nonDeterministicRng.GetNext() % (u32)(Render::GetScreenSize().y / MAP_PIXEL_ZOOM);
+        u32 ws_y = std::clamp<u32>(ss_y + (u32)(Render::GetCameraPosition().y / MAP_PIXEL_ZOOM), 0, GetPixelHeight()-1);
+
+        if (GetPixel((s32)ws_x, (s32)ws_y).GetPixelType() == MAP_PIXEL_TYPE::LAVA) {
+            if (m_currLavaHiss == 0) m_lavaHiss0Audio->Play();
+            else if (m_currLavaHiss == 1) m_lavaHiss1Audio->Play();
+            else if (m_currLavaHiss == 2) m_lavaHiss2Audio->Play();
+            else if (m_currLavaHiss == 3) m_lavaHiss3Audio->Play();
+
+            m_currLavaHiss++;
+            m_lastLavaHiss = OSGetTime();
+        }
+    }
+
+    if (m_currLavaHiss >= 4)
+        m_currLavaHiss = 0;
 }
 
 MAP_PIXEL_TYPE PixelType::GetPixelType() const
