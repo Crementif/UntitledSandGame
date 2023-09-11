@@ -1,5 +1,6 @@
 #pragma once
 #include "../common/common.h"
+#include "../common/schrift.h"
 
 enum class E_TEXFORMAT
 {
@@ -102,6 +103,7 @@ public:
     void SetupSampler(bool useLinearFiltering);
 
     void Clear(u32 color = 0x00000000);
+    u32 GetPixelRGBA8888(u32 x, u32 y);
     void SetPixelRGBA8888(u32 x, u32 y, u32 color);
     void SetPixelRG88(u32 x, u32 y, u32 color);
     void FlushCache();
@@ -152,6 +154,7 @@ public:
     static Vector2i GetScreenSize();
 
     static void RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* text, ...);
+    static Sprite* RenderTextSprite(u8 size, u32 color, const wchar_t* string);
 protected:
     static void UpdateCameraCachedValues();
 

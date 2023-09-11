@@ -23,6 +23,9 @@
 ShaderSwitcher Shader_CRT{"crt"};
 Framebuffer* postProcessingBuffer = nullptr;
 
+static SFT s_fontFace;
+static std::unordered_map<u32, std::unordered_map<SFT_Glyph, SFT_Image>> s_glyphCaches;
+
 void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u32 numMips, GX2SurfaceFormat surfaceFormat, GX2SurfaceDim surfaceDim, GX2TileMode tileMode)
 {
     texturePtr->surface.dim = surfaceDim;
@@ -216,10 +219,32 @@ void Render::Init()
     RenderState::Init();
     _InitVtxRingbuffer();
     _InitBasicRenderResources();
+
+    // initialize libschrift
+    uint8_t* s_fontBuffer;
+    uint32_t fontBufferSize;
+    OSGetSharedData(OS_SHAREDDATATYPE_FONT_STANDARD, 0, (void**)&s_fontBuffer, &fontBufferSize);
+
+    s_fontFace = {
+        .font = sft_loadmem(s_fontBuffer, fontBufferSize),
+        .xScale = 20,
+        .yScale = 20,
+        .xOffset = 0,
+        .yOffset = 0,
+        .flags = SFT_DOWNWARD_Y,
+    };
 }
 
 void Render::Shutdown()
 {
+    sft_freefont(s_fontFace.font);
+
+    for (auto& glyphCache : s_glyphCaches) {
+        for (auto& glyph : glyphCache.second) {
+            free(glyph.second.pixels);
+        }
+    }
+
     WindowExit();
 }
 
@@ -570,6 +595,12 @@ void Sprite::Clear(u32 color)
     }
 }
 
+u32 Sprite::GetPixelRGBA8888(u32 x, u32 y)
+{
+    u8* p = (u8*)m_tex->surface.image + (x + y * m_tex->surface.pitch) * 4;
+    return (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | (p[3]<<0);
+}
+
 void Sprite::SetPixelRGBA8888(u32 x, u32 y, u32 color)
 {
     u8* p = (u8*)m_tex->surface.image + (x + y * m_tex->surface.pitch) * 4;
@@ -648,6 +679,77 @@ GX2Texture* LoadFromTGA(u8* data, u32 length)
     // todo - create texture with optimal tile format and use GX2CopySurface to convert from linear to tiled format
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_TEXTURE, texture->surface.image, texture->surface.imageSize);
     return texture;
+}
+
+void drawBitmapToSprite(Sprite* renderSprite, SFT_Image *bitmap, int32_t x, int32_t y, u32 color) {
+    int32_t x_max = x + bitmap->width;
+    int32_t y_max = y + bitmap->height;
+
+    for (int32_t i=x, p=0; i < x_max; i++, p++) {
+        for (int32_t j=y, q=0; j < y_max; j++, q++) {
+            uint8_t col = ((uint8_t*)bitmap->pixels)[q * bitmap->width + p];
+
+            // todo: enable anti-aliasing by blending the color parameter with col which contains the alpha
+            if (col != 0) renderSprite->SetPixelRGBA8888(i, j, color);
+        }
+    }
+}
+
+Sprite* Render::RenderTextSprite(u8 size, u32 color, const wchar_t* string) {
+    int32_t pen_x = size;
+    int32_t pen_y = size;
+
+    auto& currGlyphCache = s_glyphCaches.try_emplace(size).first->second;
+    s_fontFace.xScale = size;
+    s_fontFace.yScale = size;
+
+    Sprite* renderedSprite = new Sprite(1920, 1080, true, E_TEXFORMAT::RGBA8888_UNORM);
+    renderedSprite->SetupSampler(true);
+
+    for (; *string; string++) {
+        SFT_Glyph gid;
+        if (sft_lookup(&s_fontFace, *string, &gid) == -1) {
+            OSReport("Failed to do character lookup!\n");
+            continue;
+        }
+
+        SFT_GMetrics mtx;
+        if (sft_gmetrics(&s_fontFace, gid, &mtx) == -1) {
+            OSReport("Failed to extract metrics from character!\n");
+            continue;
+        }
+
+        if (!currGlyphCache.contains(gid)) {
+            int32_t textureWidth = (mtx.minWidth + 3) & ~3;
+            int32_t textureHeight = mtx.minHeight;
+
+            SFT_Image img = {
+                .pixels = nullptr,
+                .width = textureWidth,
+                .height = textureHeight
+            };
+
+            if (textureWidth == 0) textureWidth = 4;
+            if (textureHeight == 0) textureHeight = 4;
+
+            img.pixels = malloc((uint32_t)(img.width * img.height));
+            if (img.pixels == nullptr || sft_render(&s_fontFace, gid, img) == -1) {
+                OSReport("Failed to render a character!\n");
+                continue;
+            }
+            currGlyphCache.emplace(gid, img);
+        }
+
+        if ((pen_x + (int32_t)mtx.advanceWidth) > 853) {
+            CriticalErrorHandler("Text too long to fit on screen!");
+        }
+
+        drawBitmapToSprite(renderedSprite, &currGlyphCache[gid], pen_x + (int32_t)mtx.leftSideBearing, pen_y + (int32_t)mtx.yOffset, color);
+        pen_x += (int32_t)mtx.advanceWidth;
+    }
+
+    renderedSprite->FlushCache();
+    return renderedSprite;
 }
 
 Sprite* Render::sBigFontTextureBlack = nullptr;

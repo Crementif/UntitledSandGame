@@ -46,9 +46,9 @@ DRC_SPLASH	:=	dist/drc-splash.png
 #-------------------------------------------------------------------------------
 CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O2 -ffunction-sections -fdata-sections $(MACHDEP) $(ROMFS_CFLAGS)
 
-CFLAGS		+=	$(INCLUDE) -std=gnu++20 -D__WIIU__ -D__WUT__
+CFLAGS		+=	$(INCLUDE) -D__WIIU__ -D__WUT__
 
-CXXFLAGS	:=	$(CFLAGS)
+CXXFLAGS	:=	$(CFLAGS) -std=gnu++20
 
 ASFLAGS		:=	-g $(ARCH)
 LDFLAGS		=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map)

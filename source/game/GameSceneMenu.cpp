@@ -17,10 +17,10 @@ GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboa
     m_selectAudio = new Audio("/sfx/select.wav");
     m_startAudio = new Audio("/sfx/start.wav");
 
-    m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, "Sandbox");
-    m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, "Host");
-    m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, "Join");
-    m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_showCrtFilter ? "Filter: ON" : "Filter: OFF");
+    m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, L"Sandbox");
+    m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, L"Host");
+    m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, L"Join");
+    m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
 
     m_fsClient = (FSClient*)MEMAllocFromDefaultHeap(sizeof(FSClient));
     FSAddClient(m_fsClient, FS_ERROR_FLAG_NONE);
@@ -172,7 +172,7 @@ void GameSceneMenu::HandleInput() {
 
             delete m_crt_btn;
             s_showCrtFilter = !s_showCrtFilter;
-            m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_showCrtFilter ? "Filter: ON": "Filter: OFF");
+            m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_showCrtFilter ? L"Filter: ON": L"Filter: OFF");
         }
     }
 }

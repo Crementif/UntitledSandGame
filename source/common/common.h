@@ -23,6 +23,7 @@
 #include <coreinit/debug.h>
 #include <coreinit/dynload.h>
 #include <coreinit/time.h>
+#include <coreinit/memory.h>
 
 #include <gx2/clear.h>
 #include <gx2/draw.h>
