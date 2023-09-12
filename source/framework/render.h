@@ -108,11 +108,8 @@ public:
     void SetPixelRG88(u32 x, u32 y, u32 color);
     void FlushCache();
 
-    u8* GetData() { return (u8*)m_tex->surface.image; };
-    s32 GetBytesPerRow()
-    {
-        return m_tex->surface.width * 4;
-    }
+    u8* GetData() { return (u8*)m_tex->surface.image; }
+    s32 GetBytesPerRow() { return (s32)m_tex->surface.width * 4; }
 
     s32 GetWidth() const { return m_width; }
     s32 GetHeight() const { return m_height; }

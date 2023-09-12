@@ -17,10 +17,10 @@ GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboa
     m_selectAudio = new Audio("/sfx/select.wav");
     m_startAudio = new Audio("/sfx/start.wav");
 
-    m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, L"Sandbox");
-    m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, L"Host");
-    m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, L"Join");
-    m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
+    m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, s_buttonSize, s_buttonColor, L"Sandbox");
+    m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, s_buttonSize, s_buttonColor, L"Host");
+    m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, s_buttonSize, s_buttonColor, L"Join");
+    m_crt_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+450, 500, 80}, s_buttonSize, s_buttonColor, s_showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
 
     m_fsClient = (FSClient*)MEMAllocFromDefaultHeap(sizeof(FSClient));
     FSAddClient(m_fsClient, FS_ERROR_FLAG_NONE);
@@ -172,7 +172,7 @@ void GameSceneMenu::HandleInput() {
 
             delete m_crt_btn;
             s_showCrtFilter = !s_showCrtFilter;
-            m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_showCrtFilter ? L"Filter: ON": L"Filter: OFF");
+            m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_buttonSize, s_buttonColor, s_showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
         }
     }
 }
@@ -207,28 +207,30 @@ void GameSceneMenu::Draw() {
     this->DrawButtons();
 
     if (m_scoreboard == MenuScoreboard::WON) {
-        Render::RenderText(1920/2-((strlen("You won!")*26)/2), 1080/2+14, 1, 0x00, "You won!");
+        Render::RenderSprite(m_wonScoreboardSprite, 1920/2-(m_wonScoreboardSprite->GetWidth()/2), 1080/2-(m_wonScoreboardSprite->GetHeight()/2)+60);
     }
     if (m_scoreboard == MenuScoreboard::LOST) {
-        Render::RenderText(1920/2-((strlen("You lost!")*26)/2), 1080/2+14, 1, 0x00, "You lost!");
+        Render::RenderSprite(m_lostScoreboardSprite, 1920/2-(m_lostScoreboardSprite->GetWidth()/2), 1080/2-(m_lostScoreboardSprite->GetHeight()/2)+60);
     }
     if (m_scoreboard == MenuScoreboard::DIED) {
-        Render::RenderText(1920/2-((strlen("You died!")*26)/2), 1080/2+14, 1, 0x00, "You died!");
+        Render::RenderSprite(m_diedScoreboardSprite, 1920/2-(m_diedScoreboardSprite->GetWidth()/2), 1080/2-(m_diedScoreboardSprite->GetHeight()/2)+60);
     }
 
     if (this->m_state == MenuState::WAIT_FOR_GAME && this->m_gameServer) {
         u32 joinedPlayers = this->m_gameServer->GetPlayerCount();
-        std::string joinedPlayersText = "Press START to start match with "+std::to_string(joinedPlayers)+" players...";
-        const u32 stringWidth = joinedPlayersText.size()*16;
-        Render::RenderText(1920-stringWidth-20, 1080-80, 0, 0x00, joinedPlayersText.c_str());
+        if (joinedPlayers != this->m_prevPlayerCount) {
+            this->m_prevPlayerCount = joinedPlayers;
+            std::wstring joinedPlayersText = L"Press START button to start match with "+std::to_wstring(joinedPlayers)+L" players...";
+            delete m_startGameWithPlayersSprite;
+            m_startGameWithPlayersSprite = Render::RenderTextSprite(32, 0xFFFFFFFF, joinedPlayersText.c_str());
+        }
+        Render::RenderSprite(m_startGameWithPlayersSprite, 1920/2-(m_startGameWithPlayersSprite->GetWidth()/2), 1080/2-(m_startGameWithPlayersSprite->GetHeight()/2)+60);
     }
     else if (this->m_state == MenuState::WAIT_FOR_GAME) {
-        const u32 stringWidth = strlen("Waiting for game to start...")*16;
-        Render::RenderText(1920-stringWidth-20, 1080-80, 0, 0x00, "Waiting for game to start...");
+        Render::RenderSprite(m_waitingForGameStartSprite, 1920/2-(m_waitingForGameStartSprite->GetWidth()/2), 1080/2-(m_waitingForGameStartSprite->GetHeight()/2)+60);
     }
     else if (this->m_state == MenuState::WAIT_FOR_CONNECTION) {
-        const u32 stringWidth = strlen("Connecting to server...")*16;
-        Render::RenderText(1920-stringWidth-20, 1080-80, 0, 0x00, "Connecting to server...");
+        Render::RenderSprite(m_connectingToServerSprite, 1920/2-(m_connectingToServerSprite->GetWidth()/2), 1080/2-(m_connectingToServerSprite->GetHeight()/2)+60);
     }
     nn::swkbd::DrawTV();
     nn::swkbd::DrawDRC();

@@ -24,7 +24,6 @@ ShaderSwitcher Shader_CRT{"crt"};
 Framebuffer* postProcessingBuffer = nullptr;
 
 static SFT s_fontFace;
-static std::unordered_map<u32, std::unordered_map<SFT_Glyph, SFT_Image>> s_glyphCaches;
 
 void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u32 numMips, GX2SurfaceFormat surfaceFormat, GX2SurfaceDim surfaceDim, GX2TileMode tileMode)
 {
@@ -212,6 +211,7 @@ void _InitBasicRenderResources()
     GX2InitSamplerZMFilter(&sRenderBaseSampler1_nearest, GX2_TEX_Z_FILTER_MODE_NONE, GX2_TEX_MIP_FILTER_MODE_NONE);
 }
 
+static std::vector<uint8_t> s_fontBuffer;
 void Render::Init()
 {
     u32 fb_width, fb_height;
@@ -221,29 +221,27 @@ void Render::Init()
     _InitBasicRenderResources();
 
     // initialize libschrift
-    uint8_t* s_fontBuffer;
-    uint32_t fontBufferSize;
-    OSGetSharedData(OS_SHAREDDATATYPE_FONT_STANDARD, 0, (void**)&s_fontBuffer, &fontBufferSize);
+    s_fontBuffer = LoadFileToMem("font/mother-2-gigu-no-gyakushu.ttf");
+    uint8_t* fontBuffer = s_fontBuffer.data();
+    size_t fontBufferSize = s_fontBuffer.size();
+    //OSGetSharedData(OS_SHAREDDATATYPE_FONT_STANDARD, 0, (void**)&fontBuffer, &fontBufferSize);
 
     s_fontFace = {
-        .font = sft_loadmem(s_fontBuffer, fontBufferSize),
+        .font = sft_loadmem(fontBuffer, fontBufferSize),
         .xScale = 20,
         .yScale = 20,
         .xOffset = 0,
         .yOffset = 0,
         .flags = SFT_DOWNWARD_Y,
     };
+
+    if (s_fontFace.font == NULL)
+        CriticalErrorHandler("Failed to load font");
 }
 
 void Render::Shutdown()
 {
     sft_freefont(s_fontFace.font);
-
-    for (auto& glyphCache : s_glyphCaches) {
-        for (auto& glyph : glyphCache.second) {
-            free(glyph.second.pixels);
-        }
-    }
 
     WindowExit();
 }
@@ -681,34 +679,62 @@ GX2Texture* LoadFromTGA(u8* data, u32 length)
     return texture;
 }
 
-void drawBitmapToSprite(Sprite* renderSprite, SFT_Image *bitmap, int32_t x, int32_t y, u32 color) {
+void drawBitmapToSprite(Sprite* renderSprite, SFT_Image* bitmap, int32_t x, int32_t y, u32 rgb) {
     int32_t x_max = x + bitmap->width;
     int32_t y_max = y + bitmap->height;
 
     for (int32_t i=x, p=0; i < x_max; i++, p++) {
         for (int32_t j=y, q=0; j < y_max; j++, q++) {
-            uint8_t col = ((uint8_t*)bitmap->pixels)[q * bitmap->width + p];
+            uint8_t opacity = ((uint8_t*)bitmap->pixels)[q * bitmap->width + p];
 
-            // todo: enable anti-aliasing by blending the color parameter with col which contains the alpha
-            if (col != 0) renderSprite->SetPixelRGBA8888(i, j, color);
+            if (opacity != 0) renderSprite->SetPixelRGBA8888(i, j, rgb | opacity);
         }
     }
 }
 
 Sprite* Render::RenderTextSprite(u8 size, u32 color, const wchar_t* string) {
-    int32_t pen_x = size;
-    int32_t pen_y = size;
-
-    auto& currGlyphCache = s_glyphCaches.try_emplace(size).first->second;
     s_fontFace.xScale = size;
     s_fontFace.yScale = size;
 
-    Sprite* renderedSprite = new Sprite(1920, 1080, true, E_TEXFORMAT::RGBA8888_UNORM);
-    renderedSprite->SetupSampler(true);
+    // calculate text dimensions
+   SFT_LMetrics lmtx;
+   if (sft_lmetrics(&s_fontFace, &lmtx) == -1) {
+       CriticalErrorHandler("Failed to extract line metrics from character!\n");
+   }
 
-    for (; *string; string++) {
+    int32_t text_width = 0;
+    int32_t text_height = (int32_t)std::ceil(lmtx.ascender + lmtx.descender + lmtx.lineGap)+2;
+    for (const wchar_t* stringPtr = string; *stringPtr; stringPtr++) {
         SFT_Glyph gid;
-        if (sft_lookup(&s_fontFace, *string, &gid) == -1) {
+        if (sft_lookup(&s_fontFace, *stringPtr, &gid) == -1) {
+            OSReport("Failed to do character lookup!\n");
+            continue;
+        }
+
+        SFT_GMetrics gmtx;
+        if (sft_gmetrics(&s_fontFace, gid, &gmtx) == -1) {
+            OSReport("Failed to extract glyph metrics from character!\n");
+            continue;
+        }
+
+        text_height = std::max(text_height, gmtx.minHeight);
+        text_width += (int32_t)gmtx.advanceWidth;
+    }
+
+    if (text_width > 1920)
+        CriticalErrorHandler("Text too long to fit on screen!");
+
+    // create sprite
+    Sprite* renderedSprite = new Sprite(text_width, text_height, true, E_TEXFORMAT::RGBA8888_UNORM);
+    renderedSprite->Clear();
+    renderedSprite->SetupSampler(false);
+
+    // render glyphs into sprite
+    int32_t pen_x = 0;
+    int32_t pen_y = (int32_t)std::ceil(lmtx.ascender + lmtx.descender + lmtx.lineGap) + 1;
+    for (const wchar_t *stringPtr = string; *stringPtr; stringPtr++) {
+        SFT_Glyph gid;
+        if (sft_lookup(&s_fontFace, *stringPtr, &gid) == -1) {
             OSReport("Failed to do character lookup!\n");
             continue;
         }
@@ -719,32 +745,21 @@ Sprite* Render::RenderTextSprite(u8 size, u32 color, const wchar_t* string) {
             continue;
         }
 
-        if (!currGlyphCache.contains(gid)) {
-            int32_t textureWidth = (mtx.minWidth + 3) & ~3;
-            int32_t textureHeight = mtx.minHeight;
+        int32_t textureWidth = mtx.minWidth;
+        int32_t textureHeight = mtx.minHeight;
 
-            SFT_Image img = {
-                .pixels = nullptr,
-                .width = textureWidth,
-                .height = textureHeight
-            };
+        SFT_Image img = {
+            .pixels = malloc((uint32_t)(textureWidth * textureHeight)),
+            .width = textureWidth,
+            .height = textureHeight
+        };
 
-            if (textureWidth == 0) textureWidth = 4;
-            if (textureHeight == 0) textureHeight = 4;
-
-            img.pixels = malloc((uint32_t)(img.width * img.height));
-            if (img.pixels == nullptr || sft_render(&s_fontFace, gid, img) == -1) {
-                OSReport("Failed to render a character!\n");
-                continue;
-            }
-            currGlyphCache.emplace(gid, img);
+        if (img.pixels == nullptr || sft_render(&s_fontFace, gid, img) == -1) {
+            OSReport("Failed to render a character!\n");
+            continue;
         }
 
-        if ((pen_x + (int32_t)mtx.advanceWidth) > 853) {
-            CriticalErrorHandler("Text too long to fit on screen!");
-        }
-
-        drawBitmapToSprite(renderedSprite, &currGlyphCache[gid], pen_x + (int32_t)mtx.leftSideBearing, pen_y + (int32_t)mtx.yOffset, color);
+        drawBitmapToSprite(renderedSprite, &img, pen_x + (int32_t)mtx.leftSideBearing, pen_y + (int32_t)mtx.yOffset, color & 0xFFFFFF00);
         pen_x += (int32_t)mtx.advanceWidth;
     }
 
