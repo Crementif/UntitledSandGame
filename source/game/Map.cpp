@@ -42,7 +42,7 @@ void MapCell::LoadCellFromTGA(class TGALoader& tgaLoader)
             c |= ((u32)tgaPixelIn[1] << 8);
             c |= ((u32)tgaPixelIn[2] << 0);
 
-            pOut->SetPixel(_GetPixelTypeFromTGAColor(c));
+            pOut->SetStaticPixelWithRandomSeed(_GetPixelTypeFromTGAColor(c));
 
             if(c == 0xFF00DC)
             {
@@ -208,4 +208,22 @@ MAP_PIXEL_TYPE PixelType::GetPixelType() const
     }
     ActivePixelBase* pixelBase = _GetDynamicPtr();
     return pixelBase->material;
+}
+
+// format: 0xRRGGBBAA
+u32 PixelType::CalculatePixelColor() const
+{
+    u8 type = 0;
+    u8 seed = 0;
+    if (!IsDynamic())
+    {
+        type = (u8)(MAP_PIXEL_TYPE)((pixelType >> 1)&0x7F);
+        seed = (u8)((pixelType >> 8)&0xFF);
+    }
+    else {
+        ActivePixelBase* pixelBase = _GetDynamicPtr();
+        type = (u8)pixelBase->material;
+        seed = (u8)pixelBase->seed;
+    }
+    return (type << 24) | (seed << 16);
 }

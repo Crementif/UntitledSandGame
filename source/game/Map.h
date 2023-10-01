@@ -9,7 +9,7 @@
 #define MAP_CELL_WIDTH  (64)
 #define MAP_CELL_HEIGHT  (64)
 
-enum class MAP_PIXEL_TYPE
+enum class MAP_PIXEL_TYPE : u8
 {
     AIR = 0,
     SAND = 1,
@@ -21,12 +21,90 @@ enum class MAP_PIXEL_TYPE
     _COUNT = 7,
 };
 
+static constexpr u8 _GetMaxVariationsFromPixelType(MAP_PIXEL_TYPE type) {
+    switch (type)
+    {
+        case MAP_PIXEL_TYPE::AIR:
+            return 0;
+        case MAP_PIXEL_TYPE::SAND:
+            return 2;
+        case MAP_PIXEL_TYPE::SOIL:
+            return 2;
+        case MAP_PIXEL_TYPE::GRASS:
+            return 2;
+        case MAP_PIXEL_TYPE::LAVA:
+            return 3;
+        case MAP_PIXEL_TYPE::ROCK:
+            return 9;
+        case MAP_PIXEL_TYPE::SMOKE:
+            return 2;
+        case MAP_PIXEL_TYPE::_COUNT:
+            break;
+    }
+    return 0;
+}
+
+static u8 _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE type) {
+    switch(type)
+    {
+        case MAP_PIXEL_TYPE::AIR:
+            return 0;
+        case MAP_PIXEL_TYPE::SAND:
+            return rand()%_GetMaxVariationsFromPixelType(MAP_PIXEL_TYPE::SAND);
+        case MAP_PIXEL_TYPE::SOIL:
+            return rand()%_GetMaxVariationsFromPixelType(MAP_PIXEL_TYPE::SOIL);
+        case MAP_PIXEL_TYPE::GRASS:
+            return rand()%_GetMaxVariationsFromPixelType(MAP_PIXEL_TYPE::GRASS);
+        case MAP_PIXEL_TYPE::LAVA:
+            return rand()%_GetMaxVariationsFromPixelType(MAP_PIXEL_TYPE::LAVA);
+        case MAP_PIXEL_TYPE::ROCK:
+            return rand()%_GetMaxVariationsFromPixelType(MAP_PIXEL_TYPE::ROCK);
+        case MAP_PIXEL_TYPE::SMOKE:
+            return rand()%_GetMaxVariationsFromPixelType(MAP_PIXEL_TYPE::SMOKE);
+        case MAP_PIXEL_TYPE::_COUNT:
+            break;
+    }
+    return 0;
+}
+
+static u8 _GetDimmedSeedOffsetFromPixelType(MAP_PIXEL_TYPE type, u8 existingSeed) {
+    switch (type) {
+        case MAP_PIXEL_TYPE::SAND:
+            return 2;
+        case MAP_PIXEL_TYPE::GRASS:
+            return 2;
+        case MAP_PIXEL_TYPE::SOIL:
+            return 2;
+        case MAP_PIXEL_TYPE::ROCK:
+            return 9;
+        default:
+            return existingSeed;
+    }
+}
+
 union PixelType
 {
-    inline void SetPixel(MAP_PIXEL_TYPE type)
+
+    inline void SetStaticPixel(MAP_PIXEL_TYPE type, u8 seed)
     {
-        pixelType = 1;
+        pixelType |= 1; // mark as static pixel by setting LSB
+        // set type
+        pixelType &= ~(0x7F<<1); // 7 bits for type
         pixelType |= ((u32)type << 1);
+        // set seed
+        pixelType &= ~(0xFF<<8);
+        pixelType |= ((u32)seed << 8);
+    }
+
+    inline void SetStaticPixelWithRandomSeed(MAP_PIXEL_TYPE type)
+    {
+        SetStaticPixel(type, _GetRandomSeedFromPixelType(type));
+    }
+
+    inline void SetStaticPixelToAir()
+    {
+        // pre-emptive optimization to remove _GetRandomSeedFromPixelType when air has no seed
+        SetStaticPixel(MAP_PIXEL_TYPE::AIR, 0);
     }
 
     inline void SetDynamicPixel(class ActivePixelBase* pixelPtr)
@@ -34,24 +112,38 @@ union PixelType
         pixelType = (u32)(uintptr_t)pixelPtr;
     }
 
+    // if LSB is not set, the bottom 31 bits are a pointer to ActivePixel (pointer tagging, so bottom bit of address isn't stored)
     inline class ActivePixelBase* _GetDynamicPtr() const
     {
         ActivePixelBase* pixelBase = (ActivePixelBase*)(pixelType&~1);
         return pixelBase;
     }
 
+    // if LSB is set, the next 7 bits are used for the MAP_PIXEL_TYPE and the 8 bits after that are used for the seed
+    inline u8 _GetPixelSeedStatic() const
+    {
+        return ((pixelType >> 8)&0xFF);
+    }
+    inline void _SetPixelSeedStatic(u8 seed) {
+        pixelType &= ~(0xFF<<8);
+        pixelType |= ((u32)seed << 8);
+    }
+
     MAP_PIXEL_TYPE GetPixelType() const;
+
+    // format: 0xRRGGBBAA
+    u32 CalculatePixelColor() const;
 
     // collision applies
     // deprecated, use IsFilled() instead
-    bool IsSolid() const
+    inline bool IsSolid() const
     {
         if(GetPixelType() == MAP_PIXEL_TYPE::AIR)
             return false;
         return true;
     }
 
-    bool IsLiquid() const
+    inline bool IsLiquid() const
     {
         MAP_PIXEL_TYPE mat = GetPixelType();
         switch(mat)
@@ -62,11 +154,6 @@ union PixelType
                 break;
         }
         return false;
-    }
-
-    bool IsDestructible() const
-    {
-        return true;
     }
 
     inline bool IsDynamic() const
@@ -110,8 +197,24 @@ union PixelType
         return _GetPixelTypeStatic() != MAP_PIXEL_TYPE::AIR;
     }
 
-    uint32_t pixelType; // LSB set
-    //ActivePixel* pixelPtr; // LSB not set
+    inline bool IsDimmable() const {
+        if (IsDynamic())
+            return false;
+
+        switch(_GetPixelTypeStatic())
+        {
+            case MAP_PIXEL_TYPE::SAND:
+            case MAP_PIXEL_TYPE::GRASS:
+            case MAP_PIXEL_TYPE::SOIL:
+            case MAP_PIXEL_TYPE::ROCK:
+                return true;
+            default:
+                return false;
+        }
+        return false;
+    }
+
+    uint32_t pixelType; // LSB set means static pixel, otherwise dynamic pixel
 };
 
 static_assert(sizeof(PixelType) == 4);
@@ -189,9 +292,9 @@ public:
     void SimulateTick();
     bool CheckVolatileStaticPixelsHotspot(u32 x, u32 y);
     void CheckStaticPixels();
-    void SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y);
-    void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y);
-    void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y, f32 force);
+    void SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y);
+    void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y);
+    void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y, f32 force);
 
     u32 GetRNGNumber()
     {

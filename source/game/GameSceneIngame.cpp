@@ -311,13 +311,13 @@ void GameSceneIngame::RunDeterministicSimulationStep()
     double startTime = GetMillisecondTimestamp();
 
     if ((this->GetMap()->GetRNGNumber()&0x7) < 3)
-        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 200, 155);
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SAND), 200, 155);
 
     if ((this->GetMap()->GetRNGNumber()&0x7) < 3)
-        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 700, 210);
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SAND), 700, 210);
 
     if ((this->GetMap()->GetRNGNumber()&0x7) < 5)
-        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, 480, 160);
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::LAVA), 480, 160);
 
     this->GetMap()->SimulateTick();
     this->GetMap()->Update(); // map objects are always independent of the world simulation?

@@ -1,9 +1,7 @@
 #include "MapFlungPixels.h"
 #include "Map.h"
 
-u32 _GetColorFromPixelType(PixelType& pixelType);
-
-FlungPixel::FlungPixel(Map* map, Vector2f pos, Vector2f velocity, MAP_PIXEL_TYPE type) : m_pos(pos), m_velocity(velocity), m_materialType(type)
+FlungPixel::FlungPixel(Map* map, Vector2f pos, Vector2f velocity, MAP_PIXEL_TYPE type, u8 seed) : m_pos(pos), m_velocity(velocity), m_materialType(type), m_materialSeed(seed)
 {
     map->m_flungPixels.emplace_back(this);
 }
@@ -12,7 +10,10 @@ void FlungPixel::RemovePixelColor(Map* map)
 {
     s32 x = (s32)(m_pos.x + 0.5f);
     s32 y = (s32)(m_pos.y + 0.5f);
-    map->SetPixelColor(x, y, _GetColorFromPixelType(map->GetPixel(x, y)));
+    if (map->IsPixelOOB(x, y)) {
+        CriticalErrorHandler("FlungPixel::RemovePixelColor - pixel out of bounds");
+    }
+    map->SetPixelColor(x, y, map->GetPixelNoBoundsCheck(x, y).CalculatePixelColor());
 }
 
 bool FlungPixel::Update(Map* map)
@@ -26,26 +27,22 @@ bool FlungPixel::Update(Map* map)
     m_velocity.y += 0.028f;
     m_pos = newPos;
 
-    // hacky workaround to get color, eventually decouple _GetColorFromPixelType from PixelType
-    PixelType pt;
-    pt.SetPixel(m_materialType);
-    u32 pixelColor = _GetColorFromPixelType(pt);
+    u32 flungColor = ((u8)m_materialType << 24) | (m_materialSeed << 16);
 
     if(prevPosXi == newPosXi && prevPosYi == newPosYi)
     {
         // even if not moved, still redraw the pixel
-        map->SetPixelColor(newPosXi, newPosYi, pixelColor);
+        map->SetPixelColor(newPosXi, newPosYi, flungColor);
         return true;
     }
 
-
     if(map->GetPixel(newPosXi, newPosYi).IsCollideWithObjects())
     {
-        map->SpawnMaterialPixel(m_materialType, prevPosXi, prevPosYi);
+        map->SpawnMaterialPixel(m_materialType, m_materialSeed, prevPosXi, prevPosYi);
         return false;
     }
 
-    map->SetPixelColor(newPosXi, newPosYi, pixelColor);
+    map->SetPixelColor(newPosXi, newPosYi, flungColor);
 
     return true;
 }

@@ -179,13 +179,13 @@ void GameSceneMenu::HandleInput() {
 
 void GameSceneMenu::SimulateAndDrawLevel() {
     if ((this->GetMap()->GetRNGNumber()&0x7) < 1)
-        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 430, 2);
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SAND), 430, 2);
 
     if ((this->GetMap()->GetRNGNumber()&0x7) < 1)
-        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, 260, 2);
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SAND), 260, 2);
 
     if ((this->GetMap()->GetRNGNumber()&0x7) < 2)
-        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, 2, 178);
+        this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::LAVA), 2, 178);
 
     this->GetMap()->SimulateTick();
     this->GetMap()->Draw();

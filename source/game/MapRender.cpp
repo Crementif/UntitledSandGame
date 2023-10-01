@@ -252,6 +252,21 @@ private:
         {
             m_pixelColorLookupMap->SetPixelRGBA8888(seedIndex , selectedMaterialIndex, color);
         };
+        auto GenerateDimmerMatColor = [&](s32 seedIndex, s32 seedDimOffset, float seedDimFactor)
+        {
+            u32 color = m_pixelColorLookupMap->GetPixelRGBA8888(seedIndex, selectedMaterialIndex);
+            u8 r = (color >> 24) & 0xFF;
+            u8 g = (color >> 16) & 0xFF;
+            u8 b = (color >> 8) & 0xFF;
+            u8 a = color & 0xFF;
+
+            r = std::max(0, static_cast<int>(r * (1.0f - seedDimFactor)));
+            g = std::max(0, static_cast<int>(g * (1.0f - seedDimFactor)));
+            b = std::max(0, static_cast<int>(b * (1.0f - seedDimFactor)));
+
+            m_pixelColorLookupMap->SetPixelRGBA8888(seedDimOffset + seedIndex, selectedMaterialIndex, (u32)((r << 24) | (g << 16) | (b << 8) | a));
+        };
+        constexpr float dimFactor = 0.15f;
 
         // Setting AIR color
         SelectMat(MAP_PIXEL_TYPE::AIR);
@@ -261,16 +276,22 @@ private:
         SelectMat(MAP_PIXEL_TYPE::SAND);
         SetMatColor(0, 0xE9B356FF);
         SetMatColor(1, 0xEEC785FF);
+        GenerateDimmerMatColor(0, 2, dimFactor);
+        GenerateDimmerMatColor(1, 2, dimFactor);
 
         // Setting SOIL colors
         SelectMat(MAP_PIXEL_TYPE::SOIL);
         SetMatColor(0, 0x5F3300FF);
         SetMatColor(1, 0x512B00FF);
+        GenerateDimmerMatColor(0, 2, dimFactor);
+        GenerateDimmerMatColor(1, 2, dimFactor);
 
         // Setting GRASS colors
         SelectMat(MAP_PIXEL_TYPE::GRASS);
         SetMatColor(0, 0x2F861FFF);
         SetMatColor(1, 0x3E932BFF);
+        GenerateDimmerMatColor(0, 2, dimFactor);
+        GenerateDimmerMatColor(1, 2, dimFactor);
 
         // Setting LAVA colors
         SelectMat(MAP_PIXEL_TYPE::LAVA);
@@ -289,6 +310,15 @@ private:
         SetMatColor(6, 0x414142FF);
         SetMatColor(7, 0x414142FF);
         SetMatColor(8, 0x414142FF);
+        GenerateDimmerMatColor(0, 9, dimFactor);
+        GenerateDimmerMatColor(1, 9, dimFactor);
+        GenerateDimmerMatColor(2, 9, dimFactor);
+        GenerateDimmerMatColor(3, 9, dimFactor);
+        GenerateDimmerMatColor(4, 9, dimFactor);
+        GenerateDimmerMatColor(5, 9, dimFactor);
+        GenerateDimmerMatColor(6, 9, dimFactor);
+        GenerateDimmerMatColor(7, 9, dimFactor);
+        GenerateDimmerMatColor(8, 9, dimFactor);
 
         // Setting SMOKE colors
         SelectMat(MAP_PIXEL_TYPE::SMOKE);
@@ -370,7 +400,7 @@ void MapCell::RefreshCellTexture()
     {
         for(u32 x=0; x<MAP_CELL_WIDTH; x++)
         {
-            m_cellSprite->SetPixelRG88(x, y, _GetColorFromPixelType(*pTypeIn));
+            m_cellSprite->SetPixelRG88(x, y, pTypeIn->CalculatePixelColor());
             pTypeIn++;
             idx++;
         }

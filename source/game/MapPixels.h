@@ -1,15 +1,11 @@
 #pragma once
 #include "Map.h"
-#include <vector>
 
-#include <coreinit/debug.h>
-
-u32 _GetColorFromPixelType(PixelType& pixelType);
-
-class ActivePixelBase
+// align to 16 bytes to allow for pointer tagging in PixelType
+class alignas(0x10) ActivePixelBase
 {
 public:
-    ActivePixelBase(s32 x, s32 y, MAP_PIXEL_TYPE material) : x((u16)x), y((u16)y), material(material) {}
+    ActivePixelBase(s32 x, s32 y, MAP_PIXEL_TYPE material, u8 seed) : x((u16)x), y((u16)y), material(material), seed(seed) {}
     virtual ~ActivePixelBase() {};
 
     virtual bool SimulateStep(Map* map)
@@ -25,7 +21,7 @@ public:
     void RemoveFromWorld(Map* map)
     {
         PixelType& pt = map->GetPixel(x, y);
-        pt.SetPixel(MAP_PIXEL_TYPE::AIR);
+        pt.SetStaticPixelToAir();
         map->SetPixelColor(x, y, 0x00000000);
     }
 
@@ -34,12 +30,13 @@ public:
         PixelType& pt = map->GetPixel(x, y);
         pt.SetDynamicPixel(this);
         // update pixel color
-        map->SetPixelColor(x, y, _GetColorFromPixelType(pt));
+        map->SetPixelColor(x, y, pt.CalculatePixelColor());
     }
 
     u16 x;
     u16 y;
     MAP_PIXEL_TYPE material;
+    u8 seed;
     u16 idleTime{0};
 };
 
@@ -47,7 +44,7 @@ template<MAP_PIXEL_TYPE TMaterial>
 class ActivePixel : public ActivePixelBase
 {
 public:
-    ActivePixel(s32 x, s32 y) : ActivePixelBase(x, y, TMaterial) { }
+    ActivePixel(s32 x, s32 y, u8 seed) : ActivePixelBase(x, y, TMaterial, seed) { }
 
     void ChangeParticleXY(Map* map, s32 x, s32 y)
     {
@@ -68,16 +65,18 @@ public:
             otherActivePixel->RemoveFromWorld(map);
             otherActivePixel->x = x;
             otherActivePixel->y = y;
+            otherActivePixel->seed = seed;
             otherActivePixel->IntegrateIntoWorld(map);
         }
         else
         {
             PixelType& selfPT = map->GetPixelNoBoundsCheck(x, y);
-            selfPT.SetPixel(otherPT.GetPixelType());
-            map->SetPixelColor(x, y, _GetColorFromPixelType(selfPT));
+            selfPT.SetStaticPixel(otherPT.GetPixelType(), otherPT._GetPixelSeedStatic());
+            map->SetPixelColor(x, y, selfPT.CalculatePixelColor());
         }
         x = otherX;
         y = otherY;
+        seed = otherPT._GetPixelSeedStatic();
         IntegrateIntoWorld(map);
         idleTime = 0;
     }
@@ -85,8 +84,8 @@ public:
     void PixelDeactivated(Map* map) override
     {
         PixelType& pt = map->GetPixel(x, y);
-        pt.SetPixel(TMaterial);
-        map->SetPixelColor(x, y, _GetColorFromPixelType(pt));
+        pt.SetStaticPixel(TMaterial, seed);
+        map->SetPixelColor(x, y, pt.CalculatePixelColor());
     }
 
 };
@@ -94,7 +93,7 @@ public:
 class ActivePixelSand : public ActivePixel<MAP_PIXEL_TYPE::SAND>
 {
 public:
-    ActivePixelSand(s32 x, s32 y) : ActivePixel<MAP_PIXEL_TYPE::SAND>(x, y) {};
+    ActivePixelSand(s32 x, s32 y, u8 seed) : ActivePixel<MAP_PIXEL_TYPE::SAND>(x, y, seed) {};
 
     bool SimulateStep(Map* map) final override
     {
@@ -140,7 +139,7 @@ public:
 class ActivePixelLava : public ActivePixel<MAP_PIXEL_TYPE::LAVA>
 {
 public:
-    ActivePixelLava(s32 x, s32 y) : ActivePixel<MAP_PIXEL_TYPE::LAVA>(x, y) {};
+    ActivePixelLava(s32 x, s32 y, u8 seed) : ActivePixel<MAP_PIXEL_TYPE::LAVA>(x, y, seed) {};
 
     bool SimulateStep(Map* map) final override
     {
@@ -196,7 +195,7 @@ public:
         // if above is free then occasionally spawn a smoke pixel
         if(!map->GetPixel(x, y-1).IsFilled() && (map->GetRNGNumber()&127) < 1)
         {
-            map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, x, y-1);
+            map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, seed, x, y-1);
         }
 
         if(m_lavaNoEventTime >= 200)
@@ -231,7 +230,7 @@ private:
 class ActivePixelSmoke : public ActivePixel<MAP_PIXEL_TYPE::SMOKE>
 {
 public:
-    ActivePixelSmoke(Map* map, s32 x, s32 y) : ActivePixel<MAP_PIXEL_TYPE::SMOKE>(x, y)
+    ActivePixelSmoke(Map* map, s32 x, s32 y, u8 seed) : ActivePixel<MAP_PIXEL_TYPE::SMOKE>(x, y, seed)
     {
         m_ttl = 40 + (map->GetRNGNumber()%60);
     }
@@ -266,7 +265,7 @@ public:
     void PixelDeactivated(Map* map) final override
     {
         // smoke just disappears
-        map->GetPixel(x, y).SetPixel(MAP_PIXEL_TYPE::AIR);
+        map->GetPixel(x, y).SetStaticPixelToAir();
         map->SetPixelColor(x, y, 0x00000000);
     }
 
@@ -305,6 +304,3 @@ public:
 };
 
 MAP_PIXEL_TYPE _GetPixelTypeFromTGAColor(u32 c);
-// format: RRGGBBAA
-u32 _GetColorFromPixelType(PixelType& pixelType);
-u32 _CalculateDimColor(u32 color, float dimFactor);

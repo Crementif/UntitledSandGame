@@ -5,18 +5,18 @@
 #include "../framework/audio.h"
 #include "Player.h"
 
-void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
+void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y)
 {
     switch(materialType)
     {
         case MAP_PIXEL_TYPE::SAND:
-            m_activePixels->sandPixels.emplace_back(new ActivePixelSand(x, y));
+            m_activePixels->sandPixels.emplace_back(new ActivePixelSand(x, y, materialSeed));
             break;
         case MAP_PIXEL_TYPE::LAVA:
-            m_activePixels->lavaPixels.emplace_back(new ActivePixelLava(x, y));
+            m_activePixels->lavaPixels.emplace_back(new ActivePixelLava(x, y, materialSeed));
             break;
         case MAP_PIXEL_TYPE::SMOKE:
-            m_activePixels->smokePixels.emplace_back(new ActivePixelSmoke(this, x, y));
+            m_activePixels->smokePixels.emplace_back(new ActivePixelSmoke(this, x, y, materialSeed));
             break;
         default:
             // for non-dynamic pixels we just place them as-is
@@ -30,14 +30,14 @@ void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
 
 // technically this should grab the material type from the pixel at x/y,
 // but in most cases we already have the material type so it's an extra optimization to not recalculate it
-void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y)
+void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y)
 {
-    SpawnMaterialPixel(materialType, x, y);
+    SpawnMaterialPixel(materialType, materialSeed, x, y);
 }
 
-void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, s32 x, s32 y, f32 force)
+void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y, f32 force)
 {
-    SpawnMaterialPixel(materialType, x, y);
+    SpawnMaterialPixel(materialType, materialSeed, x, y);
 }
 
 bool _IsReanimatableMaterial(MAP_PIXEL_TYPE materialType)
@@ -94,7 +94,7 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
             if(!GetPixelNoBoundsCheck(px, py+1).IsFilled())
             {
                 hasActivity = true;
-                ReanimateStaticPixel(MAP_PIXEL_TYPE::SAND, px, py);
+                ReanimateStaticPixel(MAP_PIXEL_TYPE::SAND, pixelType._GetPixelSeedStatic(), px, py);
             }
         }
         else if(mat == MAP_PIXEL_TYPE::LAVA)
@@ -102,11 +102,11 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
             if(!GetPixelNoBoundsCheck(px-1, py+1).IsFilled() || !GetPixelNoBoundsCheck(px, py+1).IsFilled() || !GetPixelNoBoundsCheck(px+1, py+1).IsFilled())
             {
                 hasActivity = true;
-                ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, px, py);
+                ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, pixelType._GetPixelSeedStatic(), px, py);
             }
             else if (!GetPixelNoBoundsCheck(px-1, py).IsFilled() || !GetPixelNoBoundsCheck(px+1, py).IsFilled()) {
                 hasActivity = true;
-                ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, px, py);
+                ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, pixelType._GetPixelSeedStatic(), px, py);
             }
         }
     }
@@ -225,31 +225,44 @@ void Map::HandleSynchronizedEvents()
 #define SIMULATE_RADIUS     15
 void Map::HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos)
 {
-    s32 posX = (s32)(pos.x + 0.5f);
-    s32 posY = (s32)(pos.y + 0.5f);
+    const s32 posX = (s32)(pos.x + 0.5f);
+    const s32 posY = (s32)(pos.y + 0.5f);
     for (s32 y=posY-SIMULATE_RADIUS; y<=posY+SIMULATE_RADIUS; y++)
     {
+        const s32 dfy = y - posY;
+        const s32 dfySq = dfy * dfy;
         for (s32 x=posX-SIMULATE_RADIUS; x<=posX+SIMULATE_RADIUS; x++)
         {
-            s32 dfx = x - posX;
-            s32 dfy = y - posY;
-            s32 squareDist = dfx * dfx + dfy * dfy;
+            if (IsPixelOOB(x, y))
+                continue;
+
+            const s32 dfx = x - posX;
+            const s32 dfxSq = dfx * dfx;
+
+            const s32 squareDist = dfxSq + dfySq;
             bool shouldDig = squareDist < (DIGGING_RADIUS*DIGGING_RADIUS-MAP_PIXEL_ZOOM);
             bool shouldTransition = squareDist < (TRANSITION_RADIUS*TRANSITION_RADIUS-MAP_PIXEL_ZOOM);
             bool shouldSimulate = squareDist < (SIMULATE_RADIUS*SIMULATE_RADIUS-MAP_PIXEL_ZOOM);
 
-            if (shouldDig && !IsPixelOOB(x, y)) {
+            if (shouldDig) {
                 PixelType& pt = GetPixelNoBoundsCheck(x, y);
-                pt.SetPixel(MAP_PIXEL_TYPE::AIR);
-                SetPixelColor(x, y, _GetColorFromPixelType(pt));
+                pt.SetStaticPixelToAir();
+                SetPixelColor(x, y, pt.CalculatePixelColor());
             }
-            else if (shouldTransition && !IsPixelOOB(x, y)) {
+            else if (shouldTransition) {
                 PixelType& pt = GetPixelNoBoundsCheck(x, y);
-                u32 existingColor = _CalculateDimColor(_GetColorFromPixelType(pt), 0.6f);
-                pt.SetPixel(MAP_PIXEL_TYPE::AIR);
-                SetPixelColor(x, y, existingColor);
+                if (pt.IsDimmable()) {
+                    u8 seed = pt._GetPixelSeedStatic();
+                    u8 maxSeed = _GetMaxVariationsFromPixelType(pt._GetPixelTypeStatic());
+                    if (seed >= maxSeed) {
+                        continue;
+                    }
+
+                    pt._SetPixelSeedStatic(seed + maxSeed);
+                    SetPixelColor(x, y, pt.CalculatePixelColor());
+                }
             }
-            else if (shouldSimulate && !IsPixelOOB(x, y)) {
+            else if (shouldSimulate) {
                 u32 checkX = std::clamp<u32>(x, HOTSPOT_RANGE+1, m_pixelsX-HOTSPOT_RANGE-1);
                 u32 checkY = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
                 CheckVolatileStaticPixelsHotspot(checkX, checkY);
@@ -300,14 +313,14 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
                 continue;
             PixelType& pt = GetPixelNoBoundsCheck(x, y);
             MAP_PIXEL_TYPE prevMaterial = pt.GetPixelType();
-            pt.SetPixel(MAP_PIXEL_TYPE::AIR);
-            SetPixelColor(x, y, _GetColorFromPixelType(pt));
+            pt.SetStaticPixelToAir();
+            SetPixelColor(x, y, pt.CalculatePixelColor());
             // randomly spawn smoke
             if((GetRNGNumber()&0xF) < 0x3)
             {
-                SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, x, y);
+                SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SMOKE), x, y);
                 PixelType& pt2 = GetPixelNoBoundsCheck(x, y);
-                SetPixelColor(x, y, _GetColorFromPixelType(pt2));
+                SetPixelColor(x, y, pt2.CalculatePixelColor());
             }
             // decide if the particle should be flung
             if(_CanMaterialBeFlung(prevMaterial) && (GetRNGNumber()&0x7) < 0x4)
@@ -339,7 +352,7 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
                     f32 dist = flungDir.x * flungDir.x + flungDir.y * flungDir.y;
                     if(dist >= radius*radius)
                         continue;
-                    new FlungPixel(this, pixelPos, flungDir * 0.07f, mat);
+                    new FlungPixel(this, pixelPos, flungDir * 0.07f, mat, _GetRandomSeedFromPixelType(mat));
                     break;
                 }
             }
