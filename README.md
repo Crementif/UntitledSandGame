@@ -48,3 +48,4 @@ A sandbox mode is also available for solo play.
 
 ### License
 This project is licensed under the [MIT License](./LICENSE.md).
+The pixel font is licensed under [Creative Commons Attribution license](./source/assets/font/license.txt).
