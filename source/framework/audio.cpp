@@ -143,10 +143,13 @@ void AudioManager::ProcessAudio() {
         voice->Update();
     }
 
-    for (auto it = this->destroyQueue.rbegin(); it != this->destroyQueue.rend(); ++it) {
+    for (auto it = this->destroyQueue.begin(); it != this->destroyQueue.end(); ) {
         if ((*it)->GetState() == Audio::StateEnum::FINISHED) {
-            this->destroyQueue.erase(std::next(it).base());
             delete (*it);
+            it = this->destroyQueue.erase(it);
+        }
+        else {
+            ++it;
         }
     }
 }

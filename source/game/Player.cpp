@@ -42,6 +42,7 @@ Player::~Player()
     m_teleportAudio->QueueDestroy();
     m_deathAudio->QueueDestroy();
     m_hitAudio->QueueDestroy();
+    m_drillMoveAudio->SetLooping(false);
     m_drillStartAudio->QueueDestroy();
     m_drillMoveAudio->QueueDestroy();
     m_drillStopAudio->QueueDestroy();
