@@ -14,6 +14,7 @@ bool GameScene::s_showCrtFilter = true;
 GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboard(scoreboard) {
     this->RegisterMap(new Map("menu.tga", 1337));
 
+    m_lastInput = OSGetTime() + (OSTime)OSSecondsToTicks(1);
     m_selectAudio = new Audio("/sfx/select.wav");
     m_startAudio = new Audio("/sfx/start.wav");
 
@@ -206,13 +207,13 @@ void GameSceneMenu::Draw() {
     Render::SetStateForSpriteRendering();
     this->DrawButtons();
 
-    if (m_scoreboard == MenuScoreboard::WON) {
+    if (this->m_state == MenuState::NORMAL && m_scoreboard == MenuScoreboard::WON) {
         Render::RenderSprite(m_wonScoreboardSprite, 1920/2-(m_wonScoreboardSprite->GetWidth()/2), 1080/2-(m_wonScoreboardSprite->GetHeight()/2)+60);
     }
-    if (m_scoreboard == MenuScoreboard::LOST) {
+    if (this->m_state == MenuState::NORMAL && m_scoreboard == MenuScoreboard::LOST) {
         Render::RenderSprite(m_lostScoreboardSprite, 1920/2-(m_lostScoreboardSprite->GetWidth()/2), 1080/2-(m_lostScoreboardSprite->GetHeight()/2)+60);
     }
-    if (m_scoreboard == MenuScoreboard::DIED) {
+    if (this->m_state == MenuState::NORMAL && m_scoreboard == MenuScoreboard::DIED) {
         Render::RenderSprite(m_diedScoreboardSprite, 1920/2-(m_diedScoreboardSprite->GetWidth()/2), 1080/2-(m_diedScoreboardSprite->GetHeight()/2)+60);
     }
 
