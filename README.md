@@ -1,6 +1,6 @@
+![Tank Trap Banner](./dist/has-banner.png)
 # Tank Trap
-
-Tank Trap, formerly Untitled Sand Game, is a Wii U homebrew game with a simple premise. You control a drill tank in a multiplayer arena with dynamic, 2D physics-based terrain, inspired by games like Noita.
+**Tank Trap**, formerly Untitled Sand Game, is a Wii U homebrew game with a simple premise. You control a drill tank in a multiplayer arena with dynamic, 2D physics-based terrain, inspired by games like Noita.
 
 Navigate through sand and lava, collect (explosive) items to use against opponents, and watch as the landscape changes with each interaction.
 Create traps and obstacles for your opponents to fall into, or use the terrain to burn your enemies in all the chaos.
@@ -20,13 +20,11 @@ A sandbox mode is also available for solo play.
  1. Download Tank Trap  
     a. Download the game from the Homebrew App Store
     b. Download the latest **.zip version** from the [releases page](https://github.com/Crementif/UntitledSandGame/release) and extract it to the root of the SD card
- 2. [Install CafeGLSL](https://github.com/Exzap/CafeGLSL) by following its installation instructions
- 3. Launch Tank Trap from your home screen.
+ 2. Launch Tank Trap from your home screen or homebrew launcher.
 
 #### For Cemu (2.0 only!):
  1. Download the latest **.wua version** from the [releases page](https://github.com/Crementif/UntitledSandGame/release) and move it to your PC's Wii U games folder
- 2. [Install CafeGLSL](https://github.com/Exzap/CafeGLSL) by following its installation instructions
- 3. Refresh Cemu's game list and it should appear! You can also load the .wua file file through the File->Load File menu option
+ 2. Refresh Cemu's game list and it should appear! You can also load the .wua file file through the File->Load File menu option
 
 ## How To Play
  - Use the left stick to move your tank
@@ -44,7 +42,9 @@ A sandbox mode is also available for solo play.
  - Run `make` in the root of the project directory
 
 ### Credits
- - Thanks for [@aboood40091](https://github.com/aboood40091) for the original GX2 framework!
+ - [@aboood40091](https://github.com/aboood40091) for the original GX2 framework!
+ - [@Maschell](https://github.com/Maschell) for RPL loading support on the Wii U!
+ - [@GaryOderNichts](https://github.com/GaryOderNichts) for testing and helping with the shader compiler!
 
 ### License
 This project is licensed under the [MIT License](./LICENSE.md).
