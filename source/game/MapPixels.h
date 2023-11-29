@@ -257,7 +257,7 @@ public:
                 return false;
         }
 
-        if(m_timeAlive > m_ttl)
+        if (m_timeAlive > m_ttl)
             return false;
         return true;
     }

@@ -22,17 +22,17 @@ static inline Sprite* m_backgroundSprite;
 static inline Sprite* m_pixelColorLookupMap;
 
 
-bool s_mapRenderingIsIntialized{false};
+bool s_mapRenderingIsInitialized{false};
 
 constexpr s32 MAP_RENDER_VIEW_BORDER = 8; // size of off-screen pixel border. Needed for postprocessing which reads across pixel boundaries
 
 // quad
-constexpr static __attribute__ ((aligned (32))) u16 s_idx_data[] =
+alignas(256) u16 s_idx_data[] =
 {
         0, 1, 2, 2, 1, 3
 };
 
-__attribute__ ((aligned (64))) u32 s_mapDrawUFVertex[4 * 4 + 4] =
+alignas(256) u32 s_mapDrawUFVertex[4 * 4 + 4] =
 {
         // [0]: 2 channels xy pos, 2 channels uv coordinates
         0, 0, 0, 0,
@@ -47,7 +47,7 @@ __attribute__ ((aligned (64))) u32 s_mapDrawUFVertex[4 * 4 + 4] =
         0, 0, 0, 0,
 };
 
-__attribute__ ((aligned (64))) u32 s_mapDrawUFPixel[4] =
+alignas(256) u32 s_mapDrawUFPixel[4] =
 {
         // [0]: time, 0, 0, 0
 };
@@ -106,12 +106,9 @@ void UpdateMapDrawUniform(f32 xOffset, f32 yOffset, AABB ws_cameraBounds, f32 ws
     s_mapDrawUFVertex[4 * 4 + 1] = EndianSwap_F32(ws_renderBounds.GetTopLeft().y / ws_worldHeight);
     s_mapDrawUFVertex[4 * 4 + 2] = EndianSwap_F32(ws_renderBounds.scale.x / ws_worldWidth);
     s_mapDrawUFVertex[4 * 4 + 3] = EndianSwap_F32(ws_renderBounds.scale.y / ws_worldHeight);
-
-
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU | GX2_INVALIDATE_MODE_UNIFORM_BLOCK, s_mapDrawUFVertex, sizeof(s_mapDrawUFVertex));
 
     // update pixel uniform
-    uint64_t rawTick = OSGetTime();
     uint64_t time64 = OSTicksToMilliseconds((OSGetTime() - launchTime));
     float time = (float)time64;
     time *= 0.001f;
@@ -232,10 +229,12 @@ public:
 
         UpdateMapDrawUniform(gridOffsetX, gridOffsetY, cameraBounds, (f32)map->GetPixelWidth() * MAP_PIXEL_ZOOM, (f32)map->GetPixelHeight() * MAP_PIXEL_ZOOM);
 
+        RenderState::SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
         RenderState::SetTransparencyMode(RenderState::E_TRANSPARENCY_MODE::ADDITIVE);
 
         GX2SetVertexUniformBlock(0, sizeof(s_mapDrawUFVertex), s_mapDrawUFVertex);
         GX2SetPixelUniformBlock(0, sizeof(s_mapDrawUFPixel), s_mapDrawUFPixel);
+
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
     }
 
@@ -358,10 +357,10 @@ Rect2D _GetVisibleCells(Map* map)
 
 void Map::Draw()
 {
-    if(!s_mapRenderingIsIntialized)
+    if(!s_mapRenderingIsInitialized)
     {
         MapRenderManager::Init();
-        s_mapRenderingIsIntialized = true;
+        s_mapRenderingIsInitialized = true;
     }
 
     MapRenderManager::DrawBackground();

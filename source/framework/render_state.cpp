@@ -9,11 +9,11 @@
 #include <gx2/surface.h>
 #include <whb/gfx.h>
 
-RenderState::E_TRANSPARENCY_MODE sRenderTransparencyMode{RenderState::E_TRANSPARENCY_MODE::OPAQUE};
-
-GX2ColorControlReg sRenderColorControl_noTransparency;
-GX2ColorControlReg sRenderColorControl_transparency;
-GX2BlendControlReg sRenderBlendReg_transparency;
+RenderState::E_TRANSPARENCY_MODE RenderState::sRenderTransparencyMode = RenderState::E_TRANSPARENCY_MODE::OPAQUE;
+GX2ColorControlReg RenderState::sRenderColorControl_transparency;
+GX2ColorControlReg RenderState::sRenderColorControl_noTransparency;
+GX2BlendControlReg RenderState::sRenderBlendReg_transparency;
+GX2ShaderMode RenderState::sShaderMode = GX2_SHADER_MODE_UNIFORM_REGISTER;
 
 void RenderState::Init()
 {
@@ -24,6 +24,7 @@ void RenderState::Init()
                            GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD,
                            GX2_FALSE, // no separate alpha blend
                            GX2_BLEND_MODE_SRC_ALPHA, GX2_BLEND_MODE_INV_SRC_ALPHA, GX2_BLEND_COMBINE_MODE_ADD);
+    SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
 }
 
 void RenderState::ReapplyState()
@@ -31,6 +32,17 @@ void RenderState::ReapplyState()
     auto transparencyMode = sRenderTransparencyMode;
     sRenderTransparencyMode = (E_TRANSPARENCY_MODE)-1;
     SetTransparencyMode(transparencyMode);
+    auto shaderMode = sShaderMode;
+    sShaderMode = (GX2ShaderMode)-1;
+    SetShaderMode(shaderMode);
+}
+
+void RenderState::SetShaderMode(GX2ShaderMode mode)
+{
+    if (sShaderMode != mode) {
+        GX2SetShaderMode(mode);
+        sShaderMode = mode;
+    }
 }
 
 void RenderState::SetTransparencyMode(E_TRANSPARENCY_MODE mode)

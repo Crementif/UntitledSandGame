@@ -326,7 +326,6 @@ void Render::SetStateForSpriteRendering()
 {
     RenderState::ReapplyState();
 
-    GX2SetShaderModeEx(GX2_SHADER_MODE_UNIFORM_REGISTER, 48, 64, 0, 0, 200, 192);
     // setup GX2 state for sprite renderer
     Shader_Sprite.Activate();
     // use the sprite vertex ringbuffer

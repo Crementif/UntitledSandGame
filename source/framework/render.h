@@ -173,5 +173,13 @@ public:
     static void Init();
     static void ReapplyState();
     static void SetTransparencyMode(E_TRANSPARENCY_MODE mode);
+    static void SetShaderMode(GX2ShaderMode mode);
+
+private:
+    static E_TRANSPARENCY_MODE sRenderTransparencyMode;
+    static GX2ColorControlReg sRenderColorControl_noTransparency;
+    static GX2ColorControlReg sRenderColorControl_transparency;
+    static GX2BlendControlReg sRenderBlendReg_transparency;
+    static GX2ShaderMode sShaderMode;
 
 };
