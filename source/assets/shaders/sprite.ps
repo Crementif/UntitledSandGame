@@ -1,8 +1,10 @@
 #version 450
 
 layout(location = 0) in vec2 attr_uv;
-layout(location = 0) out vec4 out_pixel0;
 layout(binding=0) uniform sampler2D tex_base;
+
+layout(location = 0) out vec4 out_pixel0;
+
 
 void main()
 {

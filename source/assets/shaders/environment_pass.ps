@@ -1,86 +1,53 @@
 #version 450
 
 layout(location = 0) in vec2 attr_uv;
-layout(location = 0) out vec4 out_pixel0;
 layout(binding = 0) uniform sampler2D tex_pixelMap;
+
+layout(location = 0) out vec4 out_pixel0;
+
 
 void ScanSurroundings(inout float lavaGlowIntensity, inout float pixelObstructionFactor)
 {
 	ivec2 pixelMapSize = textureSize(tex_pixelMap, 0);
 	vec2 pixelMapPixelSize = vec2(1.0) / vec2(pixelMapSize);
-	
-	int numLavaPixels = 0;
+
+	float Pi = 6.28318530718; // Pi*2
+	float Directions = 16.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
+	float Quality = 8.0f; // BLUR QUALITY (Default 4.0 - More is better but slower)
+	//float Size = 8.0; // BLUR SIZE (Radius)
+
+	vec2 Radius = 12.0 * pixelMapPixelSize;
+
+	// Blur calculations
+	int totalPixels = 0;
+	int lavaPixels = 0;
 	int filledPixels = 0;
-	/*
-	// use a proper kernel and not just a surrounding check?
-	
-	for(int y=-6; y<=6; y++)
+	for (float d=0.0; d<Pi; d+=Pi/Directions)
 	{
-		for(int x=-6; x<=6; x++)
+		for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
 		{
-			vec2 pixelMapSample = texture(tex_pixelMap, attr_uv + vec2(x, y) * pixelMapPixelSize).rg;
+			totalPixels++;
+			vec2 pixelMapSample = texture(tex_pixelMap, attr_uv + vec2(cos(d),sin(d)) * (Radius * i)).rg;
 			int pixelType = int(pixelMapSample.r * 255.0f + 0.5);
-			if(pixelType == 0)
+			if (pixelType == 0)
 				continue; // dont draw air pixels -> Even if its air, it might be influenced by glow effects
 			filledPixels++;
 			if(pixelType == 4)
-				numLavaPixels++;
+				lavaPixels++;
 		}
 	}
-	
-	const int NUM_CHECKED_PIXELS = 13 * 13;
-	lavaGlowIntensity = float(numLavaPixels) / float(NUM_CHECKED_PIXELS);
-	pixelObstructionFactor = float(filledPixels) / float(NUM_CHECKED_PIXELS);
-	pixelObstructionFactor = 1.0 - pixelObstructionFactor * 0.1; // 0.9 to 1.0 range
-	
-	
-	*/
-	
-	
-	
-	float Pi = 6.28318530718; // Pi*2
-    float Directions = 16.0; // BLUR DIRECTIONS (Default 16.0 - More is better but slower)
-    float Quality = 4.0; // BLUR QUALITY (Default 4.0 - More is better but slower)
-    //float Size = 8.0; // BLUR SIZE (Radius)
-   
-    vec2 Radius = 8.0 * pixelMapPixelSize; //Size/iResolution.xy;
-    
-    // Normalized pixel coordinates (from 0 to 1)
-    //vec2 uv = fragCoord/iResolution.xy;
-    // Pixel colour
-    //vec4 Color = texture(iChannel0, uv);
-    
-    // Blur calculations
-    int counter = 0;
-    for( float d=0.0; d<Pi; d+=Pi/Directions)
-    {
-		for(float i=1.0/Quality; i<=1.0; i+=1.0/Quality)
-        {
-			counter++;
-			vec2 pixelMapSample = texture( tex_pixelMap, attr_uv+vec2(cos(d),sin(d))*Radius*i).rg;
-			int pixelType = int(pixelMapSample.r * 255.0f + 0.5);
-			if(pixelType == 0)
-				continue; // dont draw air pixels -> Even if its air, it might be influenced by glow effects
-			filledPixels++;
-			if(pixelType == 4)
-				numLavaPixels++;
-        }
-    }
-	
-	
-	int NUM_CHECKED_PIXELS = counter;
-	lavaGlowIntensity = float(numLavaPixels) / float(NUM_CHECKED_PIXELS);
-	pixelObstructionFactor = float(filledPixels) / float(NUM_CHECKED_PIXELS);
+
+	lavaGlowIntensity = float(lavaPixels) / float(totalPixels);
+	pixelObstructionFactor = float(filledPixels) / float(totalPixels);
 	//pixelObstructionFactor = 1.0 - pixelObstructionFactor * 0.1; // 0.9 to 1.0 range
 	pixelObstructionFactor = 0.4 + pixelObstructionFactor * 0.6;
 }
 
 void main()
 {
-	float lavaGlowIntensity;
-	float pixelObstructionFactor;
+	float lavaGlowIntensity = 1.0f;
+	float pixelObstructionFactor = 1.0f;
 	ScanSurroundings(lavaGlowIntensity, pixelObstructionFactor);
-
 
 	out_pixel0 = vec4(lavaGlowIntensity, pixelObstructionFactor, 0.0, 0.0);
 }

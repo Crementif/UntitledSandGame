@@ -3,33 +3,15 @@
 
 layout(location = 0) noperspective in vec2 ss_uv;
 layout(location = 1) noperspective in vec2 ws_uv;
-
-layout(location = 0) out vec4 out_pixel0;
-layout(binding=0) uniform sampler2D tex_base;
-layout(binding=1) uniform sampler2D tex_environment;
-layout(binding=2) uniform sampler2D tex_pixelColorLookup;
-layout(binding = 0) uniform uf_data
-{
-	float uf_time;
+layout(binding = 0) uniform sampler2D tex_base;
+layout(binding = 1) uniform sampler2D tex_environment;
+layout(binding = 2) uniform sampler2D tex_pixelColorLookup;
+layout(binding = 0) uniform uf_data {
+    float uf_time;
 };
 
-vec3 CalculateLavaGlowColor()
-{
-	float iTime = uf_time * 0.001 + 1000.0;
-	vec2 u = ss_uv.xy * 3.3;
+layout(location = 0) out vec4 out_pixel0;
 
-	// borrowed from https://www.shadertoy.com/view/DdyGDD
-    vec2  R = vec2(0.,sin(iTime/25.0)*8.24),
-          p = 5.*( u+u+vec2(800.,cos((iTime+5.)/10.0)*4000.) - R ) / R.y,
-          r = p-p;
-
-    for(float f=1.; f < 40.; f *= 1.05 )
-		r += sin( p*f +iTime*0.85) / f,
-        p = p * mat2(8,6,-8,6)*.1 + r*.4;
-
-    float l = length(r);
-    return vec3(l*0.29, l*l*0.024, l*l*l*0.0016);
-}
 
 float rand(vec2 n) {
     return fract(sin(dot(n.xy ,vec2(12.9898,78.233))) * 43758.5453);
@@ -45,7 +27,7 @@ float noise( in vec2 n )
 float fbm(vec2 n) {
     float total = 0.0;
     float amplitude = 2.0f;
-    for (int i = 0; i < 14; i++){
+    for (int i = 0; i < 14; i++) {
         total += noise(n) * amplitude;
         n += n;
         amplitude *= 0.55f;
@@ -76,23 +58,20 @@ vec3 CalculateLavaPixelColor(vec2 uv) {
 
 void main()
 {
-	//ivec2 pixelMapSize = textureSize(tex_base, 0);
-	//vec2 pixelMapPixelSize = vec2(1.0) / vec2(pixelMapSize);
-
-	vec4 envSample = texture(tex_environment, ss_uv).rgba;
 	// env:
 	// r -> lavaGlowIntensity
 	// b -> pixelObstructionFactor (1.0 means not obstructed)
+    vec4 envSample = texture(tex_environment, ss_uv).rgba;
 
 	vec2 pixelMapSample = texture(tex_base, ss_uv).rg;
-	int pixelType = int(pixelMapSample.r * 255.0f + 0.5);	
+	int pixelType = int(pixelMapSample.r * 255.0f + 0.5);
 	int pixelSeed = int(pixelMapSample.g * 255.0f + 0.5);
 	bool isSolid = pixelType != 0; // check for smoke too?
 
 	vec4 pixelColor = texelFetch(tex_pixelColorLookup, ivec2(pixelSeed, pixelType), 0);
 
 	pixelColor.a = isSolid ? 1.0 : 0.0;
-	if(pixelType == 4)
+	if (pixelType == 4)
     {
         vec3 lavaEffectColor = pow(CalculateLavaPixelColor(ws_uv * 5.0f), vec3(1.4f, 1.4f, 1.4f));
         pixelColor.rgb = (lavaEffectColor * 0.5f) + (pixelColor.rgb * 0.7f);
@@ -102,7 +81,7 @@ void main()
 	// lava glow
 	if(!isSolid && envSample.r > 0.001)
 	{
-		pixelColor.rgb = vec3(236.0/255.0, 50.0/255.0, 0.0);//CalculateLavaGlowColor();//vec3(236.0/255.0, 50.0/255.0, 0.0);
+		pixelColor.rgb = vec3(236.0/255.0, 50.0/255.0, 0.0);
 		pixelColor.a = envSample.r;
 	}
 	out_pixel0 = pixelColor;
