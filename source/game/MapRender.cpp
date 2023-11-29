@@ -324,6 +324,7 @@ private:
         SelectMat(MAP_PIXEL_TYPE::SMOKE);
         SetMatColor(0, 0x30303080);
         SetMatColor(1, 0x50505080);
+        SetMatColor(2, 0x54545480);
 
         m_pixelColorLookupMap->FlushCache();
     }
