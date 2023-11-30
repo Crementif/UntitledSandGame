@@ -48,3 +48,5 @@ build/
 # Assets folder
 /source/assets/font/*
 !/source/assets/font/*.tga
+
+dist/wua/00050000102b2b2b_v0/content/

@@ -150,13 +150,11 @@ public:
     static Vector2f GetUnfilteredCameraPosition(); // returns the original vector passed to SetCameraPosition
     static Vector2i GetScreenSize();
 
-    static void RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* text, ...);
+    static void RenderText(u32 x, u32 y, u8 blackLevel, const char* text, ...);
     static Sprite* RenderTextSprite(u8 size, u32 color, const wchar_t* string);
 protected:
     static void UpdateCameraCachedValues();
 
-    static Sprite* sBigFontTextureBlack;
-    static Sprite* sBigFontTextureWhite;
     static Sprite* sSmallFontTextureBlack;
     static Sprite* sSmallFontTextureWhite;
 };

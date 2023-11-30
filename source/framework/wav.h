@@ -3,7 +3,7 @@
 class WavFile {
 public:
     WavFile(std::string path) {
-        std::ifstream soundFile((std::string("romfs:/")+path).c_str(), std::ios::in | std::ios::binary);
+        std::ifstream soundFile(("fs:/vol/content/"+path).c_str(), std::ios::in | std::ios::binary);
         if (!soundFile.is_open())
             CriticalErrorHandler("Failed to open wav file!");
 

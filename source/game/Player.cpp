@@ -22,11 +22,11 @@ Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(par
     UpdatePosition(playerPos);
     if(!s_tankBodySprite)
     {
-        s_tankBodySprite = new Sprite("tex/tank.tga", true);
-        s_tankDrill0Sprite = new Sprite("tex/tank_drill0.tga", true);
-        s_tankDrill1Sprite = new Sprite("tex/tank_drill1.tga", true);
-        s_tankDrill2Sprite = new Sprite("tex/tank_drill2.tga", true);
-        s_tankWheelSprite = new Sprite("tex/tank_wheel.tga", true);
+        s_tankBodySprite = new Sprite("/tex/tank.tga", true);
+        s_tankDrill0Sprite = new Sprite("/tex/tank_drill0.tga", true);
+        s_tankDrill1Sprite = new Sprite("/tex/tank_drill1.tga", true);
+        s_tankDrill2Sprite = new Sprite("/tex/tank_drill2.tga", true);
+        s_tankWheelSprite = new Sprite("/tex/tank_wheel.tga", true);
     }
 
     m_teleportAudio = new Audio("/sfx/teleport.wav");

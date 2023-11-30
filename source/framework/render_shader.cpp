@@ -41,7 +41,7 @@ void _InitDefaultFetchShader()
 std::string _LoadShaderSource(std::string_view shaderName, std::string_view extension)
 {
     std::string name = std::string(shaderName).append(extension);
-    std::ifstream fs((std::string("romfs:/shaders/") + name).c_str(), std::ios::in | std::ios::binary);
+    std::ifstream fs(("fs:/vol/content/shaders/" + name).c_str(), std::ios::in | std::ios::binary);
     if(!fs.is_open())
         CriticalErrorHandler("Failed to open file shaders/%s\n", name.c_str());
     std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());

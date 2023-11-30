@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <cstring>
 #include <span>
 
 #include <coreinit/debug.h>
@@ -31,54 +32,64 @@ public:
 
         u32 width = _swapU16(tgaHeader->width);
         u32 height = _swapU16(tgaHeader->height);
+        bool isRLE = (tgaHeader->imagetype & 0x08) != 0; // Check if RLE compression is used
 
         m_width = width;
         m_height = height;
-
         m_bpp = tgaHeader->bits;
-        uint8_t* pixelBaseIn = (uint8_t*)(tgaFileData.data()+sizeof(TGA_HEADER));
-        if(tgaHeader->bits == 24)
-        {
-            // 3 byte format
-            m_tgaData.resize(width * height * 3);
-            for(u32 y=0; y<height; y++)
-            {
-                uint8_t* tga_bgra_data = pixelBaseIn + ((height - y - 1) * width) * 3;
-                uint8_t* out_data = (uint8_t*)m_tgaData.data() + (y * width) * 3;
-                for(u32 x=0; x<width; x++)
-                {
-                    out_data[2] = tga_bgra_data[0];
-                    out_data[1] = tga_bgra_data[1];
-                    out_data[0] = tga_bgra_data[2];
-                    tga_bgra_data += 3;
-                    out_data += 3;
+        uint8_t* pixelBaseIn = (uint8_t*)(tgaFileData.data() + sizeof(TGA_HEADER));
+
+        u32 pixelSize = tgaHeader->bits / 8;
+        u32 dataSize = width * height * pixelSize;
+        m_tgaData.resize(dataSize);
+
+        if (isRLE) {
+            // Handle RLE decoding with vertical flipping
+            u32 pixelCount = 0;
+            while (pixelCount < width * height) {
+                uint8_t packetHeader = *pixelBaseIn++;
+                uint8_t packetType = packetHeader & 0x80;
+                u32 packetSize = (packetHeader & 0x7F) + 1;
+
+                if (packetType) {
+                    // Run-length packet
+                    for (u32 i = 0; i < packetSize; ++i) {
+                        u32 row = (height - 1 - (pixelCount / width));
+                        u32 col = pixelCount % width;
+                        std::copy_n(pixelBaseIn, pixelSize, &m_tgaData[(row * width + col) * pixelSize]);
+                        pixelCount++;
+                    }
+                    pixelBaseIn += pixelSize;
+                }
+                else {
+                    // Raw packet
+                    for (u32 i = 0; i < packetSize; ++i) {
+                        u32 row = (height - 1 - (pixelCount / width));
+                        u32 col = pixelCount % width;
+                        std::copy_n(pixelBaseIn, pixelSize, &m_tgaData[(row * width + col) * pixelSize]);
+                        pixelBaseIn += pixelSize;
+                        pixelCount++;
+                    }
                 }
             }
         }
-        else if(tgaHeader->bits == 32)
-        {
-            // 4 byte format
-            m_tgaData.resize(width * height * 4);
-            for(u32 y=0; y<height; y++)
-            {
-                uint8_t* tga_bgra_data = pixelBaseIn + ((height - y - 1) * width) * 4;
-                uint8_t* out_data = (uint8_t*)m_tgaData.data() + (y * width) * 4;
-                for(u32 x=0; x<width; x++)
-                {
-                    out_data[2] = tga_bgra_data[0];
-                    out_data[1] = tga_bgra_data[1];
-                    out_data[0] = tga_bgra_data[2];
-                    out_data[3] = tga_bgra_data[3];
-                    tga_bgra_data += 4;
-                    out_data += 4;
-                }
+        else {
+            // Handle non-RLE data with vertical flipping
+            for (u32 y = 0; y < height; ++y) {
+                uint8_t* srcRow = pixelBaseIn + (height - 1 - y) * width * pixelSize;
+                uint8_t* dstRow = m_tgaData.data() + y * width * pixelSize;
+                std::memcpy(dstRow, srcRow, width * pixelSize);
             }
         }
-        else
-        {
-            OSFatal("TGAFile: Unsupported bit width");
-            // todo
+
+        // Flip and swap color channels
+        for (u32 y = 0; y < height; ++y) {
+            for (u32 x = 0; x < width; ++x) {
+                uint8_t* pixel = &m_tgaData[((height - 1 - y) * width + x) * pixelSize];
+                std::swap(pixel[0], pixel[2]); // Swap red and blue channels
+            }
         }
+
         return true;
     }
 

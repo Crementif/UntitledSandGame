@@ -33,10 +33,9 @@ include $(DEVKITPRO)/wut/share/wut_rules
 TARGET		:=	sand
 BUILD		:=	build
 SOURCES		:=	source/common source/framework source/framework/physics source/framework/noise source/framework/fileformat source/framework/multiplayer source/game
-ROMFS		:=	source/assets
 DATA		:=	data
 INCLUDES	:=	include
-CONTENT		:=
+CONTENT		:=	source/assets
 ICON		:=	dist/icon.png
 TV_SPLASH	:=	dist/tv-splash.png
 DRC_SPLASH	:=	dist/drc-splash.png
@@ -44,7 +43,7 @@ DRC_SPLASH	:=	dist/drc-splash.png
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O2 -ffunction-sections -fdata-sections $(MACHDEP) $(ROMFS_CFLAGS)
+CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O2 -ffunction-sections -fdata-sections $(MACHDEP)
 
 CFLAGS		+=	$(INCLUDE) -D__WIIU__ -D__WUT__
 
@@ -54,15 +53,6 @@ ASFLAGS		:=	-g $(ARCH)
 LDFLAGS		=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map)
 
 LIBS		:=	-lwut
-
-#-------------------------------------------------------------------------------
-# options for libromfs
-#-------------------------------------------------------------------------------
-include $(PORTLIBS_PATH)/wiiu/share/romfs-wiiu.mk
-CFLAGS		+=	$(ROMFS_CFLAGS)
-CXXFLAGS	+=	$(ROMFS_CFLAGS)
-LIBS		+=	$(ROMFS_LIBS)
-OFILES		+=	$(ROMFS_TARGET)
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level
@@ -81,7 +71,7 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+					$(foreach dir,$(DATA),$(CURDIR)/$(dir))
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
@@ -110,8 +100,8 @@ export OFILES 		:=	$(OFILES_BIN) $(OFILES_SRC)
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
-			$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
-			-I$(CURDIR)/$(BUILD)
+					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
+					-I$(CURDIR)/$(BUILD)
 
 export LIBPATHS	:=	$(foreach dir,$(LIBDIRS),-L$(dir)/lib)
 
@@ -143,26 +133,19 @@ else ifneq (,$(wildcard $(TOPDIR)/splash.png))
 	export APP_DRC_SPLASH := $(TOPDIR)/splash.png
 endif
 
-.PHONY: $(BUILD) check_romfs clean all
-
-check_romfs:
-	@newest_file=$$(find $(ROMFS) -type f -newer $(ROMFS) | head -1); \
-	if [ -n "$$newest_file" ]; then \
-		echo "Updating ROMFS timestamp to force romfs rebuild due to newer files..."; \
-		touch $(ROMFS); \
-	fi
+.PHONY: $(BUILD) clean all
 
 #-------------------------------------------------------------------------------
-all: check_romfs $(BUILD)
+all: $(BUILD)
 
 $(BUILD):
 	@$(shell [ ! -d $(BUILD) ] && mkdir -p $(BUILD))
-	@$(MAKE) CC=$(DEVKITPPC)/bin/powerpc-eabi-gcc CXX=$(DEVKITPPC)/bin/powerpc-eabi-g++ -C $(BUILD) -f $(CURDIR)/Makefile
+	$(MAKE) CC=$(DEVKITPPC)/bin/powerpc-eabi-gcc CXX=$(DEVKITPPC)/bin/powerpc-eabi-g++ -C $(BUILD) -f $(CURDIR)/Makefile
 
 #-------------------------------------------------------------------------------
 clean:
 	@echo clean...
-	@rm -fr $(BUILD) $(TARGET).wuhb $(TARGET).rpx $(TARGET).elf
+	@rm -fr $(BUILD) $(TARGET).wua $(TARGET).wuhb $(TARGET).rpx $(TARGET).elf
 
 #-------------------------------------------------------------------------------
 else
@@ -173,11 +156,20 @@ DEPENDS	:=	$(OFILES:.o=.d)
 #-------------------------------------------------------------------------------
 # main targets
 #-------------------------------------------------------------------------------
-all	:	$(OUTPUT).wuhb
+all: $(OUTPUT).wuhb $(OUTPUT).wua
 
-$(OUTPUT).wuhb	:	$(OUTPUT).rpx
-$(OUTPUT).rpx	:	$(OUTPUT).elf
-$(OUTPUT).elf	:	$(OFILES)
+$(OUTPUT).wuhb:	$(OUTPUT).rpx
+$(OUTPUT).wua: $(OUTPUT).rpx
+	@echo Creating wua...
+	@cp $(OUTPUT).rpx $(TOPDIR)/dist/wua/00050000102b2b2b_v0/code/$(TARGET).rpx
+	@rm -rf $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
+	@mkdir $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
+	@cp -r $(TOPDIR)/$(CONTENT)/. $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
+	@rm -f $(OUTPUT).wua
+	@$(TOPDIR)/dist/zarchive.exe $(shell wslpath -m $(TOPDIR)/dist/wua) $(shell wslpath -m $(OUTPUT).wua)
+	@echo built ... sand.wua
+$(OUTPUT).rpx: $(OUTPUT).elf
+$(OUTPUT).elf: $(OFILES)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
 

@@ -28,7 +28,6 @@ Sprite* Collectable::s_collectableSprite = nullptr;
 int main()
 {
     WHBLogCafeInit();
-    romfsInit();
     initializeInputs();
 
     Render::Init();
@@ -101,7 +100,6 @@ int main()
     Render::Shutdown();
 
     WHBLogCafeDeinit();
-    WHBLogUdpDeinit();
     return 0;
 }
 

@@ -109,14 +109,14 @@ void GameSceneIngame::DrawHUD() {
 
     if (m_showDebugInfo) {
         for (u32 i = 0; i < g_debugStrings.size(); i++) {
-            Render::RenderText(20, 300 + (i * 16), 0, 0x00, g_debugStrings[i].c_str());
+            Render::RenderText(20, 300 + (i * 16), 0x00, g_debugStrings[i].c_str());
         }
     }
 
     if (m_selfPlayer->IsSpectating()) {
         std::string spectatingText = "Press A to spectate next player";
         const u32 stringWidth = spectatingText.size() * 16;
-        Render::RenderText(1920 - stringWidth - 20, 1080 - (80 * 2), 0, 0x00, spectatingText.c_str());
+        Render::RenderText(1920 - stringWidth - 20, 1080 - (80 * 2), 0x00, spectatingText.c_str());
     }
 }
 

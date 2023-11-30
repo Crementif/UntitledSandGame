@@ -538,7 +538,7 @@ GX2Texture* _InitSpriteTexture(u32 width, u32 height, E_TEXFORMAT format);
 
 Sprite::Sprite(const char* path, bool hasTransparency) : m_hasTransparency(hasTransparency)
 {
-    std::ifstream fs((std::string("romfs:/") + path).c_str(), std::ios::in | std::ios::binary);
+    std::ifstream fs("fs:/vol/content/"+std::string(path), std::ios::in | std::ios::binary);
     if(!fs.is_open())
         CriticalErrorHandler("Failed to open file %s\n", path);
     std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
@@ -766,20 +766,14 @@ Sprite* Render::RenderTextSprite(u8 size, u32 color, const wchar_t* string) {
     return renderedSprite;
 }
 
-Sprite* Render::sBigFontTextureBlack = nullptr;
-Sprite* Render::sBigFontTextureWhite = nullptr;
 Sprite* Render::sSmallFontTextureBlack = nullptr;
 Sprite* Render::sSmallFontTextureWhite = nullptr;
 
-void Render::RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* text, ...) {
-    if (sBigFontTextureBlack == nullptr) {
-        sBigFontTextureBlack = new Sprite("font/source-code-pro-black.tga", true);
-        sBigFontTextureBlack->SetupSampler(false);
-        sBigFontTextureWhite = new Sprite("font/source-code-pro-white.tga", true);
-        sBigFontTextureWhite->SetupSampler(false);
-        sSmallFontTextureBlack = new Sprite("font/source-code-pro-small-black.tga", true);
+void Render::RenderText(u32 x, u32 y, u8 blackLevel, const char* text, ...) {
+    if (sSmallFontTextureBlack == nullptr) {
+        sSmallFontTextureBlack = new Sprite("/font/source-code-pro-small-black.tga", true);
         sSmallFontTextureBlack->SetupSampler(false);
-        sSmallFontTextureWhite = new Sprite("font/source-code-pro-small-white.tga", true);
+        sSmallFontTextureWhite = new Sprite("/font/source-code-pro-small-white.tga", true);
         sSmallFontTextureWhite->SetupSampler(false);
     }
 
@@ -790,22 +784,16 @@ void Render::RenderText(u32 x, u32 y, u8 textSize, u8 blackLevel, const char* te
     va_end (args);
 
     Sprite* spriteUsed = nullptr;
-    if (blackLevel != 0x00 && textSize != 0) {
-        spriteUsed = sBigFontTextureBlack;
-    }
-    else if (blackLevel != 0x00 && textSize == 0) {
+    if (blackLevel != 0x00) {
         spriteUsed = sSmallFontTextureBlack;
     }
-    else if (blackLevel == 0x00 && textSize != 0) {
-        spriteUsed = sBigFontTextureWhite;
-    }
-    else if (blackLevel == 0x00 && textSize == 0) {
+    else if (blackLevel == 0x00) {
         spriteUsed = sSmallFontTextureWhite;
     }
 
-    uint32_t effectiveCharacterWidth = (textSize == 0 ? 14 : 26);
-    uint32_t characterSize = (textSize == 0 ? 32 : 64);
-    uint32_t textureDimensions = (textSize == 0 ? 512 : 1024);
+    constexpr uint32_t effectiveCharacterWidth = 14;
+    constexpr uint32_t characterSize = 32;
+    constexpr uint32_t textureDimensions = 512;
     for (uint32_t i=0; i<strlen(maxTextBuffer); i++) {
         if (maxTextBuffer[i] == '\0') break;
         u32 letter = (u32)maxTextBuffer[i];
