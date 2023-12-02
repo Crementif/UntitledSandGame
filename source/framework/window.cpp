@@ -23,6 +23,9 @@ static void*            gDrcScanBuffer        = NULL;
 static GX2ColorBuffer   gColorBuffer;
 static void*            gColorBufferImageData = NULL;
 static GX2Texture       gColorBufferTexture;
+static GX2ColorBuffer   gPostBuffer;
+static void*            gPostBufferImageData = NULL;
+static GX2Texture       gPostBufferTexture;
 static GX2DepthBuffer   gDepthBuffer;
 static void*            gDepthBufferImageData = NULL;
 static GX2Texture       gDepthBufferTexture;
@@ -180,44 +183,50 @@ static bool WindowForegroundAcquire()
         GX2SetDRCScale(drc_width, drc_height);
     }
 
-    // Initialize color buffer
-    gColorBuffer.surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
-    gColorBuffer.surface.width = gWindowWidth;
-    gColorBuffer.surface.height = gWindowHeight;
-    gColorBuffer.surface.depth = 1;
-    gColorBuffer.surface.mipLevels = 1;
-    gColorBuffer.surface.format = GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
-    gColorBuffer.surface.aa = GX2_AA_MODE1X;
-    gColorBuffer.surface.use = GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV;
-    gColorBuffer.surface.mipmaps = NULL;
-    gColorBuffer.surface.tileMode = GX2_TILE_MODE_DEFAULT;
-    gColorBuffer.surface.swizzle  = 0;
-    gColorBuffer.viewMip = 0;
-    gColorBuffer.viewFirstSlice = 0;
-    gColorBuffer.viewNumSlices = 1;
-    GX2CalcSurfaceSizeAndAlignment(&gColorBuffer.surface);
-    GX2InitColorBufferRegs(&gColorBuffer);
+    auto initializeColorBuffer = [](GX2ColorBuffer& buffer, GX2Texture& bufferTexture, void*& bufferImageData, u32 bufferWidth, u32 bufferHeight) -> bool {
+        // initialize buffer
+        buffer.surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
+        buffer.surface.width = bufferWidth;
+        buffer.surface.height = bufferHeight;
+        buffer.surface.depth = 1;
+        buffer.surface.mipLevels = 1;
+        buffer.surface.format = GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
+        buffer.surface.aa = GX2_AA_MODE1X;
+        buffer.surface.use = GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV;
+        buffer.surface.mipmaps = NULL;
+        buffer.surface.tileMode = GX2_TILE_MODE_DEFAULT;
+        buffer.surface.swizzle  = 0;
+        buffer.viewMip = 0;
+        buffer.viewFirstSlice = 0;
+        buffer.viewNumSlices = 1;
+        GX2CalcSurfaceSizeAndAlignment(&buffer.surface);
+        GX2InitColorBufferRegs(&buffer);
 
-    // Allocate color buffer data
-    gColorBufferImageData = MEMAllocFromFrmHeapEx(
-        gMEM1HeapHandle,
-        gColorBuffer.surface.imageSize, // Data byte size
-        gColorBuffer.surface.alignment  // Required alignment
-    );
+        // initialize buffer data
+        bufferImageData = MEMAllocFromFrmHeapEx(
+            gMEM1HeapHandle,
+            buffer.surface.imageSize, // Data byte size
+            (int)buffer.surface.alignment  // Required alignment
+        );
+        if (!bufferImageData)
+            return false;
+        buffer.surface.image = bufferImageData;
 
-    if (!gColorBufferImageData)
+        // initialize buffer texture
+        _GX2InitTextureFromColorBuffer(&bufferTexture, &buffer);
+        bufferTexture.surface.use = (GX2SurfaceUse)(bufferTexture.surface.use | GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV);
+        memset(bufferTexture.surface.image, 0, bufferTexture.surface.imageSize);
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, bufferTexture.surface.image, bufferTexture.surface.imageSize);
+
+        GX2Invalidate(GX2_INVALIDATE_MODE_CPU, bufferImageData, buffer.surface.imageSize);
+        return true;
+    };
+
+    if (!initializeColorBuffer(gColorBuffer, gColorBufferTexture, gColorBufferImageData, gWindowWidth, gWindowHeight))
         return false;
 
-    gColorBuffer.surface.image = gColorBufferImageData;
-
-    // Initialize color buffer texture
-    _GX2InitTextureFromColorBuffer(&gColorBufferTexture, &gColorBuffer);
-    gColorBufferTexture.surface.use = (GX2SurfaceUse)(gColorBufferTexture.surface.use | GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV);
-    memset(gColorBufferTexture.surface.image, 0, gColorBufferTexture.surface.imageSize);
-    GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, gColorBufferTexture.surface.image, gColorBufferTexture.surface.imageSize);
-
-    // Flush allocated buffer from CPU cache
-    GX2Invalidate(GX2_INVALIDATE_MODE_CPU, gColorBufferImageData, gColorBuffer.surface.imageSize);
+    if (!initializeColorBuffer(gPostBuffer, gPostBufferTexture, gPostBufferImageData, gWindowWidth, gWindowHeight))
+        return false;
 
     // Initialize depth buffer
     gDepthBuffer.surface.dim = GX2_SURFACE_DIM_TEXTURE_2D;
@@ -304,6 +313,7 @@ static void WindowForegroundRelease()
         gMEM1HeapHandle = NULL;
     }
     gColorBufferImageData = NULL;
+    gPostBufferImageData = NULL;
     gDepthBufferImageData = NULL;
 
     WHBUnmountSdCard();
@@ -398,15 +408,15 @@ bool WindowIsRunning()
     return gIsRunning;
 }
 
-void WindowSwapBuffers()
+void WindowSwapBuffers(bool usePostBuffer)
 {
     // Make sure to flush all commands to GPU before copying the color buffer to the scan buffers
-    // (Calling GX2DrawDone instead here causes slow downs)
+    // (Calling GX2DrawDone instead here causes slow-downs)
     GX2Flush();
 
     // Copy the color buffer to the TV and DRC scan buffers
-    GX2CopyColorBufferToScanBuffer(&gColorBuffer, GX2_SCAN_TARGET_TV);
-    GX2CopyColorBufferToScanBuffer(&gColorBuffer, GX2_SCAN_TARGET_DRC);
+    GX2CopyColorBufferToScanBuffer(usePostBuffer ? &gPostBuffer : &gColorBuffer, GX2_SCAN_TARGET_TV);
+    GX2CopyColorBufferToScanBuffer(usePostBuffer ? &gPostBuffer : &gColorBuffer, GX2_SCAN_TARGET_DRC);
     // Flip
     GX2SwapScanBuffers();
 
@@ -479,6 +489,11 @@ GX2ColorBuffer* WindowGetColorBuffer()
     return &gColorBuffer;
 }
 
+GX2ColorBuffer* WindowGetPostBuffer()
+{
+    return &gPostBuffer;
+}
+
 GX2DepthBuffer* WindowGetDepthBuffer()
 {
     return &gDepthBuffer;
@@ -487,6 +502,21 @@ GX2DepthBuffer* WindowGetDepthBuffer()
 GX2Texture* WindowGetColorBufferTexture()
 {
     return &gColorBufferTexture;
+}
+
+GX2Texture* WindowGetPostBufferTexture()
+{
+    return &gColorBufferTexture;
+}
+
+GX2Surface* WindowGetColorBufferSurface()
+{
+    return &gColorBuffer.surface;
+}
+
+GX2Surface* WindowGetPostBufferSurface()
+{
+    return &gColorBuffer.surface;
 }
 
 GX2Texture* WindowGetDepthBufferTexture()

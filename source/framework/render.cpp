@@ -21,7 +21,6 @@
 #include "../game/GameScene.h"
 
 ShaderSwitcher Shader_CRT{"crt"};
-Framebuffer* postProcessingBuffer = nullptr;
 
 static SFT s_fontFace;
 
@@ -82,6 +81,19 @@ GX2SurfaceFormat _GetGX2SurfaceFormat(E_TEXFORMAT texFormat)
     }
     return GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
 }
+
+E_TEXFORMAT _GetGX2Format(GX2SurfaceFormat surfaceFormat)
+{
+    switch(surfaceFormat)
+    {
+        case GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8: return E_TEXFORMAT::RGBA8888_UNORM;
+        case GX2_SURFACE_FORMAT_UNORM_R8_G8: return E_TEXFORMAT::RG88_UNORM;
+        default:
+            CriticalErrorHandler("Unknown texture format");
+    }
+    return E_TEXFORMAT::RGBA8888_UNORM;
+}
+
 
 void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear)
 {
@@ -266,6 +278,7 @@ constexpr static __attribute__ ((aligned (32))) u16 s_idx_data[] =
 void Render::DoPostProcessing() {
     if (GameScene::IsCrtFilterEnabled()) {
         Framebuffer::ApplyBackbuffer();
+        GX2SetColorBuffer(WindowGetPostBuffer(), GX2_RENDER_TARGET_0);
 
         Shader_CRT.Activate();
 
@@ -278,7 +291,7 @@ void Render::DoPostProcessing() {
 
 void Render::SwapBuffers()
 {
-    WindowSwapBuffers();
+    WindowSwapBuffers(GameScene::IsCrtFilterEnabled());
 }
 
 Vector2f sRenderCamUnfiltered{0.0, 0.0};

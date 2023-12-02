@@ -1,14 +1,11 @@
 #include "../common/common.h"
 #include "GameScene.h"
 #include "GameSceneMenu.h"
-#include "GameSceneIngame.h"
-#include "Object.h"
 #include "Landmine.h"
 #include "TextButton.h"
 #include "Collectable.h"
 #include "Missile.h"
 
-#include "../framework/render.h"
 #include "../framework/navigation.h"
 #include "../framework/audio.h"
 

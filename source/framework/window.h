@@ -37,7 +37,7 @@ bool WindowIsRunning();
 // Swap the front and back buffers
 // This function will perform a GPU flush and block until swapping is done
 // For Wii U, TV output is automatically duplicated to the Gamepad
-void WindowSwapBuffers();
+void WindowSwapBuffers(bool usePostBuffer);
 
 // Function to be called by user at application exit to free resources allocated by this library
 void WindowExit();
@@ -45,8 +45,10 @@ void WindowExit();
 #include <gx2/surface.h>
 
 GX2ColorBuffer* WindowGetColorBuffer();
+GX2ColorBuffer* WindowGetPostBuffer();
 GX2DepthBuffer* WindowGetDepthBuffer();
 GX2Texture* WindowGetColorBufferTexture();
+GX2Texture* WindowGetPostBufferTexture();
 GX2Texture* WindowGetDepthBufferTexture();
 
 s32 WindowGetWidth();

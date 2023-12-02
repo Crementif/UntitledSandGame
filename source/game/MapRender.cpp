@@ -275,28 +275,35 @@ private:
         SelectMat(MAP_PIXEL_TYPE::SAND);
         SetMatColor(0, 0xE9B356FF);
         SetMatColor(1, 0xEEC785FF);
+        SetMatColor(2, 0xDEB56FFF);
         GenerateDimmerMatColor(0, 2, dimFactor);
         GenerateDimmerMatColor(1, 2, dimFactor);
+        GenerateDimmerMatColor(2, 2, dimFactor);
 
         // Setting SOIL colors
         SelectMat(MAP_PIXEL_TYPE::SOIL);
         SetMatColor(0, 0x5F3300FF);
         SetMatColor(1, 0x512B00FF);
+        SetMatColor(2, 0x472600FF);
         GenerateDimmerMatColor(0, 2, dimFactor);
         GenerateDimmerMatColor(1, 2, dimFactor);
+        GenerateDimmerMatColor(2, 2, dimFactor);
 
         // Setting GRASS colors
         SelectMat(MAP_PIXEL_TYPE::GRASS);
         SetMatColor(0, 0x2F861FFF);
         SetMatColor(1, 0x3E932BFF);
+        SetMatColor(1, 0x3D9629FF);
         GenerateDimmerMatColor(0, 2, dimFactor);
         GenerateDimmerMatColor(1, 2, dimFactor);
+        GenerateDimmerMatColor(2, 2, dimFactor);
 
         // Setting LAVA colors
         SelectMat(MAP_PIXEL_TYPE::LAVA);
         SetMatColor(0, 0xFF0000FF);
         SetMatColor(1, 0xFF2B00FF);
         SetMatColor(2, 0xFF6A00FF);
+        SetMatColor(3, 0xFA2F19FF);
 
         // Setting ROCK colors
         SelectMat(MAP_PIXEL_TYPE::ROCK);
