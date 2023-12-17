@@ -151,7 +151,8 @@ clean:
 else
 .PHONY:	all
 
-DEPENDS	:=	$(OFILES:.o=.d)
+DEPENDS			:=	$(OFILES:.o=.d)
+CONTENT_DEPENDS	:=	$(shell find $(APP_CONTENT) -type f) $(APP_ICON) $(APP_TV_SPLASH) $(APP_DRC_SPLASH)
 
 #-------------------------------------------------------------------------------
 # main targets
@@ -168,7 +169,7 @@ $(OUTPUT).wua: $(OUTPUT).rpx
 	@rm -f $(OUTPUT).wua
 	@$(TOPDIR)/dist/zarchive.exe $(shell wslpath -m $(TOPDIR)/dist/wua) $(shell wslpath -m $(OUTPUT).wua)
 	@echo built ... sand.wua
-$(OUTPUT).rpx: $(OUTPUT).elf
+$(OUTPUT).rpx: $(OUTPUT).elf $(CONTENT_DEPENDS)
 $(OUTPUT).elf: $(OFILES)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
