@@ -42,6 +42,7 @@ build/
 /cemu/*
 !/cemu/.gitkeep
 !/cemu/cafeLibs/glslcompiler.rpl
+!/dist/zarchive.exe
 /tools/**
 /tools/**/.gitkeep
 
