@@ -164,6 +164,7 @@ void Framebuffer::ApplyBackbuffer()
 }
 
 GX2Sampler sRenderBaseSampler1_linear;
+GX2Sampler sRenderBaseSampler1_linear_repeat;
 GX2Sampler sRenderBaseSampler1_nearest;
 
 struct
@@ -217,6 +218,10 @@ void _InitBasicRenderResources()
     // init linear sampler
     GX2InitSampler(&sRenderBaseSampler1_linear, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_LINEAR);
     GX2InitSamplerZMFilter(&sRenderBaseSampler1_linear, GX2_TEX_Z_FILTER_MODE_NONE, GX2_TEX_MIP_FILTER_MODE_NONE);
+
+    // setup sRenderBaseSampler1_linear_repeat
+    GX2InitSampler(&sRenderBaseSampler1_linear_repeat, GX2_TEX_CLAMP_MODE_WRAP, GX2_TEX_XY_FILTER_MODE_LINEAR);
+    GX2InitSamplerZMFilter(&sRenderBaseSampler1_linear_repeat, GX2_TEX_Z_FILTER_MODE_NONE, GX2_TEX_MIP_FILTER_MODE_NONE);
 
     // init nearest sampler
     GX2InitSampler(&sRenderBaseSampler1_nearest, GX2_TEX_CLAMP_MODE_CLAMP, GX2_TEX_XY_FILTER_MODE_POINT);

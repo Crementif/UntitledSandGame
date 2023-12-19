@@ -19,6 +19,7 @@ static inline Framebuffer* s_environmentMap;
 
 // sprites
 static inline Sprite* m_backgroundSprite;
+static inline Sprite* m_dirtDetailSprite;
 static inline Sprite* m_pixelColorLookupMap;
 
 
@@ -59,6 +60,7 @@ inline u32 EndianSwap_F32(f32 v)
 
 extern GX2Sampler sRenderBaseSampler1_nearest;
 extern GX2Sampler sRenderBaseSampler1_linear;
+extern GX2Sampler sRenderBaseSampler1_linear_repeat;
 
 static uint64_t launchTime = OSGetTime();
 
@@ -122,6 +124,7 @@ public:
     static void Init()
     {
         m_backgroundSprite = new Sprite("/tex/background_tile_a.tga", false);
+        m_dirtDetailSprite = new Sprite("/tex/dirt_detail.tga", false);
 
         // calculate how many pixels will be visible
         s32 visibleWorldPixelsX = (WindowGetWidth() + (MAP_PIXEL_ZOOM-1)) / MAP_PIXEL_ZOOM;
@@ -193,7 +196,6 @@ public:
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
     }
 
-
     // draw map pixels to screen using m_pixelMap
     static void DrawPixelsToScreen(Map *map)
     {
@@ -208,6 +210,8 @@ public:
         GX2SetPixelSampler(&sRenderBaseSampler1_linear, 1);
         GX2SetPixelTexture(m_pixelColorLookupMap->GetTexture(), 2);
         GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 2);
+        GX2SetPixelTexture(m_dirtDetailSprite->GetTexture(), 3);
+        GX2SetPixelSampler(&sRenderBaseSampler1_linear_repeat, 3);
 
         // some math magic to allow for 1-pixel-precise scrolling regardless of zoom factor
         const f32 pixelWidth = Framebuffer::GetCurrentPixelWidth()*2.0f;

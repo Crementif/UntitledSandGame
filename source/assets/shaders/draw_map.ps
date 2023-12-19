@@ -6,6 +6,7 @@ layout(location = 1) noperspective in vec2 ws_uv;
 layout(binding = 0) uniform sampler2D tex_base;
 layout(binding = 1) uniform sampler2D tex_environment;
 layout(binding = 2) uniform sampler2D tex_pixelColorLookup;
+layout(binding = 3) uniform sampler2D tex_dirtDetail;
 layout(binding = 0) uniform uf_data {
     float uf_time;
 };
@@ -75,6 +76,13 @@ void main()
     {
         vec3 lavaEffectColor = pow(CalculateLavaPixelColor(ws_uv * 5.0f), vec3(1.4f, 1.4f, 1.4f));
         pixelColor.rgb = (lavaEffectColor * 0.5f) + (pixelColor.rgb * 0.7f);
+	}
+	else if (pixelType == 2)
+	{
+	   // soil detail
+	   //pixelColor.rgb = pixelColor.rgb*0.6 + texture(tex_dirtDetail, ws_uv * 1.0f).rgb*0.8;
+	   pixelColor.rgb = pixelColor.rgb*0.6 + (texture(tex_dirtDetail, ws_uv * 1.0f).rgb*0.8-vec3(0.1));
+	   //pixelColor.rgb = pixelColor.rgb*0.8 + (texture(tex_dirtDetail, ws_uv * 1.0f).rgb-vec3(0.11))*0.8;
 	}
 
 	pixelColor.rgb *= envSample.g;
