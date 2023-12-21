@@ -5,6 +5,7 @@
 #include "TextButton.h"
 #include "Collectable.h"
 #include "Missile.h"
+#include "Blackhole.h"
 
 #include "../framework/navigation.h"
 #include "../framework/audio.h"
@@ -18,6 +19,9 @@ Sprite* Missile::s_missile0Sprite = nullptr;
 Sprite* Missile::s_missile1Sprite = nullptr;
 Sprite* Missile::s_missile2Sprite = nullptr;
 Sprite* Missile::s_missile3Sprite = nullptr;
+Sprite* Blackhole::s_blackhole0Sprite = nullptr;
+Sprite* Blackhole::s_blackhole1Sprite = nullptr;
+Sprite* Blackhole::s_blackhole2Sprite = nullptr;
 Sprite* Collectable::s_collectableSprite = nullptr;
 
 #include <chrono>
@@ -37,6 +41,9 @@ int main()
     Missile::s_missile1Sprite = new Sprite("/tex/missile1.tga", true);
     Missile::s_missile2Sprite = new Sprite("/tex/missile2.tga", true);
     Missile::s_missile3Sprite = new Sprite("/tex/missile3.tga", true);
+    Blackhole::s_blackhole0Sprite = new Sprite("/tex/blackhole0.tga", true);
+    Blackhole::s_blackhole1Sprite = new Sprite("/tex/blackhole1.tga", true);
+    Blackhole::s_blackhole2Sprite = new Sprite("/tex/blackhole2.tga", true);
     Collectable::s_collectableSprite = new Sprite("/tex/ammo.tga", true);
 
     // set polygon mode

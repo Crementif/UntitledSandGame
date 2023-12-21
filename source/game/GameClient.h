@@ -19,7 +19,8 @@ public:
         BOMB = 4,
         LAVA = 5,
         JETPACK = 6,
-        DEATH = 7 // special non-collectible ability for the explosion when a player dies
+        DEATH = 7, // special non-collectible ability for the explosion when a player dies
+        BLACKHOLE = 8,
     };
 
     struct GameSessionInfo
@@ -59,6 +60,7 @@ public:
         {
             DRILLING = 0,
             EXPLOSION = 1,
+            IMPLOSION = 2,
         };
         EVENT_TYPE eventType;
         u32 frameIndex;
@@ -75,6 +77,12 @@ public:
                 Vector2f pos;
                 f32 radius;
             }action_explosion;
+            struct
+            {
+                PlayerID playerId;
+                Vector2f pos;
+                f32 radius;
+            }action_implosion;
         };
     };
 

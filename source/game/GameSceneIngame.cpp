@@ -12,6 +12,7 @@
 #include "Collectable.h"
 #include "MapPixels.h"
 #include "GameSceneMenu.h"
+#include "Blackhole.h"
 
 
 GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): GameScene(std::move(client), std::move(server))
@@ -103,6 +104,9 @@ void GameSceneIngame::DrawHUD() {
     else if (m_selfPlayer->GetAbility() == GameClient::GAME_ABILITY::MISSILE) {
         Render::RenderSpriteScreenRelative(&m_missileSprite, 20+16, 20+64+20+(64/2)-9, 32, 32);
     }
+    else if (m_selfPlayer->GetAbility() == GameClient::GAME_ABILITY::BLACKHOLE) {
+        Render::RenderSpriteScreenRelative(&m_blackholeSprite, 20+16, 20+64+20+(64/2)-9, 32, 32);
+    }
 
     if (pressedStart())
         m_showDebugInfo = !m_showDebugInfo;
@@ -166,6 +170,8 @@ void GameSceneIngame::UpdateMultiplayer()
             new Landmine(this, event.playerId, event.pos.x, event.pos.y);
         else if (event.ability == GameClient::GAME_ABILITY::MISSILE)
             new Missile(this, event.playerId, event.pos.x, event.pos.y, event.velocity.x, event.velocity.y);
+        else if (event.ability == GameClient::GAME_ABILITY::BLACKHOLE)
+            new Blackhole(this, event.playerId, event.pos.x, event.pos.y, event.velocity.x, event.velocity.y);
         else if (event.ability == GameClient::GAME_ABILITY::DEATH) {
             this->GetPlayerById(event.playerId)->ChangeToSpectator();
 

@@ -80,7 +80,7 @@ private:
     bool m_spectating = false;
     u32 m_spectatingPlayerIdx = 0;
     Player* m_spectatingPlayer = nullptr;
-    GameClient::GAME_ABILITY m_ability = GameClient::GAME_ABILITY::NONE;
+    GameClient::GAME_ABILITY m_ability = GameClient::GAME_ABILITY::BLACKHOLE;
     OSTime m_turboBoost = 0;
 
     f32 m_moveAnimRot = 0;

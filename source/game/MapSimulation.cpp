@@ -216,6 +216,9 @@ void Map::HandleSynchronizedEvents()
                 // todo: also make audio volume depend on distance to explosion. Same for all other audio bytes probably!
                 HandleSynchronizedEvent_Explosion(event.action_explosion.playerId, event.action_explosion.pos, event.action_explosion.radius);
                 break;
+            case GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION:
+                HandleSynchronizedEvent_Implosion(event.action_implosion.playerId, event.action_implosion.pos, event.action_implosion.radius);
+                break;
         }
     }
 }
@@ -276,6 +279,9 @@ bool _CanMaterialBeFlung(MAP_PIXEL_TYPE mat)
     switch(mat)
     {
         case MAP_PIXEL_TYPE::SOIL:
+        case MAP_PIXEL_TYPE::SAND:
+        case MAP_PIXEL_TYPE::GRASS:
+        case MAP_PIXEL_TYPE::LAVA:
             return true;
         default:
             return false;
@@ -356,6 +362,46 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
                     break;
                 }
             }
+        }
+    }
+}
+
+#define IMPLOSION_HOTSPOT_ATTEMPTS 5
+void Map::HandleSynchronizedEvent_Implosion(u32 playerId, Vector2f pos, f32 radius)
+{
+    s32 radiusI = (s32)(radius + 0.5f);
+    if(radiusI <= 0)
+        return;
+    s32 posX = (s32)(pos.x + 0.5f);
+    s32 posY = (s32)(pos.y + 0.5f);
+
+    for(s32 y=posY-radiusI-1; y<=posY+radiusI+1; y++)
+    {
+        for(s32 x=posX-radiusI-1; x<=posX+radiusI-1; x++)
+        {
+            if( IsPixelOOB(x, y) )
+                continue;
+
+            s32 dfx = x - posX;
+            s32 dfy = y - posY;
+            s32 squareDist = dfx * dfx + dfy * dfy;
+
+            if(squareDist >= radiusI*radiusI)
+                continue;
+
+            // Calculate the direction towards the center
+            Vector2f dirToCenter = Vector2f(posX - x, posY - y).GetNormalized();
+
+            // Calculate the strength of the attraction
+            // You can modify this formula to change how the attraction decreases with distance
+            f32 strength = (radiusI - std::sqrt(squareDist)) / radiusI;
+
+            // Apply the attraction to the pixel
+            // Assuming FlungPixel can take a direction and strength of movement
+            PixelType& pt = GetPixelNoBoundsCheck(x, y);
+            new FlungPixel(this, Vector2f(x, y), dirToCenter * strength, pt.GetPixelType(), _GetRandomSeedFromPixelType(pt.GetPixelType()));
+
+            // You can add additional effects like shrinking the pixel or changing color here
         }
     }
 }

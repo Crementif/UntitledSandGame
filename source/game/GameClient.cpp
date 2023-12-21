@@ -173,6 +173,15 @@ bool GameClient::ProcessPacket_SyncedEvent(PacketParser &pp)
             m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
             break;
         }
+        case SynchronizedEvent::EVENT_TYPE::IMPLOSION:
+        {
+            se.action_implosion.playerId = playerId;
+            se.action_implosion.pos.x = pos.x;
+            se.action_implosion.pos.y = pos.y;
+            se.action_implosion.radius = extraParam1;
+            m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
+            break;
+        }
         default:
             break;
     }
