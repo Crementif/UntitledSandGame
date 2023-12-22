@@ -319,7 +319,7 @@ private:
     void HandleSynchronizedEvents();
     void HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos);
     void HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius);
-    void HandleSynchronizedEvent_Implosion(u32 playerId, Vector2f pos, f32 radius);
+    void HandleSynchronizedEvent_Implosion(u32 playerId, Vector2f pos, f32 radiusStart, f32 radiusEnd);
 
     void SimulateFlungPixels();
 

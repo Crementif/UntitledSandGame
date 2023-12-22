@@ -48,9 +48,42 @@ private:
     std::vector<Vector2f> m_directions;
 };
 
+class BlackholeParticle: public Particle {
+public:
+    BlackholeParticle(GameScene* parent, Vector2f pos, u32 rays, f32 distance, u32 lifetimeSteps, float randomness) : Particle(parent, std::make_unique<Sprite>("/tex/blackhole0.tga", true), 1, pos, rays, distance, lifetimeSteps, randomness) {
+    };
+private:
+    void Explode(Vector2f pos) override {
+        Map* map = this->m_parent->GetMap();
+
+        AABB explosionRange = AABB({pos.x-(f32)m_force/2, pos.y-(f32)m_force/2}, Vector2f(m_force, m_force));
+
+        // loop over AABB pixels
+
+        // -> pixel interaction has to be synchronized (see synchronized event explosion)
+        /*
+        for (s32 x = (s32)explosionRange.pos.x; x < (s32)(explosionRange.pos.x + explosionRange.scale.x); x++) {
+            for (s32 y = (s32)explosionRange.pos.y; y < (s32)(explosionRange.pos.y + explosionRange.scale.y); y++) {
+                // check if map pixel is in range of the explosion force and whether it is solid/destructible
+                if (map->IsPixelOOB(x, y))
+                    continue;
+
+                PixelType& pixel = map->GetPixelNoBoundsCheck(x, y);
+                if (pos.Distance({(f32)x, (f32)y}) <= m_force && pixel.IsSolid() && pixel.IsDestructible()) {
+                    // adjust force for distance
+                    f32 distanceAdjustedForce = m_force - Vector2f((f32)x, (f32)y).Distance(pos);
+                    // apply force to pixel
+                    map->ReanimateStaticPixel(pixel.GetPixelType(), x, y, distanceAdjustedForce);
+                }
+            }
+        }*/
+    };
+    float m_force = 1.0f;
+};
+
 class ExplosiveParticle: public Particle {
 public:
-    ExplosiveParticle(GameScene* parent, std::unique_ptr<Sprite> sprite, u32 tilesNr, Vector2f pos, u32 rays, f32 distance, u32 lifetimeSteps, float randomness, float force) : Particle(parent, std::move(sprite), tilesNr, pos, rays, distance, lifetimeSteps, randomness), m_force(force) {
+    ExplosiveParticle(GameScene* parent, Vector2f pos, u32 rays, f32 distance, u32 lifetimeSteps, float randomness, float force) : Particle(parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, pos, rays, distance, lifetimeSteps, randomness), m_force(force) {
     };
 private:
     void Explode(Vector2f pos) override {

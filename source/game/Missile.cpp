@@ -16,7 +16,7 @@ void Missile::Update(float timestep) {
         m_animationIdx = 0;
 
     auto triggerExplosion = [this](Player* player) {
-        new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
+        new ExplosiveParticle(m_parent, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
 
         float distance = (m_parent->GetPlayer()->GetPosition().Distance(this->m_aabb.GetCenter())+0.00000001f)/20.0f;
         float volume = 20.0f - (distance/100.0f*20.0f);

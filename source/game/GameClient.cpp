@@ -178,7 +178,8 @@ bool GameClient::ProcessPacket_SyncedEvent(PacketParser &pp)
             se.action_implosion.playerId = playerId;
             se.action_implosion.pos.x = pos.x;
             se.action_implosion.pos.y = pos.y;
-            se.action_implosion.radius = extraParam1;
+            se.action_implosion.radiusStart = extraParam1;
+            se.action_implosion.radiusEnd = extraParam2;
             m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
             break;
         }

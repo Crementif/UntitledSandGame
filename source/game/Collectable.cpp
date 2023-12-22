@@ -26,7 +26,7 @@ void Collectable::Update(float timestep) {
         m_hoverAnimDirUp = false;
 }
 
-constexpr s32 min = 1, max = 3;
+constexpr s32 min = 1, max = 4;
 constexpr s32 range = max - min + 1;
 
 static std::unordered_map<u32, u8> counts;

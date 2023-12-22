@@ -81,7 +81,8 @@ public:
             {
                 PlayerID playerId;
                 Vector2f pos;
-                f32 radius;
+                f32 radiusStart;
+                f32 radiusEnd;
             }action_implosion;
         };
     };

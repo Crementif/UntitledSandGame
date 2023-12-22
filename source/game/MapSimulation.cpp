@@ -217,7 +217,7 @@ void Map::HandleSynchronizedEvents()
                 HandleSynchronizedEvent_Explosion(event.action_explosion.playerId, event.action_explosion.pos, event.action_explosion.radius);
                 break;
             case GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION:
-                HandleSynchronizedEvent_Implosion(event.action_implosion.playerId, event.action_implosion.pos, event.action_implosion.radius);
+                HandleSynchronizedEvent_Implosion(event.action_implosion.playerId, event.action_implosion.pos, event.action_implosion.radiusStart, event.action_implosion.radiusEnd);
                 break;
         }
     }
@@ -366,18 +366,23 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
     }
 }
 
-#define IMPLOSION_HOTSPOT_ATTEMPTS 5
-void Map::HandleSynchronizedEvent_Implosion(u32 playerId, Vector2f pos, f32 radius)
+void Map::HandleSynchronizedEvent_Implosion(u32 playerId, Vector2f pos, f32 radiusStart, f32 radiusEnd)
 {
-    s32 radiusI = (s32)(radius + 0.5f);
-    if(radiusI <= 0)
+    // todo: have each step only check/delete pixels outside of the previous step's radius
+    s32 radiusStartI = (s32)(radiusStart + 0.5f);
+    if (radiusStartI <= 0)
+        return;
+    s32 radiusEndI = (s32)(radiusEnd + 0.5f);
+    if (radiusEndI <= 0)
         return;
     s32 posX = (s32)(pos.x + 0.5f);
     s32 posY = (s32)(pos.y + 0.5f);
 
-    for(s32 y=posY-radiusI-1; y<=posY+radiusI+1; y++)
+    // first pass to delete all the pixels and track which ones need to be flung
+    u32 flungCountTracker[(size_t)MAP_PIXEL_TYPE::_COUNT]{};
+    for(s32 y=posY-radiusEndI-1; y <= posY+radiusEndI+1; y++)
     {
-        for(s32 x=posX-radiusI-1; x<=posX+radiusI-1; x++)
+        for(s32 x=posX-radiusEndI-1; x <= posX+radiusEndI-1; x++)
         {
             if( IsPixelOOB(x, y) )
                 continue;
@@ -386,22 +391,53 @@ void Map::HandleSynchronizedEvent_Implosion(u32 playerId, Vector2f pos, f32 radi
             s32 dfy = y - posY;
             s32 squareDist = dfx * dfx + dfy * dfy;
 
-            if(squareDist >= radiusI*radiusI)
+            if (radiusEndI * radiusEndI <= squareDist)
+                continue;
+            if (radiusStartI * radiusStartI >= squareDist)
                 continue;
 
-            // Calculate the direction towards the center
-            Vector2f dirToCenter = Vector2f(posX - x, posY - y).GetNormalized();
-
-            // Calculate the strength of the attraction
-            // You can modify this formula to change how the attraction decreases with distance
-            f32 strength = (radiusI - std::sqrt(squareDist)) / radiusI;
-
-            // Apply the attraction to the pixel
-            // Assuming FlungPixel can take a direction and strength of movement
+            // delete original pixels
             PixelType& pt = GetPixelNoBoundsCheck(x, y);
-            new FlungPixel(this, Vector2f(x, y), dirToCenter * strength, pt.GetPixelType(), _GetRandomSeedFromPixelType(pt.GetPixelType()));
+            MAP_PIXEL_TYPE prevMaterial = pt.GetPixelType();
+            pt.SetStaticPixelToAir();
+            SetPixelColor(x, y, pt.CalculatePixelColor());
 
-            // You can add additional effects like shrinking the pixel or changing color here
+            // track which pixel types need to be flung into the hole
+            if(_CanMaterialBeFlung(prevMaterial) && (GetRNGNumber()&0x7) < 0x1) {
+                flungCountTracker[(size_t)prevMaterial]++;
+            }
+        }
+    }
+
+    // second pass to create all the flung pixels
+    for(u32 matIndex = 0; matIndex < (size_t)MAP_PIXEL_TYPE::_COUNT; matIndex++)
+    {
+        MAP_PIXEL_TYPE mat = (MAP_PIXEL_TYPE)matIndex;
+        while(flungCountTracker[matIndex] > 0)
+        {
+            flungCountTracker[matIndex]--;
+            // find a random location within the circle
+            while( true )
+            {
+                f32 rdx = GetRNGFloat01();
+                f32 rdy = GetRNGFloat01();
+                Vector2f pixelPos(pos.x - radiusEnd + rdx * radiusEnd * 2.0f, pos.y - radiusEnd + rdy * radiusEnd * 2.0f);
+
+                // spawn flung pixel towards the center
+                Vector2f flungDir = pos - pixelPos;
+                f32 dist = flungDir.x * flungDir.x + flungDir.y * flungDir.y;
+
+                if (radiusEnd * radiusEnd <= dist)
+                    continue;
+                if (radiusStart * radiusStart >= dist)
+                    continue;
+
+                if ((GetRNGNumber() & 0x7) < 0x1)
+                    new FlungPixel(this, pixelPos, flungDir * 0.03f, mat, _GetRandomSeedFromPixelType(mat), 0.028f, 0x3, 45+30);
+                else
+                    new FlungPixel(this, pixelPos, flungDir * 0.02f, mat, _GetRandomSeedFromPixelType(mat), 0.0f, 0x0, 45);
+                break;
+            }
         }
     }
 }

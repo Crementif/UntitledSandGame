@@ -17,7 +17,9 @@ public:
 private:
     u32 m_owner = 0;
 
-    u32 m_animationIdx = 1;
+    bool m_imploding = false;
+    u32 m_shootAnimationIdx = 0;
+    u32 m_implosionAnimationIdx = 0;
     float m_velocityAngle = 0.0f;
     void Draw(u32 layerIndex) override;
     void Update(float timestep) override;

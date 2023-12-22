@@ -193,7 +193,7 @@ void GameSceneIngame::UpdateMultiplayer()
                 explosionAudio->SetVolume((u32)volume);
                 explosionAudio->QueueDestroy();
 
-                new ExplosiveParticle(this, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(event.pos.x-11.0f, event.pos.y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
+                new ExplosiveParticle(this, Vector2f(event.pos.x-11.0f, event.pos.y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
             }
             else if (winner == nullptr) {
                 GameScene::ChangeTo(new GameSceneMenu(MenuScoreboard::DIED));

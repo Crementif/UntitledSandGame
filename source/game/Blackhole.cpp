@@ -11,12 +11,51 @@ Blackhole::Blackhole(GameScene *parent, u32 owner, float x, float y, float volX,
 }
 
 void Blackhole::Update(float timestep) {
-    m_animationIdx++;
-    if (m_animationIdx >= 45)
-        m_animationIdx = 0;
+    if (!m_imploding) {
+        m_shootAnimationIdx++;
+        if (m_shootAnimationIdx >= 45)
+            m_shootAnimationIdx = 0;
 
-    auto triggerExplosion = [this](Player* player) {
-        new ExplosiveParticle(m_parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.6f, 2, 20.0f, 20.0f);
+        this->SimulatePhysics();
+    }
+    else {
+        constexpr u32 m_implosionStep = 3;
+        constexpr u32 m_implosionStepLength = 15;
+
+        if (m_implosionAnimationIdx == 0) {
+            // only send implosion if the owner of the blackhole orb
+            if (m_parent->GetPlayer()->IsSelf() && m_parent->GetPlayer()->GetPlayerId() == m_owner) {
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION, GetPosition(), 0.0001f, 8.0f*2.0f);
+            }
+        }
+
+        if (m_implosionAnimationIdx % m_implosionStep == 0) {
+            // create a new blackhole particle for each step
+            new BlackholeParticle(m_parent, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.8f*1.5f, 1, 20.0f);
+
+            // only send implosion if the owner of the blackhole orb
+            if (m_parent->GetPlayer()->IsSelf() && m_parent->GetPlayer()->GetPlayerId() == m_owner) {
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION, GetPosition(), 8.0f*(float)(m_implosionAnimationIdx/m_implosionStep), 8.0f*(float)(m_implosionAnimationIdx/m_implosionStep+1));
+            }
+
+            // do damage for each step
+            for (const auto& nearbyPlayer : m_parent->GetPlayers()) {
+                if (nearbyPlayer.second->GetPosition().Distance(this->GetPosition()) < 100.0f && !nearbyPlayer.second->IsSpectating()) {
+                    nearbyPlayer.second->TakeDamage();
+                }
+            }
+        }
+
+        m_implosionAnimationIdx++;
+        if (m_implosionAnimationIdx >= (m_implosionStep*m_implosionStepLength)) {
+            // remove once the implosion animation is done
+            m_parent->QueueUnregisterObject(this);
+        }
+    }
+
+    // check if velocity is zero which means that there was a collision and thus the blackhole should implode
+    if (this->m_velocity.x == 0.0 && this->m_velocity.y == 0.0) {
+        m_imploding = true;
 
         float distance = (m_parent->GetPlayer()->GetPosition().Distance(this->m_aabb.GetCenter())+0.00000001f)/20.0f;
         float volume = 20.0f - (distance/100.0f*20.0f);
@@ -25,31 +64,6 @@ void Blackhole::Update(float timestep) {
         explosionAudio->Play();
         explosionAudio->SetVolume((u32)volume);
         explosionAudio->QueueDestroy();
-
-
-        for (const auto& nearbyPlayer : m_parent->GetPlayers()) {
-            if (nearbyPlayer.second->GetPosition().Distance(this->GetPosition()) < 100.0f && !nearbyPlayer.second->IsSpectating()) {
-                nearbyPlayer.second->TakeDamage();
-            }
-        }
-
-        m_parent->QueueUnregisterObject(this);
-        // only send explosion command if the owner of the landmine detects it
-        if (player->IsSelf() && player->GetPlayerId() == m_owner) {
-            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION, GetPosition(), 40.0f, 0.0f);
-        }
-    };
-
-    this->SimulatePhysics();
-    // check if velocity is zero which means that there was a collision and thus it should explode
-    if (this->m_velocity.x == 0.0 && this->m_velocity.y == 0.0) {
-        return triggerExplosion(m_parent->GetPlayer());
-    }
-
-    // check if missile is in lava
-    Map* map = m_parent->GetMap();
-    if (DoesAABBCollide(m_aabb, [map](Vector2f cornerPos) { return map->DoesPixelCollideWithType((s32) cornerPos.x, (s32) cornerPos.y, MAP_PIXEL_TYPE::LAVA); })) {
-        return triggerExplosion(m_parent->GetPlayer());
     }
 }
 
@@ -58,10 +72,10 @@ Vector2f Blackhole::GetPosition() {
 }
 
 void Blackhole::Draw(u32 layerIndex) {
-    if (m_animationIdx >= 30) {
+    if (m_shootAnimationIdx >= 30) {
         Render::RenderSprite(s_blackhole2Sprite, (s32)m_aabb.pos.x*MAP_PIXEL_ZOOM, (s32)m_aabb.pos.y*MAP_PIXEL_ZOOM, 32, 32, m_velocityAngle);
     }
-    else if (m_animationIdx >= 15) {
+    else if (m_shootAnimationIdx >= 15) {
         Render::RenderSprite(s_blackhole1Sprite, (s32)m_aabb.pos.x*MAP_PIXEL_ZOOM, (s32)m_aabb.pos.y*MAP_PIXEL_ZOOM, 32, 32, m_velocityAngle);
     }
     else {
