@@ -59,9 +59,23 @@ struct Vector2f
         return Vector2f(this->x - rhs.x, this->y - rhs.y);
     }
 
+    Vector2f operator-=(const Vector2f& rhs)
+    {
+        this->x -= rhs.x;
+        this->y -= rhs.y;
+        return *this;
+    }
+
     Vector2f operator+(const Vector2f& rhs) const
     {
         return Vector2f(this->x + rhs.x, this->y + rhs.y);
+    }
+
+    Vector2f operator+=(const Vector2f& rhs)
+    {
+        this->x += rhs.x;
+        this->y += rhs.y;
+        return *this;
     }
 
     Vector2f operator*(const f32& rhs) const

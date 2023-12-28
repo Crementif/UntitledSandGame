@@ -5,7 +5,7 @@
 class FlungPixel
 {
 public:
-    FlungPixel(class Map* map, Vector2f pos, Vector2f velocity, MAP_PIXEL_TYPE type, u8 seed, f32 gravity = 0.028f, u8 spawnChance = 0x2, u32 lifetime = std::numeric_limits<u32>::max());
+    FlungPixel(class Map* map, Vector2f pos, Vector2f velocity, MAP_PIXEL_TYPE type, u8 seed, f32 gravity = 0.028f, u8 spawnChance = 0x5, u32 lifetime = std::numeric_limits<u32>::max());
 
     void RemovePixelColor(class Map* map);
     bool Update(class Map* map);

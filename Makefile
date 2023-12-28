@@ -43,7 +43,7 @@ DRC_SPLASH	:=	dist/drc-splash.png
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
-CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O2 -ffunction-sections -fdata-sections $(MACHDEP)
+CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O3 -fno-math-errno -ffast-math -funsafe-math-optimizations -ftree-vectorize $(MACHDEP)
 
 CFLAGS		+=	$(INCLUDE) -D__WIIU__ -D__WUT__
 

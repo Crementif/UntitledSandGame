@@ -40,19 +40,6 @@ void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32
     SpawnMaterialPixel(materialType, materialSeed, x, y);
 }
 
-bool _IsReanimatableMaterial(MAP_PIXEL_TYPE materialType)
-{
-    switch(materialType)
-    {
-        case MAP_PIXEL_TYPE::LAVA:
-        case MAP_PIXEL_TYPE::SAND:
-            return true;
-        default:
-            break;
-    }
-    return false;
-}
-
 template<typename T>
 void SimulateMaterial(Map* map, std::vector<T>& pixels)
 {
@@ -129,7 +116,7 @@ void Map::CheckStaticPixels()
         u32 x = 4 + (this->GetRNGNumber() % boundX);
         u32 y = 4 + (this->GetRNGNumber() % boundY);
         PixelType& pixelType = GetPixelNoBoundsCheck(x, y);
-        if (pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::SAND)
+        if (pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::SAND || pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::LAVA)
         {
             if (!GetPixelNoBoundsCheck(x, y+1).IsFilled())
             {
@@ -139,16 +126,8 @@ void Map::CheckStaticPixels()
                 m_volatilityHotspots.emplace_back(x, y);
             }
         }
-        else if (pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::LAVA)
-        {
-            if (!GetPixelNoBoundsCheck(x, y+1).IsFilled())
-            {
-                u32 hotspotX = x, hotspotY = y;
-                ClampHotspotCoords(hotspotX, hotspotY);
-                m_volatilityHotspots.emplace_back(x, y);
-            }
-        }
     }
+
     // handle hotspots
     auto hotspotIt = m_volatilityHotspots.begin();
     while(hotspotIt != m_volatilityHotspots.end())
@@ -167,7 +146,7 @@ void Map::CheckStaticPixels()
             }
         }
 
-        hotspotIt++;
+        ++hotspotIt;
     }
 }
 
@@ -214,7 +193,7 @@ void Map::HandleSynchronizedEvents()
             case GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION:
                 // todo: find a way to properly clean up a sound... we want to have multiple explosions at the same time probably?
                 // todo: also make audio volume depend on distance to explosion. Same for all other audio bytes probably!
-                HandleSynchronizedEvent_Explosion(event.action_explosion.playerId, event.action_explosion.pos, event.action_explosion.radius);
+                HandleSynchronizedEvent_Explosion(event.action_explosion.playerId, event.action_explosion.pos, event.action_explosion.radius, event.action_explosion.force);
                 break;
             case GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION:
                 HandleSynchronizedEvent_Implosion(event.action_implosion.playerId, event.action_implosion.pos, event.action_implosion.radiusStart, event.action_implosion.radiusEnd);
@@ -289,7 +268,7 @@ bool _CanMaterialBeFlung(MAP_PIXEL_TYPE mat)
 }
 
 #define EXPLOSION_HOTSPOT_ATTEMPTS 5
-void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius)
+void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius, f32 force)
 {
     s32 radiusI = (s32)(radius + 0.5f);
     if(radiusI <= 0)
@@ -339,6 +318,11 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
     // second pass to create all the flung pixels
     if( radius >= 2.0f)
     {
+        const float radPxStartX = pos.x - radius;
+        const float radPxStartY = pos.y - radius;
+        const float radMult = 2.0f * radius;
+        const float radSq = radius * radius;
+
         for(u32 matIndex = 0; matIndex < (size_t)MAP_PIXEL_TYPE::_COUNT; matIndex++)
         {
             MAP_PIXEL_TYPE mat = (MAP_PIXEL_TYPE)matIndex;
@@ -350,15 +334,13 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
                 {
                     f32 rdx = GetRNGFloat01();
                     f32 rdy = GetRNGFloat01();
-                    f32 spx = pos.x - radius + rdx * radius * 2.0f;
-                    f32 spy = pos.y - radius + rdy * radius * 2.0f;
+                    Vector2f pixelPos(radPxStartX + rdx * radMult, radPxStartY + rdy * radMult);
                     // spawn
-                    Vector2f pixelPos(spx, spy);
                     Vector2f flungDir = pixelPos - pos;
                     f32 dist = flungDir.x * flungDir.x + flungDir.y * flungDir.y;
-                    if(dist >= radius*radius)
+                    if (dist >= radSq)
                         continue;
-                    new FlungPixel(this, pixelPos, flungDir * 0.07f, mat, _GetRandomSeedFromPixelType(mat));
+                    new FlungPixel(this, pixelPos, flungDir * force, mat, _GetRandomSeedFromPixelType(mat));
                     break;
                 }
             }

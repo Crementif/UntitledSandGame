@@ -15,19 +15,18 @@ public:
 
     virtual void PixelDeactivated(Map* map)
     {
-
     }
 
     void RemoveFromWorld(Map* map)
     {
-        PixelType& pt = map->GetPixel(x, y);
+        PixelType& pt = map->GetPixelNoBoundsCheck(x, y);
         pt.SetStaticPixelToAir();
         map->SetPixelColor(x, y, 0x00000000);
     }
 
     void IntegrateIntoWorld(Map* map)
     {
-        PixelType& pt = map->GetPixel(x, y);
+        PixelType& pt = map->GetPixelNoBoundsCheck(x, y);
         pt.SetDynamicPixel(this);
         // update pixel color
         map->SetPixelColor(x, y, pt.CalculatePixelColor());
@@ -83,11 +82,10 @@ public:
 
     void PixelDeactivated(Map* map) override
     {
-        PixelType& pt = map->GetPixel(x, y);
+        PixelType& pt = map->GetPixelNoBoundsCheck(x, y);
         pt.SetStaticPixel(TMaterial, seed);
         map->SetPixelColor(x, y, pt.CalculatePixelColor());
     }
-
 };
 
 class ActivePixelSand : public ActivePixel<MAP_PIXEL_TYPE::SAND>
@@ -98,7 +96,13 @@ public:
     bool SimulateStep(Map* map) final override
     {
         idleTime++;
-        PixelType& ptBelow = map->GetPixel(x, y+1);
+        if(idleTime >= 20)
+            return false; // deactivate pixel when EOL
+
+        if (map->IsPixelOOBWithSafetyMargin(x, y, 1))
+            return false;
+
+        PixelType& ptBelow = map->GetPixelNoBoundsCheck(x, y+1);
         if(!ptBelow.IsSolid())
         {
             ChangeParticleXY(map, x, y+1);
@@ -107,7 +111,7 @@ public:
         else
         {
             // if it's a liquid then drop down, but slowly
-            if( ptBelow.IsLiquid() && (map->GetRNGNumber()&0xF) < 5)
+            if(ptBelow.IsLiquid() && (map->GetRNGNumber()&0xF) < 5)
             {
                 SwapPixelPosition(map, x, y+1);
                 return true;
@@ -118,19 +122,15 @@ public:
             return true;
 
         // try to move either left or right
-        if(!map->GetPixel(x - 1, y+1).IsSolid())
+        if(!map->GetPixelNoBoundsCheck(x - 1, y+1).IsSolid())
         {
             ChangeParticleXY(map, x - 1, y+1);
             return true;
         }
-        if(!map->GetPixel(x + 1, y+1).IsSolid())
+        if(!map->GetPixelNoBoundsCheck(x + 1, y+1).IsSolid())
         {
             ChangeParticleXY(map, x + 1, y+1);
             return true;
-        }
-        if(idleTime >= 20)
-        {
-            return false; // inactivate particle
         }
         return true;
     }
@@ -143,64 +143,60 @@ public:
 
     bool SimulateStep(Map* map) final override
     {
-        // try moving down if possible
-        if(!map->GetPixel(x, y+1).IsFilled())
+        if (map->IsPixelOOBWithSafetyMargin(x, y, 2)) {
+            return false;
+        }
+
+        if(!map->GetPixelNoBoundsCheck(x, y+1).IsFilled())
         {
             ChangeParticleXY(map, x, y+1);
             m_xMomentum = -1 + (map->GetRNGNumber()&2);
-            m_lavaNoEventTime = 0;
             return true;
         }
-        if(!map->GetPixel(x-1, y+1).IsFilled())
+        if(!map->GetPixelNoBoundsCheck(x-1, y+1).IsFilled())
         {
             ChangeParticleXY(map, x-1, y+1);
             m_xMomentum = -1;
-            m_lavaNoEventTime = 0;
             return true;
         }
-        if(!map->GetPixel(x+1, y+1).IsFilled())
+        if(!map->GetPixelNoBoundsCheck(x+1, y+1).IsFilled())
         {
             ChangeParticleXY(map, x+1, y+1);
             m_xMomentum = 1;
-            m_lavaNoEventTime = 0;
             return true;
         }
 
-        // movement with lower slope is slowish
-        if(m_moveDelay > 0)
+        // movement with lower slope is is slower and gets move delayed
+        if(m_slopeMoveDelay > 0)
         {
-            m_moveDelay--;
+            m_slopeMoveDelay--;
             return true;
         }
-        m_moveDelay = 6;
+        m_slopeMoveDelay = 6;
 
-        idleTime++;
-
-
-        if(!map->GetPixel(x-2, y+1).IsFilled())
+        if(!map->GetPixelNoBoundsCheck(x-2, y+1).IsFilled())
         {
             ChangeParticleXY(map, x-2, y+1);
             m_xMomentum = -2;
-            m_lavaNoEventTime = 0;
             return true;
         }
-        if(!map->GetPixel(x+2, y+1).IsFilled())
+        if(!map->GetPixelNoBoundsCheck(x+2, y+1).IsFilled())
         {
             ChangeParticleXY(map, x+2, y+1);
             m_xMomentum = 2;
-            m_lavaNoEventTime = 0;
             return true;
         }
+
         // keep momentum and move along x axis
         // if above is free then occasionally spawn a smoke pixel
-        if(!map->GetPixel(x, y-1).IsFilled() && (map->GetRNGNumber()&127) < 1)
+        if(!map->GetPixelNoBoundsCheck(x, y-1).IsFilled() && (map->GetRNGNumber()&127) < 1)
         {
             map->SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, seed, x, y-1);
         }
 
-        if(m_lavaNoEventTime >= 200)
-            return false; // inactivate particle
-        m_lavaNoEventTime++;
+        idleTime++;
+        if(idleTime >= 20)
+            return false; // deactivate particle after it got stuck (couldn't change position)
 
         if(m_xMomentum < 0)
         {
@@ -223,8 +219,7 @@ public:
 
 private:
     s8 m_xMomentum{0};
-    s8 m_moveDelay{0};
-    u8 m_lavaNoEventTime{0};
+    s8 m_slopeMoveDelay{0};
 };
 
 class ActivePixelSmoke : public ActivePixel<MAP_PIXEL_TYPE::SMOKE>
