@@ -6,7 +6,8 @@
       <file path="$PROJECT_DIR$/source" />
     </sourceRoots>
     <excludeRoots>
-      <file path="$PROJECT_DIR$/build" />
+      <file path="$PROJECT_DIR$/build_debug" />
+      <file path="$PROJECT_DIR$/build_release" />
       <file path="$PROJECT_DIR$/cemu" />
       <file path="$PROJECT_DIR$/dist" />
       <file path="$PROJECT_DIR$/tools" />
@@ -16,6 +17,7 @@
   <component name="MakefileSettings">
     <option name="linkedExternalProjectsSettings">
       <MakefileProjectSettings>
+        <option name="buildTarget" value="release" />
         <option name="externalProjectPath" value="$PROJECT_DIR$" />
         <option name="modules">
           <set>

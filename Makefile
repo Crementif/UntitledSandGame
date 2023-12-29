@@ -30,8 +30,14 @@ include $(DEVKITPRO)/wut/share/wut_rules
 # TV_SPLASH is the image displayed during bootup on the TV, leave blank to use default rule
 # DRC_SPLASH is the image displayed during bootup on the DRC, leave blank to use default rule
 #-------------------------------------------------------------------------------
+ifneq ($(BUILD_DEBUG),1)
 TARGET		:=	sand
-BUILD		:=	build
+BUILD		:=	build_release
+else
+TARGET		:=	sand_dbg
+BUILD		:=	build_debug
+endif
+
 SOURCES		:=	source/common source/framework source/framework/physics source/framework/noise source/framework/fileformat source/framework/multiplayer source/game
 DATA		:=	data
 INCLUDES	:=	include
@@ -43,7 +49,11 @@ DRC_SPLASH	:=	dist/drc-splash.png
 #-------------------------------------------------------------------------------
 # options for code generation
 #-------------------------------------------------------------------------------
+ifneq ($(BUILD_DEBUG),1)
 CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O3 -fno-math-errno -ffast-math -funsafe-math-optimizations -ftree-vectorize $(MACHDEP)
+else
+CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O0 -ffunction-sections -fdata-sections $(MACHDEP)
+endif
 
 CFLAGS		+=	$(INCLUDE) -D__WIIU__ -D__WUT__
 
@@ -133,19 +143,30 @@ else ifneq (,$(wildcard $(TOPDIR)/splash.png))
 	export APP_DRC_SPLASH := $(TOPDIR)/splash.png
 endif
 
-.PHONY: $(BUILD) clean all
+.PHONY: $(BUILD) both release debug clean all
 
 #-------------------------------------------------------------------------------
-all: $(BUILD)
+all: both
 
 $(BUILD):
-	@$(shell [ ! -d $(BUILD) ] && mkdir -p $(BUILD))
+	@$(shell [ ! -d $@ ] && mkdir -p $@)
 	$(MAKE) CC=$(DEVKITPPC)/bin/powerpc-eabi-gcc CXX=$(DEVKITPPC)/bin/powerpc-eabi-g++ -C $(BUILD) -f $(CURDIR)/Makefile
+
+release:
+	$(MAKE) build_release BUILD_DEBUG=0 -f $(CURDIR)/Makefile
+
+debug:
+	$(MAKE) build_debug BUILD_DEBUG=1 -f $(CURDIR)/Makefile
+
+both:
+	# run release and debug builds sequentially
+	$(MAKE) build_release BUILD_DEBUG=0 -f $(CURDIR)/Makefile
+	$(MAKE) build_debug BUILD_DEBUG=1 -f $(CURDIR)/Makefile
 
 #-------------------------------------------------------------------------------
 clean:
 	@echo clean...
-	@rm -fr $(BUILD) $(TARGET).wua $(TARGET).wuhb $(TARGET).rpx $(TARGET).elf
+	@rm -fr build_debug build_release $(TARGET).wua $(TARGET).wuhb $(TARGET).rpx $(TARGET).elf $(TARGET)_dbg.wua $(TARGET)_dbg.wuhb $(TARGET)_dbg.rpx $(TARGET)_dbg.elf
 
 #-------------------------------------------------------------------------------
 else
@@ -162,7 +183,7 @@ all: $(OUTPUT).wuhb $(OUTPUT).wua
 $(OUTPUT).wuhb:	$(OUTPUT).rpx
 $(OUTPUT).wua: $(OUTPUT).rpx
 	@echo Creating wua...
-	@cp $(OUTPUT).rpx $(TOPDIR)/dist/wua/00050000102b2b2b_v0/code/$(TARGET).rpx
+	@cp $(OUTPUT).rpx $(TOPDIR)/dist/wua/00050000102b2b2b_v0/code/sand.rpx
 	@rm -rf $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
 	@mkdir $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
 	@cp -r $(TOPDIR)/$(CONTENT)/. $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/

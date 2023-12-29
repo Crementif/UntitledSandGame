@@ -37,6 +37,8 @@
 
 # Build folder
 build/
+build_release/
+build_debug/
 
 # Tools folder
 /cemu/*

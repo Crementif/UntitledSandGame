@@ -31,7 +31,7 @@ void Landmine::Update(float timestep) {
         m_parent->QueueUnregisterObject(this);
         // only send explosion command if the owner of the landmine detects it
         if (player->IsSelf() && player->GetPlayerId() == m_owner) {
-            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 50.0f, 0.0f);
+            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 50.0f, 0.007f);
         }
     };
 

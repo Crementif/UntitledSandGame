@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Build &amp; Debug Using Cemu" type="CompoundRunConfigurationType">
-    <toRun name="Run Using Cemu With GDB" type="CLionNativeAppRunConfigurationType" />
+    <toRun name="Run Using Cemu With GDB - Debug" type="CLionNativeAppRunConfigurationType" />
     <toRun name="Debug Using GDB" type="CLion_Remote" />
     <method v="2" />
   </configuration>
