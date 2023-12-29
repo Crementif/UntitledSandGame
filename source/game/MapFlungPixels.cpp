@@ -18,30 +18,33 @@ void FlungPixel::RemovePixelColor(Map* map)
 
 bool FlungPixel::Update(Map* map)
 {
-    s32 prevPosXi = (s32)(m_pos.x + 0.5f);
-    s32 prevPosYi = (s32)(m_pos.y + 0.5f);
-    Vector2f newPos = m_pos + m_velocity;
-    s32 newPosXi = (s32)(newPos.x + 0.5f);
-    s32 newPosYi = (s32)(newPos.y + 0.5f);
-
-    m_velocity.y += m_gravity;
-    m_pos = newPos;
-
-    if (m_lifetime != std::numeric_limits<u32>::max())
-        m_lifetime--;
-    if (m_lifetime == 0)
+    // check for pixel's EOL
+    m_lifetime--;
+    if (m_lifetime == 0) [[unlikely]]
         return false;
 
     u32 flungColor = ((u8)m_materialType << 24) | (m_materialSeed << 16);
+    s32 prevPosXi = (s32)(m_pos.x + 0.5f);
+    s32 prevPosYi = (s32)(m_pos.y + 0.5f);
 
-    if(prevPosXi == newPosXi && prevPosYi == newPosYi)
-    {
-        // even if not moved, still redraw the pixel
-        map->SetPixelColor(newPosXi, newPosYi, flungColor);
-        return true;
-    }
+    // calculate new position
+    m_velocity.y += m_gravity;
+    m_pos += m_velocity;
+    //m_velocity += (map->CalculateGravityInfluences(m_pos, 1.0f) * 4.0f);
+    m_pos += (map->CalculateGravityInfluences(m_pos, 1.0f) * 4.0f);
+    s32 newPosXi = (s32)(m_pos.x + 0.5f);
+    s32 newPosYi = (s32)(m_pos.y + 0.5f);
+    newPosXi = std::clamp(newPosXi, 2, (s32)map->GetPixelWidth() - 1 - 2);
+    newPosYi = std::clamp(newPosYi, 2, (s32)map->GetPixelHeight() - 1 - 2);
 
-    if(map->GetPixel(newPosXi, newPosYi).IsCollideWithObjects())
+    // if (newPosXi == prevPosXi && newPosYi == prevPosYi) [[unlikely]]
+    // {
+    //     map->SetPixelColor(newPosXi, newPosYi, flungColor);
+    //     return true;
+    // }
+
+    // check if pixel has collided with something
+    if (map->GetPixelNoBoundsCheck(newPosXi, newPosYi).IsCollideWithObjects()) [[unlikely]]
     {
         if ((map->GetRNGNumber()&0x7) < m_spawnChance)
             map->SpawnMaterialPixel(m_materialType, m_materialSeed, prevPosXi, prevPosYi);
@@ -49,15 +52,17 @@ bool FlungPixel::Update(Map* map)
     }
 
     map->SetPixelColor(newPosXi, newPosYi, flungColor);
-
     return true;
 }
 
 void Map::SimulateFlungPixels()
 {
     // first we erase the pixels
-    for(auto& flungPixel : m_flungPixels)
+    for (const auto& flungPixel : m_flungPixels)
+    {
         flungPixel->RemovePixelColor(this);
+    }
+
     // update and redraw
     auto it = m_flungPixels.begin();
     while(it != m_flungPixels.end())

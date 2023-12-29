@@ -2,8 +2,8 @@
 #include "MapPixels.h"
 #include "GameSceneIngame.h"
 #include "MapFlungPixels.h"
+#include "MapGravityPixels.h"
 #include "../framework/audio.h"
-#include "Player.h"
 
 void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y)
 {
@@ -167,6 +167,7 @@ void Map::SimulateTick()
     g_debugStrings.emplace_back("Hotspots: " + std::to_string(m_volatilityHotspots.size()) + " StaticCheck: " + strBuf + "ms");
 
     SimulateFlungPixels();
+    SimulateGravityPixels();
 
     g_debugStrings.emplace_back("Simulation Tick: " + std::to_string(GetMillisecondTimestamp() - startTime) + "ms");
     m_simulationTick++;
@@ -195,8 +196,8 @@ void Map::HandleSynchronizedEvents()
                 // todo: also make audio volume depend on distance to explosion. Same for all other audio bytes probably!
                 HandleSynchronizedEvent_Explosion(event.action_explosion.playerId, event.action_explosion.pos, event.action_explosion.radius, event.action_explosion.force);
                 break;
-            case GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION:
-                HandleSynchronizedEvent_Implosion(event.action_implosion.playerId, event.action_implosion.pos, event.action_implosion.radiusStart, event.action_implosion.radiusEnd);
+            case GameClient::SynchronizedEvent::EVENT_TYPE::GRAVITY:
+                HandleSynchronizedEvent_Gravity(event.action_gravity.playerId, event.action_gravity.pos, event.action_gravity.strength, event.action_gravity.lifetimeTicks);
                 break;
         }
     }
@@ -267,7 +268,7 @@ bool _CanMaterialBeFlung(MAP_PIXEL_TYPE mat)
     }
 }
 
-#define EXPLOSION_HOTSPOT_ATTEMPTS 5
+#define EXPLOSION_HOTSPOT_ATTEMPTS 4
 void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius, f32 force)
 {
     s32 radiusI = (s32)(radius + 0.5f);
@@ -277,46 +278,61 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
     s32 posY = (s32)(pos.y + 0.5f);
     u32 flungCountTracker[(size_t)MAP_PIXEL_TYPE::_COUNT]{}; // keeps track of how many pixels per material need to be flung
 
-    for(s32 y=posY-radiusI-1; y<=posY+radiusI+1; y++)
+    const s32 radiusEdgeInner = radius * radius;
+    const s32 radiusEdgeOuter = (radius+1) * (radius+1);
+    for (s32 y=posY-radiusI-1; y<=posY+radiusI+1; y++)
     {
-        for(s32 x=posX-radiusI-1; x<=posX+radiusI-1; x++)
+        const s32 dfy = y - posY;
+        const s32 dfySq = dfy * dfy;
+        for (s32 x=posX-radiusI-1; x<=posX+radiusI-1; x++)
         {
-            s32 dfx = x - posX;
-            s32 dfy = y - posY;
-            s32 squareDist = dfx * dfx + dfy * dfy;
-            if(squareDist >= radiusI*radiusI) {
-                if (squareDist <= (radiusI+1)*(radiusI+1) && !IsPixelOOB(x, y)) {
-                    for (uint32_t i=0; i<EXPLOSION_HOTSPOT_ATTEMPTS; i++) {
-                        u32 checkX = std::clamp<u32>(x, HOTSPOT_RANGE+1, m_pixelsX-HOTSPOT_RANGE-1);
-                        u32 checkY = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
+            if (IsPixelOOB(x, y))
+                continue;
+
+            const s32 dfx = x - posX;
+            const s32 dfxSq = dfx * dfx;
+
+            // check if inside destruction radius
+            const s32 distSq = dfxSq + dfySq;
+            const bool shouldCheckHotspot = distSq <= radiusEdgeOuter;
+            const bool shouldDig = distSq <= radiusEdgeInner;
+            const u8 pixelRNG = GetRNGNumber()&0x7;
+
+            if (!shouldDig) {
+                if (shouldCheckHotspot && pixelRNG < 0x3) {
+                    // just outside radius, create hotspots for some surrounding pixels
+                    const u32 checkX = std::clamp<u32>(x, HOTSPOT_RANGE+1, m_pixelsX-HOTSPOT_RANGE-1);
+                    const u32 checkY = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
+                    for (u32 i=0; i<EXPLOSION_HOTSPOT_ATTEMPTS; i++) {
                         CheckVolatileStaticPixelsHotspot(checkX, checkY);
                     }
                 }
+                // outside radius (even though it might be just outside the edge), skip
                 continue;
             }
-            if( IsPixelOOB(x, y) )
-                continue;
+
             PixelType& pt = GetPixelNoBoundsCheck(x, y);
-            MAP_PIXEL_TYPE prevMaterial = pt.GetPixelType();
+
+            // decide if the particle should be flung
+            if (MAP_PIXEL_TYPE material = pt.GetPixelType(); _CanMaterialBeFlung(material) && pixelRNG < 0x8)
+                flungCountTracker[(size_t)material]++;
+
+            // change pixels to air
             pt.SetStaticPixelToAir();
             SetPixelColor(x, y, pt.CalculatePixelColor());
+
             // randomly spawn smoke
-            if((GetRNGNumber()&0xF) < 0x3)
+            if (pixelRNG < 0x3)
             {
                 SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SMOKE), x, y);
                 PixelType& pt2 = GetPixelNoBoundsCheck(x, y);
                 SetPixelColor(x, y, pt2.CalculatePixelColor());
             }
-            // decide if the particle should be flung
-            if(_CanMaterialBeFlung(prevMaterial) && (GetRNGNumber()&0x7) < 0x4)
-            {
-                flungCountTracker[(size_t)prevMaterial]++;
-            }
         }
     }
 
     // second pass to create all the flung pixels
-    if( radius >= 2.0f)
+    if (radius >= 2.0f)
     {
         const float radPxStartX = pos.x - radius;
         const float radPxStartY = pos.y - radius;
@@ -337,8 +353,7 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
                     Vector2f pixelPos(radPxStartX + rdx * radMult, radPxStartY + rdy * radMult);
                     // spawn
                     Vector2f flungDir = pixelPos - pos;
-                    f32 dist = flungDir.x * flungDir.x + flungDir.y * flungDir.y;
-                    if (dist >= radSq)
+                    if (flungDir.LengthSquare() >= radSq)
                         continue;
                     new FlungPixel(this, pixelPos, flungDir * force, mat, _GetRandomSeedFromPixelType(mat));
                     break;
@@ -348,78 +363,7 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
     }
 }
 
-void Map::HandleSynchronizedEvent_Implosion(u32 playerId, Vector2f pos, f32 radiusStart, f32 radiusEnd)
+void Map::HandleSynchronizedEvent_Gravity(u32 playerId, Vector2f pos, f32 strength, f32 lifetimeTicks)
 {
-    // todo: have each step only check/delete pixels outside of the previous step's radius
-    s32 radiusStartI = (s32)(radiusStart + 0.5f);
-    if (radiusStartI <= 0)
-        return;
-    s32 radiusEndI = (s32)(radiusEnd + 0.5f);
-    if (radiusEndI <= 0)
-        return;
-    s32 posX = (s32)(pos.x + 0.5f);
-    s32 posY = (s32)(pos.y + 0.5f);
-
-    // first pass to delete all the pixels and track which ones need to be flung
-    u32 flungCountTracker[(size_t)MAP_PIXEL_TYPE::_COUNT]{};
-    for(s32 y=posY-radiusEndI-1; y <= posY+radiusEndI+1; y++)
-    {
-        for(s32 x=posX-radiusEndI-1; x <= posX+radiusEndI-1; x++)
-        {
-            if( IsPixelOOB(x, y) )
-                continue;
-
-            s32 dfx = x - posX;
-            s32 dfy = y - posY;
-            s32 squareDist = dfx * dfx + dfy * dfy;
-
-            if (radiusEndI * radiusEndI <= squareDist)
-                continue;
-            if (radiusStartI * radiusStartI >= squareDist)
-                continue;
-
-            // delete original pixels
-            PixelType& pt = GetPixelNoBoundsCheck(x, y);
-            MAP_PIXEL_TYPE prevMaterial = pt.GetPixelType();
-            pt.SetStaticPixelToAir();
-            SetPixelColor(x, y, pt.CalculatePixelColor());
-
-            // track which pixel types need to be flung into the hole
-            if(_CanMaterialBeFlung(prevMaterial) && (GetRNGNumber()&0x7) < 0x1) {
-                flungCountTracker[(size_t)prevMaterial]++;
-            }
-        }
-    }
-
-    // second pass to create all the flung pixels
-    for(u32 matIndex = 0; matIndex < (size_t)MAP_PIXEL_TYPE::_COUNT; matIndex++)
-    {
-        MAP_PIXEL_TYPE mat = (MAP_PIXEL_TYPE)matIndex;
-        while(flungCountTracker[matIndex] > 0)
-        {
-            flungCountTracker[matIndex]--;
-            // find a random location within the circle
-            while( true )
-            {
-                f32 rdx = GetRNGFloat01();
-                f32 rdy = GetRNGFloat01();
-                Vector2f pixelPos(pos.x - radiusEnd + rdx * radiusEnd * 2.0f, pos.y - radiusEnd + rdy * radiusEnd * 2.0f);
-
-                // spawn flung pixel towards the center
-                Vector2f flungDir = pos - pixelPos;
-                f32 dist = flungDir.x * flungDir.x + flungDir.y * flungDir.y;
-
-                if (radiusEnd * radiusEnd <= dist)
-                    continue;
-                if (radiusStart * radiusStart >= dist)
-                    continue;
-
-                if ((GetRNGNumber() & 0x7) < 0x1)
-                    new FlungPixel(this, pixelPos, flungDir * 0.03f, mat, _GetRandomSeedFromPixelType(mat), 0.028f, 0x3, 45+30);
-                else
-                    new FlungPixel(this, pixelPos, flungDir * 0.02f, mat, _GetRandomSeedFromPixelType(mat), 0.0f, 0x0, 45);
-                break;
-            }
-        }
-    }
+    new GravityPixel(this, pos, strength, (u32)lifetimeTicks);
 }

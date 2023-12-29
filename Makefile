@@ -153,9 +153,11 @@ $(BUILD):
 	$(MAKE) CC=$(DEVKITPPC)/bin/powerpc-eabi-gcc CXX=$(DEVKITPPC)/bin/powerpc-eabi-g++ -C $(BUILD) -f $(CURDIR)/Makefile
 
 release:
+	@$(shell [ ! -d build_release ] && mkdir -p build_release)
 	$(MAKE) build_release BUILD_DEBUG=0 -f $(CURDIR)/Makefile
 
 debug:
+	@$(shell [ ! -d build_debug ] && mkdir -p build_debug)
 	$(MAKE) build_debug BUILD_DEBUG=1 -f $(CURDIR)/Makefile
 
 both:

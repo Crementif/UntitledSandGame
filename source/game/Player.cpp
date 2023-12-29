@@ -580,7 +580,7 @@ u32 Player::TakeDamage(u8 damage) {
         if (m_health == 0) {
             m_deathAudio->Play();
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::DEATH, GetPosition(), Vector2f(0.0f, 0.0f));
-            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.0f);
+            m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 40.0f, 0.007f);
         }
         m_invincibility = OSGetTime() + OSSecondsToTicks(8);
     }

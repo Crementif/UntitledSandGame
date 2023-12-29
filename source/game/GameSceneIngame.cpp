@@ -108,8 +108,10 @@ void GameSceneIngame::DrawHUD() {
         Render::RenderSpriteScreenRelative(&m_blackholeSprite, 20+16, 20+64+20+(64/2)-9, 32, 32);
     }
 
-    if (pressedStart())
+    if (pressedStart()) {
         m_showDebugInfo = !m_showDebugInfo;
+        s_showCrtFilter = !m_showDebugInfo;
+    }
 
     if (m_showDebugInfo) {
         for (u32 i = 0; i < g_debugStrings.size(); i++) {

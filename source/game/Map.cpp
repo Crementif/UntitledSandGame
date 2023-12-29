@@ -3,8 +3,9 @@
 #include "../framework/render.h"
 
 #include "../framework/fileformat/TGAFile.h"
-#include <coreinit/debug.h>
 #include "../framework/Audio.h"
+#include "MapFlungPixels.h"
+#include "MapGravityPixels.h"
 
 MAP_PIXEL_TYPE _GeneratePixelAtWorldPos(s32 x, s32 y)
 {
@@ -122,6 +123,16 @@ Map::Map(const char* filename, u32 rngSeed)
 Map::~Map()
 {
     delete m_activePixels;
+    while (!m_flungPixels.empty())
+    {
+        delete m_flungPixels.back();
+        m_flungPixels.pop_back();
+    }
+    while (!m_gravityPixels.empty())
+    {
+        delete m_gravityPixels.back();
+        m_gravityPixels.pop_back();
+    }
 }
 
 void Map::SetPixelColor(s32 x, s32 y, u32 c)
@@ -136,11 +147,14 @@ void Map::SetPixelColor(s32 x, s32 y, u32 c)
 static_assert(MAP_CELL_WIDTH == 64); // hardcoded in GetPixel()
 static_assert(MAP_CELL_HEIGHT == 64);
 
-bool Map::IsPixelOOB(s32 x, s32 y)
+bool Map::IsPixelOOB(const s32 x, const s32 y) const
 {
-    s32 cellX = x >> 6;
-    s32 cellY = y >> 6;
-    return (cellX < 0 || cellX >= (s32)m_cellsX) || (cellY < 0 || cellY >= (s32)m_cellsY);
+    return (static_cast<u32>(x) >= m_pixelsX) || (static_cast<u32>(y) >= m_pixelsY);
+}
+
+bool Map::IsPixelOOBWithSafetyMargin(const s32 x, const s32 y, const u32 margin) const
+{
+    return (static_cast<u32>(x + margin) >= (m_pixelsX - margin)) || (static_cast<u32>(y + margin) >= (m_pixelsY - margin));
 }
 
 PixelType& Map::GetPixel(s32 x, s32 y)
@@ -156,7 +170,7 @@ PixelType& Map::GetPixel(s32 x, s32 y)
         CriticalErrorHandler("Map::GetPixel - x/y out of range");
     }*/
     // optimized:
-    if((u32)cellX >= (u32)m_cellsX || (u32)cellY >= (u32)m_cellsY)
+    if(static_cast<u32>(cellX) >= m_cellsX || static_cast<u32>(cellY) >= m_cellsY)
     {
         CriticalErrorHandler("Map::GetPixel - x/y out of range");
     }
@@ -185,7 +199,7 @@ void Map::Update()
         u32 ss_y = m_nonDeterministicRng.GetNext() % (u32)(Render::GetScreenSize().y / MAP_PIXEL_ZOOM);
         u32 ws_y = std::clamp<u32>(ss_y + (u32)(Render::GetCameraPosition().y / MAP_PIXEL_ZOOM), 0, GetPixelHeight()-1);
 
-        if (GetPixel((s32)ws_x, (s32)ws_y).GetPixelType() == MAP_PIXEL_TYPE::LAVA) {
+        if (GetPixelNoBoundsCheck((s32)ws_x, (s32)ws_y).GetPixelType() == MAP_PIXEL_TYPE::LAVA) {
             if (m_currLavaHiss == 0) m_lavaHiss0Audio->Play();
             else if (m_currLavaHiss == 1) m_lavaHiss1Audio->Play();
             else if (m_currLavaHiss == 2) m_lavaHiss2Audio->Play();

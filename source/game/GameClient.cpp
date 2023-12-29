@@ -170,18 +170,17 @@ bool GameClient::ProcessPacket_SyncedEvent(PacketParser &pp)
             se.action_explosion.pos.x = pos.x;
             se.action_explosion.pos.y = pos.y;
             se.action_explosion.radius = extraParam1;
+            se.action_explosion.force = extraParam2;
             m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
             break;
         }
-        case SynchronizedEvent::EVENT_TYPE::IMPLOSION:
+        case SynchronizedEvent::EVENT_TYPE::GRAVITY:
         {
-            se.action_implosion.playerId = playerId;
-            se.action_implosion.pos.x = pos.x;
-            se.action_implosion.pos.y = pos.y;
-            se.action_implosion.radiusStart = extraParam1;
-            se.action_implosion.radiusEnd = extraParam2;
-            m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
-            break;
+            se.action_gravity.playerId = playerId;
+            se.action_gravity.pos.x = pos.x;
+            se.action_gravity.pos.y = pos.y;
+            se.action_gravity.strength = extraParam1;
+            se.action_gravity.lifetimeTicks = extraParam2;
         }
         default:
             break;

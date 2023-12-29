@@ -60,7 +60,7 @@ public:
         {
             DRILLING = 0,
             EXPLOSION = 1,
-            IMPLOSION = 2,
+            GRAVITY = 2,
         };
         EVENT_TYPE eventType;
         u32 frameIndex;
@@ -76,14 +76,15 @@ public:
                 PlayerID playerId;
                 Vector2f pos;
                 f32 radius;
+                f32 force;
             }action_explosion;
             struct
             {
                 PlayerID playerId;
                 Vector2f pos;
-                f32 radiusStart;
-                f32 radiusEnd;
-            }action_implosion;
+                f32 strength;
+                f32 lifetimeTicks;
+            }action_gravity;
         };
     };
 

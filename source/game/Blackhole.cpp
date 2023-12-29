@@ -23,38 +23,22 @@ void Blackhole::Update(float timestep) {
         constexpr u32 m_implosionStepLength = 15;
 
         if (m_implosionAnimationIdx == 0) {
-            // only send implosion if the owner of the blackhole orb
-            if (m_parent->GetPlayer()->IsSelf() && m_parent->GetPlayer()->GetPlayerId() == m_owner) {
-                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION, GetPosition(), 0.0001f, 8.0f*2.0f);
-            }
-        }
-
-        if (m_implosionAnimationIdx % m_implosionStep == 0) {
-            // create a new blackhole particle for each step
             new BlackholeParticle(m_parent, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.8f*1.5f, 1, 20.0f);
 
-            // only send implosion if the owner of the blackhole orb
-            if (m_parent->GetPlayer()->IsSelf() && m_parent->GetPlayer()->GetPlayerId() == m_owner) {
-                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::IMPLOSION, GetPosition(), 8.0f*(float)(m_implosionAnimationIdx/m_implosionStep), 8.0f*(float)(m_implosionAnimationIdx/m_implosionStep+1));
-            }
-
-            // do damage for each step
-            for (const auto& nearbyPlayer : m_parent->GetPlayers()) {
-                if (nearbyPlayer.second->GetPosition().Distance(this->GetPosition()) < 100.0f && !nearbyPlayer.second->IsSpectating()) {
-                    nearbyPlayer.second->TakeDamage();
-                }
+            if (m_parent->GetPlayer()->GetPlayerId() == m_owner) {
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::GRAVITY, GetPosition(), 100.0f, 100.0f);
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 100.0f, -0.0001f);
             }
         }
 
         m_implosionAnimationIdx++;
         if (m_implosionAnimationIdx >= (m_implosionStep*m_implosionStepLength)) {
-            // remove once the implosion animation is done
             m_parent->QueueUnregisterObject(this);
         }
     }
 
     // check if velocity is zero which means that there was a collision and thus the blackhole should implode
-    if (this->m_velocity.x == 0.0 && this->m_velocity.y == 0.0) {
+    if (!m_imploding && this->m_velocity.x == 0.0 && this->m_velocity.y == 0.0) {
         m_imploding = true;
 
         float distance = (m_parent->GetPlayer()->GetPosition().Distance(this->m_aabb.GetCenter())+0.00000001f)/20.0f;

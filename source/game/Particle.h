@@ -54,31 +54,7 @@ public:
     };
 private:
     void Explode(Vector2f pos) override {
-        Map* map = this->m_parent->GetMap();
-
-        AABB explosionRange = AABB({pos.x-(f32)m_force/2, pos.y-(f32)m_force/2}, Vector2f(m_force, m_force));
-
-        // loop over AABB pixels
-
-        // -> pixel interaction has to be synchronized (see synchronized event explosion)
-        /*
-        for (s32 x = (s32)explosionRange.pos.x; x < (s32)(explosionRange.pos.x + explosionRange.scale.x); x++) {
-            for (s32 y = (s32)explosionRange.pos.y; y < (s32)(explosionRange.pos.y + explosionRange.scale.y); y++) {
-                // check if map pixel is in range of the explosion force and whether it is solid/destructible
-                if (map->IsPixelOOB(x, y))
-                    continue;
-
-                PixelType& pixel = map->GetPixelNoBoundsCheck(x, y);
-                if (pos.Distance({(f32)x, (f32)y}) <= m_force && pixel.IsSolid() && pixel.IsDestructible()) {
-                    // adjust force for distance
-                    f32 distanceAdjustedForce = m_force - Vector2f((f32)x, (f32)y).Distance(pos);
-                    // apply force to pixel
-                    map->ReanimateStaticPixel(pixel.GetPixelType(), x, y, distanceAdjustedForce);
-                }
-            }
-        }*/
     };
-    float m_force = 1.0f;
 };
 
 class ExplosiveParticle: public Particle {
@@ -87,29 +63,6 @@ public:
     };
 private:
     void Explode(Vector2f pos) override {
-        Map* map = this->m_parent->GetMap();
-
-        AABB explosionRange = AABB({pos.x-(f32)m_force/2, pos.y-(f32)m_force/2}, Vector2f(m_force, m_force));
-
-        // loop over AABB pixels
-
-        // -> pixel interaction has to be synchronized (see synchronized event explosion)
-        /*
-        for (s32 x = (s32)explosionRange.pos.x; x < (s32)(explosionRange.pos.x + explosionRange.scale.x); x++) {
-            for (s32 y = (s32)explosionRange.pos.y; y < (s32)(explosionRange.pos.y + explosionRange.scale.y); y++) {
-                // check if map pixel is in range of the explosion force and whether it is solid/destructible
-                if (map->IsPixelOOB(x, y))
-                    continue;
-
-                PixelType& pixel = map->GetPixelNoBoundsCheck(x, y);
-                if (pos.Distance({(f32)x, (f32)y}) <= m_force && pixel.IsSolid() && pixel.IsDestructible()) {
-                    // adjust force for distance
-                    f32 distanceAdjustedForce = m_force - Vector2f((f32)x, (f32)y).Distance(pos);
-                    // apply force to pixel
-                    map->ReanimateStaticPixel(pixel.GetPixelType(), x, y, distanceAdjustedForce);
-                }
-            }
-        }*/
     };
 
     float m_force = 0.0f;

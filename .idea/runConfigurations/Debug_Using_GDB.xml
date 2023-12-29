@@ -1,6 +1,7 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Debug Using GDB" type="CLion_Remote" version="1" remoteCommand="tcp:localhost:1337" symbolFile="$PROJECT_DIR$/sand.elf" sysroot="$PROJECT_DIR$/build">
     <debugger kind="GDB" isBundled="true" />
+    <pathMapping remote=":/mnt/c/Users/Milan/Desktop/Work/UntitledSandGame/source/" local="$PROJECT_DIR$/source/" />
     <method v="2" />
   </configuration>
 </component>

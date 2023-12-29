@@ -156,6 +156,19 @@ union PixelType
         return false;
     }
 
+    inline bool CanBeDynamic() const
+    {
+        MAP_PIXEL_TYPE mat = GetPixelType();
+        switch(mat)
+        {
+            case MAP_PIXEL_TYPE::SAND:
+            case MAP_PIXEL_TYPE::LAVA:
+                return true;
+            default:
+                return false;
+        }
+    }
+
     inline bool IsDynamic() const
     {
         return (pixelType&1) == 0;
@@ -247,6 +260,7 @@ class Map
 {
     friend class MapCell;
     friend class FlungPixel;
+    friend class GravityPixel;
 public:
     Map(const char* filename, u32 rngSeed);
     ~Map();
@@ -262,7 +276,9 @@ public:
         return m_collectablePoints;
     }
 
-    bool IsPixelOOB(s32 x, s32 y);
+    bool IsPixelOOB(s32 x, s32 y) const;
+    bool IsPixelOOBWithSafetyMargin(s32 x, s32 y, u32 margin) const;
+
     void SetPixelColor(s32 x, s32 y, u32 c);
 
     PixelType& GetPixel(s32 x, s32 y); // crashes with message if out-of-bounds
@@ -318,10 +334,12 @@ private:
 
     void HandleSynchronizedEvents();
     void HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos);
-    void HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius);
-    void HandleSynchronizedEvent_Implosion(u32 playerId, Vector2f pos, f32 radiusStart, f32 radiusEnd);
+    void HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius, f32 force);
+    void HandleSynchronizedEvent_Gravity(u32 playerId, Vector2f pos, f32 strength, f32 lifetimeTicks);
 
     void SimulateFlungPixels();
+    void SimulateGravityPixels();
+    Vector2f CalculateGravityInfluences(Vector2f pos, f32 weight) const;
 
     u32 m_cellsX;
     u32 m_cellsY;
@@ -334,6 +352,7 @@ private:
 
     class ActivePixelCollection* m_activePixels{nullptr};
     std::vector<class FlungPixel*> m_flungPixels;
+    std::vector<class GravityPixel*> m_gravityPixels;
 
     LCGRng m_rng;
     LCGRng m_nonDeterministicRng;
