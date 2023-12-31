@@ -104,7 +104,7 @@ Map::Map(const char* filename, u32 rngSeed)
     if(!tgaLoader.LoadFromTGA(mapData))
         CriticalErrorHandler("Unable to load level");
     OSReport("Level load - Phase 3 (Map size: %ux%u)\n", tgaLoader.GetWidth(), tgaLoader.GetHeight());
-    Init(tgaLoader.GetWidth(), tgaLoader.GetHeight());
+    this->Init(tgaLoader.GetWidth(), tgaLoader.GetHeight());
     OSReport("Level load - Phase 4\n");
     for(auto& it : m_cells)
         it.LoadCellFromTGA(tgaLoader);

@@ -1,8 +1,9 @@
 #include "MapFlungPixels.h"
 #include "Map.h"
 
-FlungPixel::FlungPixel(Map* map, Vector2f pos, Vector2f velocity, MAP_PIXEL_TYPE type, u8 seed, f32 gravity, u8 spawnChance, u32 lifetime) : m_pos(pos), m_velocity(velocity), m_gravity(gravity), m_materialType(type), m_materialSeed(seed), m_spawnChance(spawnChance), m_lifetime(lifetime)
+FlungPixel::FlungPixel(Map* map, Vector2f pos, Vector2f velocity, MAP_PIXEL_TYPE type, u8 seed, f32 gravity, u8 spawnChance, u32 lifetime): m_velocity(velocity), m_gravity(gravity), m_materialType(type), m_materialSeed(seed), m_spawnChance(spawnChance), m_lifetime(lifetime)
 {
+    m_pos = pos.Clamp(Vector2f::Zero(), Vector2f((f32)map->GetPixelWidth() - 1.0f, (f32)map->GetPixelHeight() - 1.0f));
     map->m_flungPixels.emplace_back(this);
 }
 
@@ -29,19 +30,11 @@ bool FlungPixel::Update(Map* map)
 
     // calculate new position
     m_velocity.y += m_gravity;
+    m_velocity += map->CalculateGravityInfluences(m_pos, 0.05f);
     m_pos += m_velocity;
-    //m_velocity += (map->CalculateGravityInfluences(m_pos, 1.0f) * 4.0f);
-    m_pos += (map->CalculateGravityInfluences(m_pos, 1.0f) * 4.0f);
+    m_pos = m_pos.Clamp(Vector2f::Zero(), Vector2f((f32)map->GetPixelWidth() - 1.0f, (f32)map->GetPixelHeight() - 1.0f));
     s32 newPosXi = (s32)(m_pos.x + 0.5f);
     s32 newPosYi = (s32)(m_pos.y + 0.5f);
-    newPosXi = std::clamp(newPosXi, 2, (s32)map->GetPixelWidth() - 1 - 2);
-    newPosYi = std::clamp(newPosYi, 2, (s32)map->GetPixelHeight() - 1 - 2);
-
-    // if (newPosXi == prevPosXi && newPosYi == prevPosYi) [[unlikely]]
-    // {
-    //     map->SetPixelColor(newPosXi, newPosYi, flungColor);
-    //     return true;
-    // }
 
     // check if pixel has collided with something
     if (map->GetPixelNoBoundsCheck(newPosXi, newPosYi).IsCollideWithObjects()) [[unlikely]]

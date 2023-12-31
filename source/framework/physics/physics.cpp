@@ -27,7 +27,7 @@ PhysicsCollisionShape::~PhysicsCollisionShape()
 // collidingPointOut is set to the point within the rect that has the closest distance to the circle center
 bool _CheckCircleRectIntersection(const Vector2f circlePos, float radiusSquared, const AABB& rect, Vector2f& collidingPointOut)
 {
-    Vector2f collidingPoint = circlePos.clamp(rect.pos, rect.pos + rect.scale);
+    Vector2f collidingPoint = circlePos.Clamp(rect.pos, rect.pos + rect.scale);
     f32 dist = collidingPoint.DistanceSquare(circlePos);
     collidingPointOut = collidingPoint;
     if (dist > radiusSquared)
@@ -50,7 +50,7 @@ bool PhysicsCollisionShapeRect::GetCollisionAngle(PhysicsMovingBall* obj, const 
 
     // first we do a quick check to see if the ball collides after finishing the current movement
     Vector2f targetPos = obj->GetPosition() + moveVec;
-    Vector2f collidingPoint = targetPos.clamp(m_rect.pos, rectPos2);
+    Vector2f collidingPoint = targetPos.Clamp(m_rect.pos, rectPos2);
     f32 dist = collidingPoint.DistanceSquare(targetPos);
     if( dist > radiusSquared)
         return false; // no collision

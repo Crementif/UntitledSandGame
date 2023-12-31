@@ -288,29 +288,34 @@ public:
     {
         if(IsPixelOOB(x, y))
             return true;
-        return GetPixel(x, y).IsCollideWithObjects();
+        return GetPixelNoBoundsCheck(x, y).IsCollideWithObjects();
     }
 
     bool DoesPixelCollideWithSolids(s32 x, s32 y)
     {
         if(IsPixelOOB(x, y))
             return true;
-        return GetPixel(x, y).IsCollideWithSolids();
+        return GetPixelNoBoundsCheck(x, y).IsCollideWithSolids();
     }
 
     bool DoesPixelCollideWithType(s32 x, s32 y, MAP_PIXEL_TYPE type)
     {
         if(IsPixelOOB(x, y))
             return true;
-        return GetPixel(x, y).GetPixelType() == type;
+        return GetPixelNoBoundsCheck(x, y).GetPixelType() == type;
     }
 
     void SimulateTick();
-    bool CheckVolatileStaticPixelsHotspot(u32 x, u32 y);
-    void CheckStaticPixels();
+    static constexpr u32 HOTSPOT_CHECK_ATTEMPTS = 10;
+    static constexpr u32 HOTSPOT_CHECK_RADIUS = 16;
+    bool DoVolatilityRadiusCheckForStaticPixels(u32 x, u32 y);
+    static constexpr u32 FIND_HOTSPOT_ATTEMPTS = 450 * 1.5;
+    static constexpr u32 FIND_HOTSPOT_LIFETIME = 100;
+    static constexpr u32 FIND_HOTSPOT_LIFETIME_EXTENSION = 50;
+    void FindRandomHotspots();
+    void UpdateVolatilityHotspots();
     void SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y);
     void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y);
-    void ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y, f32 force);
 
     u32 GetRNGNumber()
     {
@@ -350,7 +355,7 @@ private:
     std::vector<Vector2i> m_playerSpawnpoints;
     std::vector<Vector2i> m_collectablePoints;
 
-    class ActivePixelCollection* m_activePixels{nullptr};
+    class ActivePixelCollection* m_activePixels;
     std::vector<class FlungPixel*> m_flungPixels;
     std::vector<class GravityPixel*> m_gravityPixels;
 
@@ -362,7 +367,7 @@ private:
     // these track locations where there have been static pixels found that might need reanimation
     struct StaticVolatilityHotSpot
     {
-        StaticVolatilityHotSpot(u16 x, u16 y) : x(x), y(y), ttl(500) {};
+        StaticVolatilityHotSpot(u16 x, u16 y, u16 ttl) : x(x), y(y), ttl(ttl) {};
         u16 x;
         u16 y;
         u16 ttl; // ticks to live

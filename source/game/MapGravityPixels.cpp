@@ -20,10 +20,7 @@ Vector2f GravityPixel::CalculateInfluence(const Vector2f influencedPos, const f3
     Vector2f direction = m_pos - influencedPos;
     f32 distance = direction.Length();
 
-    if (distance < 0.05f)
-        return {0.0f, 0.0f};
-
-    f32 influenceStrength = m_strength / (0.2f+distance);
+    f32 influenceStrength = m_strength / distance;
     Vector2f influence = direction.GetNormalized() * influenceStrength * influencedWeight;
 
     return influence;

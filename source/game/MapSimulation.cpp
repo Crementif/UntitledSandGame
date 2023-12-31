@@ -35,11 +35,6 @@ void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32
     SpawnMaterialPixel(materialType, materialSeed, x, y);
 }
 
-void Map::ReanimateStaticPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y, f32 force)
-{
-    SpawnMaterialPixel(materialType, materialSeed, x, y);
-}
-
 template<typename T>
 void SimulateMaterial(Map* map, std::vector<T>& pixels)
 {
@@ -58,22 +53,23 @@ void SimulateMaterial(Map* map, std::vector<T>& pixels)
 
 }
 
-#define HOTSPOT_ATTEMPTS    ((u32)450*1.5)
-#define HOTSPOT_RANGE       ((u32)16)
-
 // check a small rectangle area for pixels that might need reanimation
-bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
+// all volatility hotspots NEED to be created within the map bounds (with a safety margin of HOTSPOT_CHECK_RADIUS)
+bool Map::DoVolatilityRadiusCheckForStaticPixels(u32 x, u32 y)
 {
     // randomly check a few pixels in each cell to see if we need to simulate them due to surrounding conditions changing
     bool hasActivity = false;
-    for(u32 i=0; i<25; i++)
+    const u32 radiusStartX = x - (HOTSPOT_CHECK_RADIUS/2);
+    const u32 radiusStartY = y - (HOTSPOT_CHECK_RADIUS/2);
+    for(u32 i=0; i<HOTSPOT_CHECK_ATTEMPTS; i++)
     {
-        u32 rdX = this->GetRNGNumber() % (HOTSPOT_RANGE*2);
-        u32 rdY = this->GetRNGNumber() % (HOTSPOT_RANGE*2);
-        u32 px = x + rdX - HOTSPOT_RANGE;
-        u32 py = y + rdY - HOTSPOT_RANGE;
+        const u32 rdX = this->GetRNGNumber() % HOTSPOT_CHECK_RADIUS;
+        const u32 rdY = this->GetRNGNumber() % HOTSPOT_CHECK_RADIUS;
+        const u32 px = radiusStartX + rdX;
+        const u32 py = radiusStartY + rdY;
+
         PixelType& pixelType = GetPixelNoBoundsCheck(px, py);
-        if(pixelType.IsDynamic())
+        if (pixelType.IsDynamic())
             continue;
         auto mat = pixelType._GetPixelTypeStatic();
         if(mat == MAP_PIXEL_TYPE::SAND)
@@ -86,55 +82,54 @@ bool Map::CheckVolatileStaticPixelsHotspot(u32 x, u32 y)
         }
         else if(mat == MAP_PIXEL_TYPE::LAVA)
         {
+            // check for any (diagonal) downwards lava flow
             if(!GetPixelNoBoundsCheck(px-1, py+1).IsFilled() || !GetPixelNoBoundsCheck(px, py+1).IsFilled() || !GetPixelNoBoundsCheck(px+1, py+1).IsFilled())
             {
                 hasActivity = true;
                 ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, pixelType._GetPixelSeedStatic(), px, py);
             }
-            else if (!GetPixelNoBoundsCheck(px-1, py).IsFilled() || !GetPixelNoBoundsCheck(px+1, py).IsFilled()) {
-                hasActivity = true;
-                ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, pixelType._GetPixelSeedStatic(), px, py);
-            }
+            // note: for performance reasons we don't check for sideways lava flow
+            // else if (!GetPixelNoBoundsCheck(px-1, py).IsFilled() || !GetPixelNoBoundsCheck(px+1, py).IsFilled()) {
+            //     hasActivity = true;
+            //     ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, pixelType._GetPixelSeedStatic(), px, py);
+            // }
         }
     }
     return hasActivity;
 }
 
-void Map::CheckStaticPixels()
+void Map::FindRandomHotspots()
 {
-    u32 boundX = m_pixelsX - (HOTSPOT_RANGE/2);
-    u32 boundY = m_pixelsY - (HOTSPOT_RANGE/2);
+    u32 boundStartX = HOTSPOT_CHECK_RADIUS + 1;
+    u32 boundStartY = HOTSPOT_CHECK_RADIUS + 1;
+    u32 boundLengthX = m_pixelsX - HOTSPOT_CHECK_RADIUS - HOTSPOT_CHECK_RADIUS - 1;
+    u32 boundLengthY = m_pixelsY - HOTSPOT_CHECK_RADIUS - HOTSPOT_CHECK_RADIUS - 1;
 
-    auto ClampHotspotCoords = [this](u32& x, u32& y)
+    for(u32 i=0; i < FIND_HOTSPOT_ATTEMPTS; i++)
     {
-        x = std::clamp<u32>(x, HOTSPOT_RANGE+1, m_pixelsX-HOTSPOT_RANGE-1);
-        y = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
-    };
-
-    for(u32 i=0; i<HOTSPOT_ATTEMPTS; i++)
-    {
-        u32 x = 4 + (this->GetRNGNumber() % boundX);
-        u32 y = 4 + (this->GetRNGNumber() % boundY);
+        u32 x = boundStartX + (this->GetRNGNumber() % boundLengthX);
+        u32 y = boundStartY + (this->GetRNGNumber() % boundLengthY);
         PixelType& pixelType = GetPixelNoBoundsCheck(x, y);
         if (pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::SAND || pixelType._GetPixelTypeStatic() == MAP_PIXEL_TYPE::LAVA)
         {
             if (!GetPixelNoBoundsCheck(x, y+1).IsFilled())
             {
-                // create hotspot
-                u32 hotspotX = x, hotspotY = y;
-                ClampHotspotCoords(hotspotX, hotspotY);
-                m_volatilityHotspots.emplace_back(x, y);
+                // create a new hotspot
+                m_volatilityHotspots.emplace_back(x, y, FIND_HOTSPOT_LIFETIME);
             }
         }
     }
+}
 
-    // handle hotspots
+void Map::UpdateVolatilityHotspots()
+{
+    // handle hotspots checking spots
     auto hotspotIt = m_volatilityHotspots.begin();
     while(hotspotIt != m_volatilityHotspots.end())
     {
-        if( CheckVolatileStaticPixelsHotspot(hotspotIt->x, hotspotIt->y) )
+        if(DoVolatilityRadiusCheckForStaticPixels(hotspotIt->x, hotspotIt->y))
         {
-            hotspotIt->ttl = 150;
+            hotspotIt->ttl = FIND_HOTSPOT_LIFETIME_EXTENSION;
         }
         else
         {
@@ -155,7 +150,8 @@ void Map::SimulateTick()
     HandleSynchronizedEvents();
 
     double startTime = GetMillisecondTimestamp();
-    CheckStaticPixels();
+    FindRandomHotspots();
+    UpdateVolatilityHotspots();
     double dur = GetMillisecondTimestamp() - startTime;
     SimulateMaterial(this, m_activePixels->sandPixels);
     SimulateMaterial(this, m_activePixels->lavaPixels);
@@ -216,7 +212,7 @@ void Map::HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos)
         const s32 dfySq = dfy * dfy;
         for (s32 x=posX-SIMULATE_RADIUS; x<=posX+SIMULATE_RADIUS; x++)
         {
-            if (IsPixelOOB(x, y))
+            if (IsPixelOOBWithSafetyMargin(x, y, HOTSPOT_CHECK_RADIUS/2))
                 continue;
 
             const s32 dfx = x - posX;
@@ -246,9 +242,7 @@ void Map::HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos)
                 }
             }
             else if (shouldSimulate) {
-                u32 checkX = std::clamp<u32>(x, HOTSPOT_RANGE+1, m_pixelsX-HOTSPOT_RANGE-1);
-                u32 checkY = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
-                CheckVolatileStaticPixelsHotspot(checkX, checkY);
+                DoVolatilityRadiusCheckForStaticPixels(x, y);
             }
         }
     }
@@ -268,53 +262,50 @@ bool _CanMaterialBeFlung(MAP_PIXEL_TYPE mat)
     }
 }
 
-#define EXPLOSION_HOTSPOT_ATTEMPTS 4
+constexpr u32 EXPLOSION_HOTSPOT_ATTEMPTS = 3;
 void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius, f32 force)
 {
     s32 radiusI = (s32)(radius + 0.5f);
-    if(radiusI <= 0)
+    if (radiusI <= 0)
         return;
     s32 posX = (s32)(pos.x + 0.5f);
     s32 posY = (s32)(pos.y + 0.5f);
     u32 flungCountTracker[(size_t)MAP_PIXEL_TYPE::_COUNT]{}; // keeps track of how many pixels per material need to be flung
 
-    const s32 radiusEdgeInner = radius * radius;
-    const s32 radiusEdgeOuter = (radius+1) * (radius+1);
+    const s32 radiusEdgeInner = radiusI * radiusI;
+    const s32 radiusEdgeOuter = (radiusI+1) * (radiusI+1);
     for (s32 y=posY-radiusI-1; y<=posY+radiusI+1; y++)
     {
-        const s32 dfy = y - posY;
-        const s32 dfySq = dfy * dfy;
+        const s32 radY = y - posY;
+        const s32 radYSq = radY * radY;
         for (s32 x=posX-radiusI-1; x<=posX+radiusI-1; x++)
         {
-            if (IsPixelOOB(x, y))
+            if (IsPixelOOBWithSafetyMargin(x, y, HOTSPOT_CHECK_RADIUS/2))
                 continue;
 
-            const s32 dfx = x - posX;
-            const s32 dfxSq = dfx * dfx;
+            const s32 radX = x - posX;
+            const s32 radXSq = radX * radX;
 
             // check if inside destruction radius
-            const s32 distSq = dfxSq + dfySq;
+            const s32 distSq = radXSq + radYSq;
             const bool shouldCheckHotspot = distSq <= radiusEdgeOuter;
             const bool shouldDig = distSq <= radiusEdgeInner;
             const u8 pixelRNG = GetRNGNumber()&0x7;
 
             if (!shouldDig) {
-                if (shouldCheckHotspot && pixelRNG < 0x3) {
-                    // just outside radius, create hotspots for some surrounding pixels
-                    const u32 checkX = std::clamp<u32>(x, HOTSPOT_RANGE+1, m_pixelsX-HOTSPOT_RANGE-1);
-                    const u32 checkY = std::clamp<u32>(y, HOTSPOT_RANGE+1, m_pixelsY-HOTSPOT_RANGE-1);
+                if (shouldCheckHotspot && pixelRNG < 0x2) {
                     for (u32 i=0; i<EXPLOSION_HOTSPOT_ATTEMPTS; i++) {
-                        CheckVolatileStaticPixelsHotspot(checkX, checkY);
+                        DoVolatilityRadiusCheckForStaticPixels(x, y);
                     }
                 }
                 // outside radius (even though it might be just outside the edge), skip
                 continue;
             }
 
-            PixelType& pt = GetPixelNoBoundsCheck(x, y);
+            PixelType& pt = GetPixel(x, y);
 
             // decide if the particle should be flung
-            if (MAP_PIXEL_TYPE material = pt.GetPixelType(); _CanMaterialBeFlung(material) && pixelRNG < 0x8)
+            if (MAP_PIXEL_TYPE material = pt.GetPixelType(); _CanMaterialBeFlung(material) && pixelRNG < 0x3)
                 flungCountTracker[(size_t)material]++;
 
             // change pixels to air
@@ -322,7 +313,7 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
             SetPixelColor(x, y, pt.CalculatePixelColor());
 
             // randomly spawn smoke
-            if (pixelRNG < 0x3)
+            if (pixelRNG < 0x1)
             {
                 SpawnMaterialPixel(MAP_PIXEL_TYPE::SMOKE, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SMOKE), x, y);
                 PixelType& pt2 = GetPixelNoBoundsCheck(x, y);
@@ -336,7 +327,7 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
     {
         const float radPxStartX = pos.x - radius;
         const float radPxStartY = pos.y - radius;
-        const float radMult = 2.0f * radius;
+        const float radiusDistance = 2.0f * radius;
         const float radSq = radius * radius;
 
         for(u32 matIndex = 0; matIndex < (size_t)MAP_PIXEL_TYPE::_COUNT; matIndex++)
@@ -348,9 +339,9 @@ void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radi
                 // find a random location within the circle
                 while( true )
                 {
-                    f32 rdx = GetRNGFloat01();
-                    f32 rdy = GetRNGFloat01();
-                    Vector2f pixelPos(radPxStartX + rdx * radMult, radPxStartY + rdy * radMult);
+                    f32 relX = GetRNGFloat01();
+                    f32 relY = GetRNGFloat01();
+                    Vector2f pixelPos(radPxStartX + (relX * radiusDistance), radPxStartY + (relY * radiusDistance));
                     // spawn
                     Vector2f flungDir = pixelPos - pos;
                     if (flungDir.LengthSquare() >= radSq)

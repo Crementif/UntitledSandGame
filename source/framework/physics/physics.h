@@ -37,7 +37,7 @@ private:
     Vector2f m_velocity{0.0f, 0.0f};
     f32 m_radius;
     class PhysicsManager* m_mgr;
-    bool m_hasCollisionQueued{};
+    bool m_hasCollisionQueued = false;
 };
 
 // static collision shape

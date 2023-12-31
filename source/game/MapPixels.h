@@ -99,7 +99,7 @@ public:
         if(idleTime >= 20)
             return false; // deactivate pixel when EOL
 
-        if (map->IsPixelOOBWithSafetyMargin(x, y, 1))
+        if (map->IsPixelOOBWithSafetyMargin(x, y, map->HOTSPOT_CHECK_ATTEMPTS/2))
             return false;
 
         PixelType& ptBelow = map->GetPixelNoBoundsCheck(x, y+1);
@@ -143,9 +143,8 @@ public:
 
     bool SimulateStep(Map* map) final override
     {
-        if (map->IsPixelOOBWithSafetyMargin(x, y, 2)) {
+        if (map->IsPixelOOBWithSafetyMargin(x, y, map->HOTSPOT_CHECK_ATTEMPTS/2))
             return false;
-        }
 
         if(!map->GetPixelNoBoundsCheck(x, y+1).IsFilled())
         {
@@ -166,7 +165,7 @@ public:
             return true;
         }
 
-        // movement with lower slope is is slower and gets move delayed
+        // movement with lower slope is slower and gets move delayed
         if(m_slopeMoveDelay > 0)
         {
             m_slopeMoveDelay--;
@@ -232,16 +231,18 @@ public:
 
     bool SimulateStep(Map* map) final override
     {
+        // wait each odd frame to slow down the smoke
         m_slowdown ^= 1;
-        if(m_slowdown == 0)
+        if (m_slowdown == 0)
             return true;
 
         m_timeAlive++;
-        s32 xOffset = -2 + (map->GetRNGNumber()%5);
-        PixelType& ptAfter = map->GetPixel(x + xOffset, y-1);
+
+        s32 jiggleOffset = -2 + (map->GetRNGNumber() % 5);
+        PixelType& ptAfter = map->GetPixel(x + jiggleOffset, y - 1);
         if(!ptAfter.IsSolid())
         {
-            ChangeParticleXY(map, x + xOffset, y-1);
+            ChangeParticleXY(map, x + jiggleOffset, y - 1);
             idleTime = 0;
             return true;
         }

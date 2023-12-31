@@ -54,6 +54,9 @@ struct Vector2f
     Vector2f(const Vector2i& intVec) : x(intVec.x), y(intVec.y) {}
     Vector2f(f32 x, f32 y) : x(x), y(y) {}
 
+    static Vector2f Zero() { return {0.0f, 0.0f}; }
+    static Vector2f One() { return {1.0f, 1.0f}; }
+
     Vector2f operator-(const Vector2f& rhs) const
     {
         return Vector2f(this->x - rhs.x, this->y - rhs.y);
@@ -88,7 +91,7 @@ struct Vector2f
         return Vector2f(this->x / rhs, this->y / rhs);
     }
 
-    Vector2f clamp(const Vector2f& minVec, const Vector2f& maxVec) const
+    Vector2f Clamp(const Vector2f& minVec, const Vector2f& maxVec) const
     {
         return {std::clamp(this->x, minVec.x, maxVec.x), std::clamp(this->y, minVec.y, maxVec.y)};
     }

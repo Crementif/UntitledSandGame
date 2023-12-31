@@ -26,8 +26,8 @@ void Blackhole::Update(float timestep) {
             new BlackholeParticle(m_parent, Vector2f(m_aabb.GetTopLeft().x-11.0f, m_aabb.GetTopLeft().y-11.0f), 8, 1.8f*1.5f, 1, 20.0f);
 
             if (m_parent->GetPlayer()->GetPlayerId() == m_owner) {
-                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::GRAVITY, GetPosition(), 100.0f, 100.0f);
-                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 100.0f, -0.0001f);
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::GRAVITY, GetPosition(), 50.0f, 100.0f);
+                m_parent->GetClient()->SendSyncedEvent(GameClient::SynchronizedEvent::EVENT_TYPE::EXPLOSION, GetPosition(), 50.0f, -0.0001f);
             }
         }
 

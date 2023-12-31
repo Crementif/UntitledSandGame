@@ -181,6 +181,8 @@ bool GameClient::ProcessPacket_SyncedEvent(PacketParser &pp)
             se.action_gravity.pos.y = pos.y;
             se.action_gravity.strength = extraParam1;
             se.action_gravity.lifetimeTicks = extraParam2;
+            m_queuedEvents.queueSynchronizedEvents.emplace_back(se);
+            break;
         }
         default:
             break;
