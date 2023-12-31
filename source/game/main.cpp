@@ -42,8 +42,11 @@ int main()
     Missile::s_missile2Sprite = new Sprite("/tex/missile2.tga", true);
     Missile::s_missile3Sprite = new Sprite("/tex/missile3.tga", true);
     Blackhole::s_blackhole0Sprite = new Sprite("/tex/blackhole0.tga", true);
+    Blackhole::s_blackhole0Sprite->SetupSampler(false);
     Blackhole::s_blackhole1Sprite = new Sprite("/tex/blackhole1.tga", true);
+    Blackhole::s_blackhole1Sprite->SetupSampler(false);
     Blackhole::s_blackhole2Sprite = new Sprite("/tex/blackhole2.tga", true);
+    Blackhole::s_blackhole2Sprite->SetupSampler(false);
     Collectable::s_collectableSprite = new Sprite("/tex/ammo.tga", true);
 
     // set polygon mode

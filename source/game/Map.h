@@ -306,8 +306,9 @@ public:
     }
 
     void SimulateTick();
-    static constexpr u32 HOTSPOT_CHECK_ATTEMPTS = 10;
-    static constexpr u32 HOTSPOT_CHECK_RADIUS = 16;
+    static constexpr u32 HOTSPOT_CHECK_ATTEMPTS_EARLY_EXIT = 6;
+    static constexpr u32 HOTSPOT_CHECK_ATTEMPTS = 30;
+    static constexpr u32 HOTSPOT_CHECK_RADIUS = 32;
     bool DoVolatilityRadiusCheckForStaticPixels(u32 x, u32 y);
     static constexpr u32 FIND_HOTSPOT_ATTEMPTS = 450 * 1.5;
     static constexpr u32 FIND_HOTSPOT_LIFETIME = 100;

@@ -48,15 +48,6 @@ private:
     std::vector<Vector2f> m_directions;
 };
 
-class BlackholeParticle: public Particle {
-public:
-    BlackholeParticle(GameScene* parent, Vector2f pos, u32 rays, f32 distance, u32 lifetimeSteps, float randomness) : Particle(parent, std::make_unique<Sprite>("/tex/blackhole0.tga", true), 1, pos, rays, distance, lifetimeSteps, randomness) {
-    };
-private:
-    void Explode(Vector2f pos) override {
-    };
-};
-
 class ExplosiveParticle: public Particle {
 public:
     ExplosiveParticle(GameScene* parent, Vector2f pos, u32 rays, f32 distance, u32 lifetimeSteps, float randomness, float force) : Particle(parent, std::make_unique<Sprite>("/tex/explosion.tga", true), 11, pos, rays, distance, lifetimeSteps, randomness), m_force(force) {

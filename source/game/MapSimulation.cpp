@@ -61,7 +61,9 @@ bool Map::DoVolatilityRadiusCheckForStaticPixels(u32 x, u32 y)
     bool hasActivity = false;
     const u32 radiusStartX = x - (HOTSPOT_CHECK_RADIUS/2);
     const u32 radiusStartY = y - (HOTSPOT_CHECK_RADIUS/2);
-    for(u32 i=0; i<HOTSPOT_CHECK_ATTEMPTS; i++)
+
+    u32 earlyExitAttempts = HOTSPOT_CHECK_ATTEMPTS_EARLY_EXIT; // early exit if we keep finding pixels that can't be reanimated
+    for(u32 i=0; i<HOTSPOT_CHECK_ATTEMPTS && earlyExitAttempts != 0; i++)
     {
         const u32 rdX = this->GetRNGNumber() % HOTSPOT_CHECK_RADIUS;
         const u32 rdY = this->GetRNGNumber() % HOTSPOT_CHECK_RADIUS;
@@ -74,6 +76,7 @@ bool Map::DoVolatilityRadiusCheckForStaticPixels(u32 x, u32 y)
         auto mat = pixelType._GetPixelTypeStatic();
         if(mat == MAP_PIXEL_TYPE::SAND)
         {
+            earlyExitAttempts = std::numeric_limits<u32>::max();
             if(!GetPixelNoBoundsCheck(px, py+1).IsFilled())
             {
                 hasActivity = true;
@@ -82,6 +85,7 @@ bool Map::DoVolatilityRadiusCheckForStaticPixels(u32 x, u32 y)
         }
         else if(mat == MAP_PIXEL_TYPE::LAVA)
         {
+            earlyExitAttempts = std::numeric_limits<u32>::max();
             // check for any (diagonal) downwards lava flow
             if(!GetPixelNoBoundsCheck(px-1, py+1).IsFilled() || !GetPixelNoBoundsCheck(px, py+1).IsFilled() || !GetPixelNoBoundsCheck(px+1, py+1).IsFilled())
             {
@@ -94,6 +98,9 @@ bool Map::DoVolatilityRadiusCheckForStaticPixels(u32 x, u32 y)
             //     ReanimateStaticPixel(MAP_PIXEL_TYPE::LAVA, pixelType._GetPixelSeedStatic(), px, py);
             // }
         }
+        else {
+            earlyExitAttempts--;
+        }
     }
     return hasActivity;
 }
@@ -105,7 +112,7 @@ void Map::FindRandomHotspots()
     u32 boundLengthX = m_pixelsX - HOTSPOT_CHECK_RADIUS - HOTSPOT_CHECK_RADIUS - 1;
     u32 boundLengthY = m_pixelsY - HOTSPOT_CHECK_RADIUS - HOTSPOT_CHECK_RADIUS - 1;
 
-    for(u32 i=0; i < FIND_HOTSPOT_ATTEMPTS; i++)
+    for(u32 i=0; i<FIND_HOTSPOT_ATTEMPTS; i++)
     {
         u32 x = boundStartX + (this->GetRNGNumber() % boundLengthX);
         u32 y = boundStartY + (this->GetRNGNumber() % boundLengthY);
@@ -262,7 +269,7 @@ bool _CanMaterialBeFlung(MAP_PIXEL_TYPE mat)
     }
 }
 
-constexpr u32 EXPLOSION_HOTSPOT_ATTEMPTS = 3;
+constexpr u32 EXPLOSION_HOTSPOT_ATTEMPTS = 16;
 void Map::HandleSynchronizedEvent_Explosion(u32 playerId, Vector2f pos, f32 radius, f32 force)
 {
     s32 radiusI = (s32)(radius + 0.5f);
