@@ -1,6 +1,6 @@
 ![Tank Trap Banner](./dist/has-banner.png)
 # Tank Trap
-**Tank Trap**, formerly Untitled Sand Game, is a Wii U homebrew game with a simple premise. You control a drill tank in a multiplayer arena with dynamic, 2D physics-based terrain, inspired by games like Noita.
+**Tank Trap**, formerly Untitled Sand Game, is a Wii U homebrew game made in a game jam with a simple premise. You control a drill tank in a multiplayer arena with dynamic, 2D physics-based terrain, inspired by games like Noita.
 
 Navigate through sand and lava, collect (explosive) items to use against opponents, and watch as the landscape changes with each interaction.
 Create traps and obstacles for your opponents to fall into, or use the terrain to burn your enemies in all the chaos.
@@ -18,7 +18,7 @@ A sandbox mode is also available for solo play.
 ## How To Install
 #### For Wii U:
  1. Download Tank Trap  
-    a. Download the game from the Homebrew App Store
+    a. Download the game from the Homebrew App Store  
     b. Download the latest **.zip version** from the [releases page](https://github.com/Crementif/UntitledSandGame/release) and extract it to the root of the SD card
  2. Launch Tank Trap from your home screen or homebrew launcher.
 
