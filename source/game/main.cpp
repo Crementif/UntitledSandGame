@@ -119,11 +119,13 @@ int main()
 [[noreturn]]
 void CriticalErrorHandler(const char* msg, ...)
 {
+    char buffer[1024];
     va_list va;
     va_start(va, msg);
-    WHBLogPrintf(msg);
+    vsnprintf(buffer, sizeof(buffer), msg, va);
     va_end(va);
+    WHBLogPrint(buffer);
+    OSFatal(buffer);
     *((unsigned int*)0) = 0xDEAD;
-    OSFatal("FATAL ERROR, CHECK LOG!");
     exit(EXIT_FAILURE);
 }
