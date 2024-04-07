@@ -8,6 +8,7 @@
 #include "GameServer.h"
 #include "GameClient.h"
 #include "../framework/audio.h"
+#include "../framework/debug.h"
 
 bool GameScene::s_showCrtFilter = true;
 
@@ -233,6 +234,8 @@ void GameSceneMenu::Draw() {
     else if (this->m_state == MenuState::WAIT_FOR_CONNECTION) {
         Render::RenderSprite(m_connectingToServerSprite, 1920/2-(m_connectingToServerSprite->GetWidth()/2), 1080/2-(m_connectingToServerSprite->GetHeight()/2)+60);
     }
+    DebugLog::Draw();
+
     nn::swkbd::DrawTV();
     nn::swkbd::DrawDRC();
 }

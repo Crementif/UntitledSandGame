@@ -1,6 +1,7 @@
 // Windowing library built on GX2 with basic operations inspired by glfw
 
 #include "window.h"
+#include "debug.h"
 
 #include <coreinit/foreground.h>
 #include <coreinit/memdefaultheap.h>
@@ -443,10 +444,7 @@ void WindowSwapBuffers(bool usePostBuffer)
         status = ProcUIProcessMessages(true);
     }
 
-    if (status == PROCUI_STATUS_EXITING ||
-        (previous_status == PROCUI_STATUS_RELEASE_FOREGROUND &&
-         status == PROCUI_STATUS_IN_FOREGROUND &&
-         !WindowForegroundAcquire()))
+    if (status == PROCUI_STATUS_EXITING || (previous_status == PROCUI_STATUS_RELEASE_FOREGROUND && status == PROCUI_STATUS_IN_FOREGROUND && !WindowForegroundAcquire()))
     {
         ProcUIShutdown();
         WindowExit();

@@ -1,6 +1,7 @@
 #include "GameScene.h"
 #include "Player.h"
 #include "Map.h"
+#include "../framework/debug.h"
 
 GameScene::GameScene(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): m_gameClient(std::move(client)), m_gameServer(std::move(server)) {
 };
@@ -89,9 +90,8 @@ void GameScene::DoUpdates(float timestep) {
         UnregisterObject(m_deletionQueue.back());
         m_deletionQueue.pop_back();
     }
-    char strBuf[64];
-    sprintf(strBuf, "%.04lf", GetMillisecondTimestamp() - start);
-    g_debugStrings.emplace_back(std::string("Objects: ") + strBuf + "ms");
+
+    DebugLog::Printf("Objects: %.04lf ms", GetMillisecondTimestamp() - start);
 }
 
 void GameScene::DoDraws() {

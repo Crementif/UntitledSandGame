@@ -9,6 +9,7 @@
 
 #include "../framework/navigation.h"
 #include "../framework/audio.h"
+#include "../framework/debug.h"
 
 GameScene* GameScene::sActiveScene = nullptr;
 
@@ -66,17 +67,21 @@ int main()
 
     GameScene* currGameScene = nullptr;
     double lastTotalTime = 0.0f;
+    double lastFrameWithoutPostProcessingTime = 0.0f;
     double lastFrameTime = 0.0f;
     while (Render::IsRunning())
     {
-        g_debugStrings.clear();
-        g_debugStrings.emplace_back("Total Time: " + std::to_string(lastTotalTime).substr(0, std::to_string(lastTotalTime).find("."))+" ms");
-        g_debugStrings.emplace_back("Render Time: " + std::to_string(lastFrameTime).substr(0, std::to_string(lastFrameTime).find("."))+" ms");
+        DebugLog::Printf("Total Time: %.04lf ms", lastTotalTime);
+        DebugLog::Printf("Render Scene Time: %.04lf ms", lastFrameWithoutPostProcessingTime);
+        DebugLog::Printf("Post Processing Time: %.04lf ms", lastFrameTime - lastFrameWithoutPostProcessingTime);
+        DebugLog::Printf("Swap Buffers Time: %.04lf ms", lastTotalTime - lastFrameTime);
 
         u64 startTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
         if (currGameScene != GameScene::sActiveScene)
             currGameScene = GameScene::sActiveScene;
+
+        assert(currGameScene != nullptr);
 
         updateInputs();
         AudioManager::GetInstance().ProcessAudio();
@@ -87,9 +92,11 @@ int main()
         currGameScene->HandleInput();
         currGameScene->Draw();
 
-        lastFrameTime = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - startTime);
+        lastFrameWithoutPostProcessingTime = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - startTime);
         Render::DoPostProcessing();
+        lastFrameTime = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - startTime);
         Render::SwapBuffers();
+        lastTotalTime = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - startTime);
 
         if (currGameScene != GameScene::sActiveScene)
         {
@@ -100,7 +107,6 @@ int main()
         if (GameScene::sActiveScene == nullptr)
             break;
 
-        lastTotalTime = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - startTime);
     }
 
     GLSL_Shutdown();

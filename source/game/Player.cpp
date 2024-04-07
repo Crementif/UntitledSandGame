@@ -6,6 +6,7 @@
 #include "GameSceneMenu.h"
 #include "../framework/audio.h"
 #include "MapPixels.h"
+#include "../framework/debug.h"
 
 Sprite* s_tankBodySprite{nullptr};
 Sprite* s_tankDrill0Sprite{nullptr};
@@ -123,23 +124,23 @@ void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2
             slightlyAbove.y -= 20.0f;
 
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::LANDMINE, {slightlyAbove.x, slightlyAbove.y}, {0.0f, 0.0f});
-            GiveAbility(m_parent->IsDebugEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::LANDMINE : GameClient::GAME_ABILITY::NONE);
+            GiveAbility(DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::LANDMINE : GameClient::GAME_ABILITY::NONE);
         }
         else if (m_ability == GameClient::GAME_ABILITY::MISSILE) {
             Vector2f shootPosition = m_parent->GetPlayer()->GetPosition() + Vector2f(0.0f, -15.0f) + (Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*20.0f);
             Vector2f shootDirection = Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*6.0f;
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::MISSILE, shootPosition, shootDirection);
-            GiveAbility(m_parent->IsDebugEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::MISSILE : GameClient::GAME_ABILITY::NONE);
+            GiveAbility(DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::MISSILE : GameClient::GAME_ABILITY::NONE);
         }
         else if (m_ability == GameClient::GAME_ABILITY::BLACKHOLE) {
             Vector2f shootPosition = m_parent->GetPlayer()->GetPosition() + Vector2f(0.0f, -15.0f) + (Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*20.0f);
             Vector2f shootDirection = Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*6.0f;
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::BLACKHOLE, shootPosition, shootDirection);
-            GiveAbility(m_parent->IsDebugEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::BLACKHOLE : GameClient::GAME_ABILITY::NONE);
+            GiveAbility(DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::BLACKHOLE : GameClient::GAME_ABILITY::NONE);
         }
         else if (m_ability == GameClient::GAME_ABILITY::TURBO_DRILL) {
             m_turboBoost = OSGetTime() + OSSecondsToTicks(25);
-            GiveAbility(m_parent->IsDebugEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::TURBO_DRILL : GameClient::GAME_ABILITY::NONE);
+            GiveAbility(DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::TURBO_DRILL : GameClient::GAME_ABILITY::NONE);
         }
     }
 
@@ -220,7 +221,7 @@ void Player::HandleLocalPlayerControl_SpectatingMode(struct ButtonState& buttonS
 
 void Player::HandleLocalPlayerControl()
 {
-    g_debugStrings.emplace_back("Current Item: "+std::to_string((int)m_ability));
+    DebugLog::Printf("Current Item: %d", (int)m_ability);
 
     ButtonState& buttonState = GetButtonState();
     Vector2f leftStick = getLeftStick();

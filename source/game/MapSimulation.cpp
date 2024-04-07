@@ -4,6 +4,7 @@
 #include "MapFlungPixels.h"
 #include "MapGravityPixels.h"
 #include "../framework/audio.h"
+#include "../framework/debug.h"
 
 void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y)
 {
@@ -163,16 +164,13 @@ void Map::SimulateTick()
     SimulateMaterial(this, m_activePixels->sandPixels);
     SimulateMaterial(this, m_activePixels->lavaPixels);
     SimulateMaterial(this, m_activePixels->smokePixels);
-    g_debugStrings.emplace_back("Particles Sand: " + std::to_string(m_activePixels->sandPixels.size()) + " Lava: " + std::to_string(m_activePixels->lavaPixels.size()) + " Smoke: " + std::to_string(m_activePixels->smokePixels.size()));
-
-    char strBuf[64];
-    sprintf(strBuf, "%.04lf", dur);
-    g_debugStrings.emplace_back("Hotspots: " + std::to_string(m_volatilityHotspots.size()) + " StaticCheck: " + strBuf + "ms");
+    DebugLog::Printf("Particles Sand: %u Lava: %u Smoke: %u", m_activePixels->sandPixels.size(), m_activePixels->lavaPixels.size(), m_activePixels->smokePixels.size());
+    DebugLog::Printf("Hotspots: %u StaticCheck: %.04lf ms", m_volatilityHotspots.size(), dur);
 
     SimulateFlungPixels();
     SimulateGravityPixels();
 
-    g_debugStrings.emplace_back("Simulation Tick: " + std::to_string(GetMillisecondTimestamp() - startTime) + "ms");
+    DebugLog::Printf("Simulation Tick: %.04lf ms", GetMillisecondTimestamp() - startTime);
     m_simulationTick++;
 }
 

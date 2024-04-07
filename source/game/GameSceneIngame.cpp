@@ -13,6 +13,7 @@
 #include "MapPixels.h"
 #include "GameSceneMenu.h"
 #include "Blackhole.h"
+#include "../framework/debug.h"
 
 
 GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server): GameScene(std::move(client), std::move(server))
@@ -83,8 +84,6 @@ void GameSceneIngame::SpawnCollectibles() {
     }
 }
 
-std::vector<std::string> g_debugStrings;
-
 void GameSceneIngame::DrawHUD() {
     static u32 heartsAnimationTicks = 0;
     heartsAnimationTicks++;
@@ -106,17 +105,6 @@ void GameSceneIngame::DrawHUD() {
     }
     else if (m_selfPlayer->GetAbility() == GameClient::GAME_ABILITY::BLACKHOLE) {
         Render::RenderSpriteScreenRelative(&m_blackholeSprite, 20+16, 20+64+20+(64/2)-9, 32, 32);
-    }
-
-    if (pressedStart()) {
-        m_showDebugInfo = !m_showDebugInfo;
-        s_showCrtFilter = !m_showDebugInfo;
-    }
-
-    if (m_showDebugInfo) {
-        for (u32 i = 0; i < g_debugStrings.size(); i++) {
-            Render::RenderText(20, 300 + (i * 16), 0x00, g_debugStrings[i].c_str());
-        }
     }
 
     if (m_selfPlayer->IsSpectating()) {
@@ -300,6 +288,7 @@ void GameSceneIngame::Draw()
 
     DoDraws();
     DrawHUD();
+    DebugLog::Draw();
 
     m_gameTime += 1.0/60.0;
 }
@@ -331,7 +320,5 @@ void GameSceneIngame::RunDeterministicSimulationStep()
     this->GetMap()->Update(); // map objects are always independent of the world simulation?
 
     double dur = GetMillisecondTimestamp() - startTime;
-    char buf[128];
-    sprintf(buf, "Simulation time: %.4lfms", dur);
-    g_debugStrings.push_back(buf);
+    DebugLog::Printf("Simulation time: %.4lfms", dur);
 }
