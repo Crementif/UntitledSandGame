@@ -14,53 +14,79 @@ struct Vertex
     f32 tex_coord[2];
 };
 
-struct GX2ShaderSet
+class GX2ShaderSet
 {
-    static GX2ShaderSet* Load(const char* name);
+public:
+    explicit GX2ShaderSet(std::string_view name);
+
+    void Prepare() const;
+    void Activate() const;
+    bool IsCompiledSuccessfully() const { return compiledSuccessfully; }
+
+    static void InitDefaultFetchShader();
+
+    //static GX2ShaderSet* Load(const char* name);
     //static void SwitchToShader();
 
-    void Prepare();
-    void Activate();
-
+private:
+    bool compiledSuccessfully = false;
     GX2FetchShader* fetchShader;
     GX2VertexShader* vertexShader;
     GX2PixelShader* fragmentShader;
-};
 
-constexpr uint64_t ct_fnv1a_hash(std::string_view str) noexcept
-{
-    uint64_t hash = 14695981039346656037u;
-    for(auto c : str)
-    {
-        hash = (hash ^ static_cast<uint64_t>(c)) * (uint64_t)1099511628211u;
-    }
-    return hash;
-}
+    static bool s_defaultFetchShaderInitialized;
+    static GX2FetchShader s_defaultFetchShader;
+};
 
 // helper class to simplify shader loading and management
 class ShaderSwitcher
 {
 public:
-    ShaderSwitcher(const std::string_view shaderName)
+    explicit ShaderSwitcher(const std::string_view shaderName)
     {
         m_name = shaderName;
     }
 
+    void CheckForReload()
+    {
+        if (m_lastRefresh < OSGetTime())
+        {
+            m_lastRefresh = OSGetTime() + (OSTime)OSMillisecondsToTicks(10 * 1000);
+            auto reloadedShader = std::make_unique<GX2ShaderSet>(m_name);
+            if (reloadedShader->IsCompiledSuccessfully())
+            {
+                m_shaderSet = std::move(reloadedShader);
+            }
+            else {
+                WHBLogPrintf("Failed to reload shader %s", m_name.data());
+            }
+        }
+    }
+
     void Activate()
     {
-        if(m_shaderSet)
+        if (m_shaderSet)
         {
+ #ifdef DEBUG
+             // check for reload in debug mode
+             CheckForReload();
+ #endif
+
             // activate and exit
             m_shaderSet->Activate();
             return;
         }
-        m_shaderSet = GX2ShaderSet::Load(m_name.c_str());
+        m_shaderSet = std::make_unique<GX2ShaderSet>(m_name);
+        if (!m_shaderSet->IsCompiledSuccessfully()) {
+            CriticalErrorHandler("Failed to compile shader %s", m_name.data());
+        }
         m_shaderSet->Activate();
     }
 
 private:
-    GX2ShaderSet* m_shaderSet{nullptr};
-    std::string m_name;
+    std::unique_ptr<GX2ShaderSet> m_shaderSet;
+    std::string_view m_name;
+    OSTime m_lastRefresh = 0;
 };
 
 class Framebuffer

@@ -50,12 +50,12 @@ DRC_SPLASH	:=	dist/drc-splash.png
 # options for code generation
 #-------------------------------------------------------------------------------
 ifneq ($(BUILD_DEBUG),1)
-CFLAGS		:=	-DDEBUG -g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O3 -fno-math-errno -ffast-math -funsafe-math-optimizations -ftree-vectorize $(MACHDEP)
+CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O3 -fno-math-errno -ffast-math -funsafe-math-optimizations -ftree-vectorize $(MACHDEP)
+CFLAGS		+=	$(INCLUDE) -DNDEBUG -D__WIIU__ -D__WUT__
 else
-CFLAGS		:=	-DNDEBUG -g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O0 -ffunction-sections -fdata-sections $(MACHDEP)
+CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O0 -ffunction-sections -fdata-sections $(MACHDEP)
+CFLAGS		+=	$(INCLUDE) -DDEBUG -D__WIIU__ -D__WUT__
 endif
-
-CFLAGS		+=	$(INCLUDE) -D__WIIU__ -D__WUT__
 
 CXXFLAGS	:=	$(CFLAGS) -std=gnu++20
 

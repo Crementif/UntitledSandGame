@@ -9,144 +9,80 @@ layout(binding = 0) uniform uf_data {
     float uf_time;
 };
 
+/*
+    zfast_crt_standard - A simple, fast CRT shader.
 
-//
-// PUBLIC DOMAIN CRT STYLED SCAN-LINE SHADER
-//
-//   by Timothy Lottes
-//
-// This is more along the style of a really good CGA arcade monitor.
-// With RGB inputs instead of NTSC.
-// The shadow mask example has the mask rotated 90 degrees for less chromatic aberration.
-//
-// Left it unoptimized to show the theory behind the algorithm.
-//
-// It is an example what I personally would want as a display option for pixel art games.
-// Please take and use, change, or whatever.
-//
+    Copyright (C) 2017 Greg Hogan (SoltanGris42)
 
-// Emulated input resolution.
-const vec2 res = vec2(640.0 / 1, 360.0 / 1);
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the Free
+    Software Foundation; either version 2 of the License, or (at your option)
+    any later version.
 
 
-// Hardness of scanline.
-//  -8.0 = soft
-// -16.0 = medium
-float hardScan = -6.0;
+Notes:  This shader does scaling with a weighted linear filter for adjustable
+	sharpness on the x and y axes based on the algorithm by Inigo Quilez here:
+	https://iquilezles.org/articles/texture/
+	but modified to be somewhat sharper. Then a scanline effect that varies
+	based on pixel brighness is applied along with a monochrome aperture mask.
+	This shader runs at 60fps on the Raspberry Pi 3 hardware at 2mpix/s
+	resolutions (1920x1080 or 1600x1200).
+*/
 
-// Hardness of pixels in scanline.
-// -2.0 = soft
-// -4.0 = hard
-float hardPix = -2.0;
+//This can't be an option without slowing the shader down
+//Comment this out for a coarser 3 pixel mask...which is currently broken
+//on SNES Classic Edition due to Mali 400 gpu precision
+//#define FINEMASK
 
-// Display warp.
-// 0.0 = none
-// 1.0/8.0 = extreme
-vec2 warp = vec2(1.0 / 40.0, 1.0 / 30.0);
+// Parameter lines go here:
+// #pragma parameter BLURSCALEX "Blur Amount X-Axis" 0.30 0.0 1.0 0.05
+// #pragma parameter LOWLUMSCAN "Scanline Darkness - Low" 6.0 0.0 10.0 0.5
+// #pragma parameter HILUMSCAN "Scanline Darkness - High" 8.0 0.0 50.0 1.0
+// #pragma parameter BRIGHTBOOST "Dark Pixel Brightness Boost" 1.25 0.5 1.5 0.05
+// #pragma parameter MASK_DARK "Mask Effect Amount" 0.25 0.0 1.0 0.05
+// #pragma parameter MASK_FADE "Mask/Scanline Fade" 0.8 0.0 1.0 0.05
 
-//------------------------------------------------------------------------
+#define BLURSCALEX 0.45
+#define LOWLUMSCAN 5.0
+#define HILUMSCAN 10.0
+#define BRIGHTBOOST 1.25
+#define MASK_DARK 0.25
+#define MASK_FADE 0.8
 
-// sRGB to Linear.
-// Assuing using sRGB typed textures this should not be needed.
-float ToLinear1(float c) {
-    return (c <= 0.04045) ? c / 12.92 : pow((c + 0.055) / 1.055, 2.4);
-}
-vec3 ToLinear(vec3 c) {
-    return vec3(ToLinear1(c.r), ToLinear1(c.g), ToLinear1(c.b));
-}
+const float maskFade = 0.3333 * MASK_FADE;
 
-// Linear to sRGB.
-// Assuing using sRGB typed textures this should not be needed.
-float ToSrgb1(float c) {
-    return (c < 0.0031308 ? c * 12.92 : 1.055 * pow(c, 0.41666) - 0.055);
-}
-vec3 ToSrgb(vec3 c) {
-    return vec3(ToSrgb1(c.r), ToSrgb1(c.g), ToSrgb1(c.b));
-}
+void main() {
+    // u_texture_size is the size of the texture
+    ivec2 u_texture_size = ivec2(1920/6, 1080/6);
 
-// Nearest emulated sample given floating point position and texel offset.
-// Also zero's off screen.
-vec3 Fetch(vec2 pos, vec2 off) {
-    pos = floor(pos * res + off) / res;
-    if (max(abs(pos.x - 0.5), abs(pos.y - 0.5)) > 0.5)
-        return vec3(0.0, 0.0, 0.0);
-    return ToLinear(texture(tex_renderedMap, pos.xy, -16.0).rgb);
-}
+    // calculate the texture coordinates
+    vec2 texture_coords = ss_uv.xy;
 
-// Distance in emulated pixels to nearest texel.
-vec2 Dist(vec2 pos) {
-    pos = pos * res;
-    return -((pos - floor(pos)) - vec2(0.5));
-}
+    //This is just like "Quilez Scaling" but sharper
+    vec2 p = texture_coords * u_texture_size;
+    vec2 i = floor(p) + 0.50;
+    vec2 f = p - i;
+    p = (i + 4.0*f*f*f) / u_texture_size;
+    p.x = mix(p.x , texture_coords.x, BLURSCALEX);
+    float Y = f.y * f.y;
+    float YY = Y * Y;
+    float YYY = YY * Y;
 
-// 1D Gaussian.
-float Gaus(float pos, float scale) {
-    return exp2(scale * pos * pos);
-}
+    #if defined(FINEMASK)
+    float whichmask = fract(ss_uv.x*-0.4999);
+    float mask = 1.0 + float(whichmask < 0.5) * -MASK_DARK;
+    #else
+    float whichmask = fract(ss_uv.x * -0.3333);
+    float mask = 1.0 + float(whichmask <= 0.33333) * -MASK_DARK;
+    #endif
+    vec3 colour = texture(tex_renderedMap, p).rgb;
 
-// 3-tap Gaussian filter along horz line.
-vec3 Horz3(vec2 pos, float off) {
-    vec3 b = Fetch(pos, vec2(-1.0, off));
-    vec3 c = Fetch(pos, vec2(0.0, off));
-    vec3 d = Fetch(pos, vec2(1.0, off));
-    float dst = Dist(pos).x;
-    // Convert distance to weight.
-    float scale = hardPix;
-    float wb = Gaus(dst - 1.0, scale);
-    float wc = Gaus(dst + 0.0, scale);
-    float wd = Gaus(dst + 1.0, scale);
-    // Return filtered sample.
-    return (b * wb + c * wc + d * wd) / (wb + wc + wd);
-}
+    float scanLineWeight = (BRIGHTBOOST - LOWLUMSCAN*(Y - 2.05*YY));
+    float scanLineWeightB = 1.0 - HILUMSCAN*(YY-2.8*YYY);
 
-// 5-tap Gaussian filter along horz line.
-vec3 Horz5(vec2 pos, float off) {
-    vec3 a = Fetch(pos, vec2(-2.0, off));
-    vec3 b = Fetch(pos, vec2(-1.0, off));
-    vec3 c = Fetch(pos, vec2(0.0, off));
-    vec3 d = Fetch(pos, vec2(1.0, off));
-    vec3 e = Fetch(pos, vec2(2.0, off));
-    float dst = Dist(pos).x;
-    // Convert distance to weight.
-    float scale = hardPix;
-    float wa = Gaus(dst - 2.0, scale);
-    float wb = Gaus(dst - 1.0, scale);
-    float wc = Gaus(dst + 0.0, scale);
-    float wd = Gaus(dst + 1.0, scale);
-    float we = Gaus(dst + 2.0, scale);
-    // Return filtered sample.
-    return (a * wa + b * wb + c * wc + d * wd + e * we) / (wa + wb + wc + wd + we);
-}
+    #if defined(BLACK_OUT_BORDER)
+    colour.rgb *= float(texture_coords.x > 0.0) * float(texture_coords.y > 0.0); // Why doesn't the driver do the right thing?
+    #endif
 
-// Return scanline weight.
-float Scan(vec2 pos, float off) {
-    float dst = Dist(pos).y;
-    return Gaus(dst + off, hardScan);
-}
-
-// Allow nearest three lines to effect pixel.
-vec3 Tri(vec2 pos) {
-    vec3 a = Horz3(pos, -1.0);
-    vec3 b = Horz5(pos, 0.0);
-    vec3 c = Horz3(pos, 1.0);
-    float wa = Scan(pos, -1.0);
-    float wb = Scan(pos, 0.0);
-    float wc = Scan(pos, 1.0);
-    return a * wa + b * wb + c * wc;
-}
-
-// Distortion of scanlines, and end of screen alpha.
-vec2 Warp(vec2 pos) {
-    pos = pos * 2.0 - 1.0;
-    pos *= vec2(1.0 + (pos.y * pos.y) * warp.x, 1.0 + (pos.x * pos.x) * warp.y);
-    return pos * 0.5 + 0.5;
-}
-
-
-void main()
-{
-    vec2 pos = Warp(ss_uv);
-    out_pixel0.rgb = Tri(pos);
-    out_pixel0.a = 1.0f;
-    out_pixel0.rgb = ToSrgb(out_pixel0.rgb);
+    out_pixel0 = vec4(colour.rgb*mix(scanLineWeight*mask, scanLineWeightB, dot(colour.rgb,vec3(maskFade))), 1.0);
 }
