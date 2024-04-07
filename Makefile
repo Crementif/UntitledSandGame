@@ -50,9 +50,9 @@ DRC_SPLASH	:=	dist/drc-splash.png
 # options for code generation
 #-------------------------------------------------------------------------------
 ifneq ($(BUILD_DEBUG),1)
-CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O3 -fno-math-errno -ffast-math -funsafe-math-optimizations -ftree-vectorize $(MACHDEP)
+CFLAGS		:=	-DDEBUG -g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O3 -fno-math-errno -ffast-math -funsafe-math-optimizations -ftree-vectorize $(MACHDEP)
 else
-CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O0 -ffunction-sections -fdata-sections $(MACHDEP)
+CFLAGS		:=	-DNDEBUG -g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O0 -ffunction-sections -fdata-sections $(MACHDEP)
 endif
 
 CFLAGS		+=	$(INCLUDE) -D__WIIU__ -D__WUT__
@@ -190,7 +190,7 @@ $(OUTPUT).wua: $(OUTPUT).rpx
 	@mkdir $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
 	@cp -r $(TOPDIR)/$(CONTENT)/. $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
 	@rm -f $(OUTPUT).wua
-	@$(TOPDIR)/dist/zarchive.exe $(shell wslpath -m $(TOPDIR)/dist/wua) $(shell wslpath -m $(OUTPUT).wua)
+	@$(TOPDIR)/dist/zarchive.exe $(shell wslpath -m $(TOPDIR)/dist/wua || echo $(TOPDIR)/dist/wua) $(shell wslpath -m $(OUTPUT).wua || echo $(OUTPUT).wua) || echo "zarchive.exe couldn't be executed, skipping wua creation..."
 	@echo built ... sand.wua
 $(OUTPUT).rpx: $(OUTPUT).elf $(CONTENT_DEPENDS)
 $(OUTPUT).elf: $(OFILES)
