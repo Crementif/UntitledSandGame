@@ -1,6 +1,36 @@
 #version 450
 #extension GL_ARB_shading_language_420pack: enable
 
+/*
+    zfast_crt_geo - A simple, fast CRT shader.
+
+    Copyright (C) 2017 Greg Hogan (SoltanGris42)
+    Copyright (C) 2023 Jose Linares (Dogway)
+
+    This program is free software; you can redistribute it and/or modify it
+    under the terms of the GNU General Public License as published by the Free
+    Software Foundation; either version 2 of the License, or (at your option)
+    any later version.
+
+
+Notes:  This shader does scaling with a weighted linear filter
+        based on the algorithm by I�igo Quilez here:
+        https://iquilezles.org/articles/texture/
+        but modified to be somewhat sharper. Then a scanline effect that varies
+        based on pixel brightness is applied along with a monochrome aperture mask.
+        This shader runs at ~60fps on the Chromecast HD (10GFlops) on a 1080p display.
+        (https://forums.libretro.com/t/android-googletv-compatible-shaders-nitpicky)
+
+Dogway: I modified zfast_crt.glsl shader to include screen curvature,
+        vignetting, round corners and phosphor*temperature. Horizontal pixel is left out
+        from the Quilez' algo (read above) to provide a more S-Video like horizontal blur.
+        The scanlines and mask are also now performed in the recommended linear light.
+        For this to run smoothly on GPU deprived platforms like the Chromecast and
+        older consoles, I had to remove several parameters and hardcode them into the shader.
+        Another POV is to run the shader on handhelds like the Switch or SteamDeck so they consume less battery.
+*/
+
+// Input variables
 layout(location = 0) noperspective in vec2 ss_uv;
 layout(binding = 0) uniform sampler2D tex_renderedMap;
 layout(location = 0) out vec4 out_pixel0;
@@ -9,80 +39,73 @@ layout(binding = 0) uniform uf_data {
     float uf_time;
 };
 
-/*
-    zfast_crt_standard - A simple, fast CRT shader.
 
-    Copyright (C) 2017 Greg Hogan (SoltanGris42)
+// Hardcoded parameters
+const float SCANLINE_WEIGHT = 6.5;
+const float MASK_DARK = 0.7;
+const float MSCL = 0.5; // Assuming 1080p as a standard resolution for simplicity
+const vec3 pwr = vec3(1.0/((-0.0325*SCANLINE_WEIGHT+1.0)*(-0.311*MASK_DARK+1.0))-1.2);
+const mat3 P22D93 = mat3(
+    1.00000, 0.00000, -0.06173,
+    0.07111, 0.96887, -0.01136,
+    0.00000, 0.08197,  1.07280
+);
 
-    This program is free software; you can redistribute it and/or modify it
-    under the terms of the GNU General Public License as published by the Free
-    Software Foundation; either version 2 of the License, or (at your option)
-    any later version.
+vec3 inv_gamma(vec3 col, vec3 power) {
+    vec3 cir = col-1.0;
+    cir *= cir;
+    col = mix(sqrt(col), sqrt(1.0-cir), power);
+    return col;
+}
 
-
-Notes:  This shader does scaling with a weighted linear filter for adjustable
-	sharpness on the x and y axes based on the algorithm by Inigo Quilez here:
-	https://iquilezles.org/articles/texture/
-	but modified to be somewhat sharper. Then a scanline effect that varies
-	based on pixel brighness is applied along with a monochrome aperture mask.
-	This shader runs at 60fps on the Raspberry Pi 3 hardware at 2mpix/s
-	resolutions (1920x1080 or 1600x1200).
-*/
-
-//This can't be an option without slowing the shader down
-//Comment this out for a coarser 3 pixel mask...which is currently broken
-//on SNES Classic Edition due to Mali 400 gpu precision
-//#define FINEMASK
-
-// Parameter lines go here:
-// #pragma parameter BLURSCALEX "Blur Amount X-Axis" 0.30 0.0 1.0 0.05
-// #pragma parameter LOWLUMSCAN "Scanline Darkness - Low" 6.0 0.0 10.0 0.5
-// #pragma parameter HILUMSCAN "Scanline Darkness - High" 8.0 0.0 50.0 1.0
-// #pragma parameter BRIGHTBOOST "Dark Pixel Brightness Boost" 1.25 0.5 1.5 0.05
-// #pragma parameter MASK_DARK "Mask Effect Amount" 0.25 0.0 1.0 0.05
-// #pragma parameter MASK_FADE "Mask/Scanline Fade" 0.8 0.0 1.0 0.05
-
-#define BLURSCALEX 0.45
-#define LOWLUMSCAN 5.0
-#define HILUMSCAN 10.0
-#define BRIGHTBOOST 1.25
-#define MASK_DARK 0.25
-#define MASK_FADE 0.8
-
-const float maskFade = 0.3333 * MASK_FADE;
+vec2 Warp(vec2 pos) {
+    pos = pos*2.0-1.0;
+    pos *= vec2(1.0 + (pos.y*pos.y)*0.0276, 1.0 + (pos.x*pos.x)*0.0414);
+    return pos*0.5 + 0.5;
+}
 
 void main() {
-    // u_texture_size is the size of the texture
-    ivec2 u_texture_size = ivec2(1920/6, 1080/6);
+    vec2 InputSize = vec2(640.0f, 360.0f);
+    vec2 TextureSize = vec2(640.0f, 360.0f);
+    vec2 OutputSize = vec2(1920.0f, 1080.0f);
+    vec2 vTexCoord = ss_uv;
 
-    // calculate the texture coordinates
-    vec2 texture_coords = ss_uv.xy;
 
-    //This is just like "Quilez Scaling" but sharper
-    vec2 p = texture_coords * u_texture_size;
-    vec2 i = floor(p) + 0.50;
-    vec2 f = p - i;
-    p = (i + 4.0*f*f*f) / u_texture_size;
-    p.x = mix(p.x , texture_coords.x, BLURSCALEX);
-    float Y = f.y * f.y;
-    float YY = Y * Y;
-    float YYY = YY * Y;
+    vec2 scale = vec2(TextureSize.xy/InputSize.xy);
+    vec2 vpos = vTexCoord*scale;
+    vec2 xy = Warp(vpos);
 
-    #if defined(FINEMASK)
-    float whichmask = fract(ss_uv.x*-0.4999);
-    float mask = 1.0 + float(whichmask < 0.5) * -MASK_DARK;
-    #else
-    float whichmask = fract(ss_uv.x * -0.3333);
-    float mask = 1.0 + float(whichmask <= 0.33333) * -MASK_DARK;
-    #endif
-    vec3 colour = texture(tex_renderedMap, p).rgb;
+    vec2 corn = min(xy,1.0-xy); // This is used to mask the rounded
+    corn.x = 0.0001/corn.x;  // corners later on
 
-    float scanLineWeight = (BRIGHTBOOST - LOWLUMSCAN*(Y - 2.05*YY));
-    float scanLineWeightB = 1.0 - HILUMSCAN*(YY-2.8*YYY);
+    xy /= scale;
 
-    #if defined(BLACK_OUT_BORDER)
-    colour.rgb *= float(texture_coords.x > 0.0) * float(texture_coords.y > 0.0); // Why doesn't the driver do the right thing?
-    #endif
+    vpos *= (1.0 - vpos.xy);
+    float vig = vpos.x * vpos.y * 46.0;
+    vig = min(sqrt(vig), 1.0);
 
-    out_pixel0 = vec4(colour.rgb*mix(scanLineWeight*mask, scanLineWeightB, dot(colour.rgb,vec3(maskFade))), 1.0);
+
+    // Of all the pixels that are mapped onto the texel we are
+    // currently rendering, which pixel are we currently rendering?
+    float ratio_scale = xy.y * TextureSize.y - 0.5;
+    // Snap to the center of the underlying texel.
+    float i = floor(ratio_scale) + 0.5;
+
+    // This is just like "Quilez Scaling" but sharper
+    float f = ratio_scale - i;
+    float Y = f*f;
+    float p = (i + 4.0*Y*f)*(1.0f/TextureSize.y);
+
+    float whichmask = floor(ss_uv.x*scale.x*OutputSize.x)*-MSCL;
+    float mask = 1.0 + float(fract(whichmask) < MSCL) *-MASK_DARK;
+    vec3 colour = texture(tex_renderedMap, vec2(xy.x, p)).rgb;
+
+    colour = max((colour*colour) * (P22D93 * vig), 0.0);
+
+    float scanLineWeight = (1.5 - SCANLINE_WEIGHT*(Y - Y*Y));
+
+    if (corn.y <= corn.x || corn.x < 0.0001)
+        colour = vec3(0.0);
+
+    out_pixel0.rgba = vec4(inv_gamma(colour.rgb*mix(scanLineWeight*mask, 1.0, colour.r*0.26667+colour.g*0.26667+colour.b*0.26667), pwr), 1.0);
 }
