@@ -16,11 +16,11 @@ public:
         LANDMINE = 1,
         MISSILE = 2,
         TURBO_DRILL = 3,
-        BOMB = 4,
-        LAVA = 5,
-        JETPACK = 6,
-        DEATH = 7, // special non-collectible ability for the explosion when a player dies
-        BLACKHOLE = 8,
+        BLACKHOLE = 4,
+        BOMB = 5,
+        LAVA = 6,
+        JETPACK = 7,
+        DEATH = 8, // special non-collectible ability for the explosion when a player dies
     };
 
     struct GameSessionInfo
