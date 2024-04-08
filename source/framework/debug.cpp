@@ -30,3 +30,6 @@ void DebugLog::Draw() {
     }
     s_logQueue.clear();
 }
+
+std::vector<std::pair<unsigned long long, OSTick>> DebugProfile::startTimes = {};
+std::vector<TimedSegment> DebugProfile::durations = {};

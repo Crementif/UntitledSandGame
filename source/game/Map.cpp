@@ -6,6 +6,7 @@
 #include "../framework/Audio.h"
 #include "MapFlungPixels.h"
 #include "MapGravityPixels.h"
+#include "../framework/debug.h"
 
 MAP_PIXEL_TYPE _GeneratePixelAtWorldPos(s32 x, s32 y)
 {
@@ -189,6 +190,7 @@ PixelType& Map::GetPixelNoBoundsCheck(s32 x, s32 y)
 constexpr u32 LAVA_HISS_ATTEMPTS = 2;
 void Map::Update()
 {
+    DebugProfile::Start("Scene -> Simulation -> Lava Hiss");
     if ((m_lastLavaHiss + (OSTime)OSSecondsToTicks(5)) >= OSGetTime())
         return;
 
@@ -212,6 +214,7 @@ void Map::Update()
 
     if (m_currLavaHiss >= 4)
         m_currLavaHiss = 0;
+    DebugProfile::End("Scene -> Simulation -> Lava Hiss");
 }
 
 MAP_PIXEL_TYPE PixelType::GetPixelType() const

@@ -274,11 +274,12 @@ void GameSceneIngame::Draw()
     if (!m_selfPlayer->IsSpectating())
         HandlePlayerCollisions();
 
+    DebugProfile::Start("Scene -> Simulation");
     RunDeterministicSimulationStep();
+    DebugProfile::End("Scene -> Simulation");
 
     UpdateCamera();
 
-    gPhysicsMgr.Update(1.0f / 60.0f);
     DoUpdates(1.0f / 60.0f);
 
     DrawBackground();
@@ -305,8 +306,6 @@ void GameSceneIngame::HandleInput()
 
 void GameSceneIngame::RunDeterministicSimulationStep()
 {
-    double startTime = GetMillisecondTimestamp();
-
     if ((this->GetMap()->GetRNGNumber()&0x7) < 3)
         this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SAND), 200, 155);
 
@@ -318,7 +317,4 @@ void GameSceneIngame::RunDeterministicSimulationStep()
 
     this->GetMap()->SimulateTick();
     this->GetMap()->Update(); // map objects are always independent of the world simulation?
-
-    double dur = GetMillisecondTimestamp() - startTime;
-    DebugLog::Printf("Simulation time: %.4lfms", dur);
 }

@@ -432,7 +432,9 @@ void WindowSwapBuffers(bool usePostBuffer)
     GX2SetDRCEnable(true);
 
     // Wait until swapping is done
+    DebugProfile::Start("Swap Buffers -> GX2WaitForFlip");
     GX2WaitForFlip();
+    DebugProfile::End("Swap Buffers -> GX2WaitForFlip");
 
     // ProcUI
     ProcUIStatus status = ProcUIProcessMessages(true);

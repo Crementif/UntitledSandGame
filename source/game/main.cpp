@@ -71,10 +71,7 @@ int main()
     double lastFrameTime = 0.0f;
     while (Render::IsRunning())
     {
-        DebugLog::Printf("Total Time: %.04lf ms", lastTotalTime);
-        DebugLog::Printf("Render Scene Time: %.04lf ms", lastFrameWithoutPostProcessingTime);
-        DebugLog::Printf("Post Processing Time: %.04lf ms", lastFrameTime - lastFrameWithoutPostProcessingTime);
-        DebugLog::Printf("Swap Buffers Time: %.04lf ms", lastTotalTime - lastFrameTime);
+        DebugProfile::Start("Total");
 
         u64 startTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
@@ -90,13 +87,16 @@ int main()
         Render::SetStateForSpriteRendering();
 
         currGameScene->HandleInput();
+        DebugProfile::Start("Scene");
         currGameScene->Draw();
+        DebugProfile::End("Scene");
 
-        lastFrameWithoutPostProcessingTime = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - startTime);
+        DebugProfile::Start("Post Processing");
         Render::DoPostProcessing();
-        lastFrameTime = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - startTime);
+        DebugProfile::End("Post Processing");
+        DebugProfile::Start("Swap Buffers");
         Render::SwapBuffers();
-        lastTotalTime = (double)(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count() - startTime);
+        DebugProfile::End("Swap Buffers");
 
         if (currGameScene != GameScene::sActiveScene)
         {
@@ -106,7 +106,9 @@ int main()
 
         if (GameScene::sActiveScene == nullptr)
             break;
+        DebugProfile::End("Total");
 
+        DebugProfile::Print();
     }
 
     GLSL_Shutdown();

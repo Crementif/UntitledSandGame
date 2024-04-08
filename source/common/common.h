@@ -111,3 +111,11 @@ inline f32 _MoveAngleTowardsTarget(f32 current, f32 dest, f32 rate)
     }
     return current;
 }
+
+consteval unsigned long long consteval_CalcHashString(const char* str, unsigned long long hash = 5381) {
+    return *str ? consteval_CalcHashString(str + 1, hash * 33 + static_cast<unsigned char>(*str)) : hash;
+}
+
+consteval std::uint64_t operator"" _hash(const char* str, std::size_t size) {
+    return consteval_CalcHashString(str, size);
+}

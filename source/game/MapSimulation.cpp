@@ -157,20 +157,21 @@ void Map::SimulateTick()
 {
     HandleSynchronizedEvents();
 
-    double startTime = GetMillisecondTimestamp();
+    DebugProfile::Start("Scene -> Simulation -> Find Volatile Static Pixels");
     FindRandomHotspots();
     UpdateVolatilityHotspots();
-    double dur = GetMillisecondTimestamp() - startTime;
+    DebugProfile::End("Scene -> Simulation -> Find Volatile Static Pixels");
+    DebugProfile::Start("Scene -> Simulation -> Simulate Active Pixels");
     SimulateMaterial(this, m_activePixels->sandPixels);
     SimulateMaterial(this, m_activePixels->lavaPixels);
     SimulateMaterial(this, m_activePixels->smokePixels);
-    DebugLog::Printf("Particles Sand: %u Lava: %u Smoke: %u", m_activePixels->sandPixels.size(), m_activePixels->lavaPixels.size(), m_activePixels->smokePixels.size());
-    DebugLog::Printf("Hotspots: %u StaticCheck: %.04lf ms", m_volatilityHotspots.size(), dur);
+    DebugProfile::End("Scene -> Simulation -> Simulate Active Pixels");
+    DebugLog::Printf("Currently Active Pixels: Sand: %u Lava: %u Smoke: %u", m_activePixels->sandPixels.size(), m_activePixels->lavaPixels.size(), m_activePixels->smokePixels.size());
+    DebugLog::Printf("Currently Active Hotspot Locations: %u", m_volatilityHotspots.size());
 
     SimulateFlungPixels();
     SimulateGravityPixels();
 
-    DebugLog::Printf("Simulation Tick: %.04lf ms", GetMillisecondTimestamp() - startTime);
     m_simulationTick++;
 }
 
