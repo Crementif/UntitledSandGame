@@ -15,6 +15,9 @@ A sandbox mode is also available for solo play.
  - Cool, Dynamic Shader Effects (made possible with [CafeGLSL](https://github.com/Exzap/CafeGLSL))
  - Works (only) on Wii U and Cemu
 
+## Screenshots
+![Screenshot of a multiplayer match of Tank Trap, showing a black hole getting shot at another player which causes the nearby ground to explode](./dist/screenshot.png)
+
 ## How To Install
 #### For Wii U:
  1. Download Tank Trap  
