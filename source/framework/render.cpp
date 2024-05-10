@@ -18,6 +18,7 @@
 
 #include "render_data.h"
 #include "../framework/fileformat/TGAFile.h"
+#include "../framework/debug.h"
 #include "../game/GameScene.h"
 
 ShaderSwitcher Shader_CRT{"crt"};
@@ -46,17 +47,34 @@ void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u
     GX2InitTextureRegs(texturePtr);
 }
 
-void _GX2AllocateTexture(GX2Texture* texture)
+void _GX2AllocateTexture(GX2Texture* texture, bool allocateInMEM1 = false)
 {
-    texture->surface.image = MEMAllocFromDefaultHeapEx(texture->surface.imageSize, texture->surface.alignment);
+    if(allocateInMEM1)
+    {
+        // allocate from MEM1 FrmHeap
+        // note: Calling WHBGfxInit() would break this as it replaces the MEM1 FrmHeap and takes ownership
+        MEMHeapHandle mem1Heap = MEMGetBaseHeapHandle(MEM_BASE_HEAP_MEM1);
+        texture->surface.image = MEMAllocFromFrmHeapEx(mem1Heap, texture->surface.imageSize, texture->surface.alignment);
+    }
+    else
+    {
+        texture->surface.image = MEMAllocFromDefaultHeapEx(texture->surface.imageSize, texture->surface.alignment);
+    }
 }
 
 void _GX2DeallocateTexture(GX2Texture* texture)
 {
     if(texture->surface.image)
     {
-        MEMFreeToDefaultHeap(texture->surface.image);
-        texture->surface.image = nullptr;
+        if((uintptr_t)texture->surface.image >= 0xF4000000 && (uintptr_t)texture->surface.image < 0xF8000000)
+        {
+            CriticalErrorHandler("Trying to free texture from MEM1 which is not supported");
+        }
+        else
+        {
+            MEMFreeToDefaultHeap(texture->surface.image);
+            texture->surface.image = nullptr;
+        }
     }
 }
 
@@ -76,6 +94,7 @@ GX2SurfaceFormat _GetGX2SurfaceFormat(E_TEXFORMAT texFormat)
     {
         case E_TEXFORMAT::RGBA8888_UNORM: return GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
         case E_TEXFORMAT::RG88_UNORM: return GX2_SURFACE_FORMAT_UNORM_R8_G8;
+        case E_TEXFORMAT::RGB565_UNORM: return GX2_SURFACE_FORMAT_UNORM_R5_G6_B5;
         default:
             CriticalErrorHandler("Unknown texture format");
     }
@@ -88,6 +107,7 @@ E_TEXFORMAT _GetGX2Format(GX2SurfaceFormat surfaceFormat)
     {
         case GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8: return E_TEXFORMAT::RGBA8888_UNORM;
         case GX2_SURFACE_FORMAT_UNORM_R8_G8: return E_TEXFORMAT::RG88_UNORM;
+        case GX2_SURFACE_FORMAT_UNORM_R5_G6_B5: return E_TEXFORMAT::RGB565_UNORM;
         default:
             CriticalErrorHandler("Unknown texture format");
     }
@@ -95,7 +115,7 @@ E_TEXFORMAT _GetGX2Format(GX2SurfaceFormat surfaceFormat)
 }
 
 
-void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear)
+void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear, bool allocateInMEM1)
 {
     if (index >= MAX_COLOR_BUFFERS)
         return;
@@ -112,7 +132,7 @@ void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT t
     m_colorBufferTexture[index] = (GX2Texture*)malloc(sizeof(GX2Texture));
     memset(m_colorBufferTexture[index], 0, sizeof(sizeof(GX2Texture)));
     _GX2InitTexture(m_colorBufferTexture[index], width, height, 1, 1, _GetGX2SurfaceFormat(texFormat), GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_DEFAULT);
-    _GX2AllocateTexture(m_colorBufferTexture[index]);
+    _GX2AllocateTexture(m_colorBufferTexture[index], allocateInMEM1);
     m_colorBufferTexture[index]->surface.use = (GX2SurfaceUse)(m_colorBufferTexture[index]->surface.use | GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV);
     if(clear)
     {
@@ -282,6 +302,7 @@ constexpr static __attribute__ ((aligned (32))) u16 s_idx_data[] =
 
 void Render::DoPostProcessing() {
     if (GameScene::IsCrtFilterEnabled()) {
+        DebugWaitAndMeasureGPUDone("[GPU] DoPostProcessing::Start"); // this is here to "reset" any time spent in the previous code
         Framebuffer::ApplyBackbuffer();
         GX2SetColorBuffer(WindowGetPostBuffer(), GX2_RENDER_TARGET_0);
 
@@ -289,8 +310,9 @@ void Render::DoPostProcessing() {
 
         GX2SetPixelTexture(WindowGetColorBufferTexture(), 0);
         GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 0);
-
+        RenderState::SetTransparencyMode(RenderState::E_TRANSPARENCY_MODE::OPAQUE);
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
+        DebugWaitAndMeasureGPUDone("[GPU] DoPostProcessing::CRTFilter");
     }
 }
 

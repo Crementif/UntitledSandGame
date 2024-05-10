@@ -5,7 +5,8 @@
 enum class E_TEXFORMAT
 {
     RGBA8888_UNORM,
-    RG88_UNORM
+    RG88_UNORM,
+    RGB565_UNORM
 };
 
 struct Vertex
@@ -94,7 +95,7 @@ class Framebuffer
     friend class Render;
     static constexpr u32 MAX_COLOR_BUFFERS = 8;
 public:
-    void SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear = false);
+    void SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear = false, bool allocateInMEM1 = false);
     void Apply();
 
     static void ApplyBackbuffer();

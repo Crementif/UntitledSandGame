@@ -288,8 +288,11 @@ void GameSceneIngame::Draw()
     Render::SetStateForSpriteRendering(); // restore sprite drawing state
 
     DoDraws();
+    DebugWaitAndMeasureGPUDone("[GPU] Scene::DoDraws");
     DrawHUD();
+    DebugWaitAndMeasureGPUDone("[GPU] Scene::DrawHUD");
     DebugLog::Draw();
+    DebugWaitAndMeasureGPUDone("[GPU] DebugLog::Draw");
 
     m_gameTime += 1.0/60.0;
 }

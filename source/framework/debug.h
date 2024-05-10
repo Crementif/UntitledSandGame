@@ -1,6 +1,8 @@
 #pragma once
 #include "../common/common.h"
 
+#define ENABLE_GPU_PROFILING 0
+
 class DebugLog {
 public:
     static void Printf(const char* format, ...);
@@ -18,7 +20,14 @@ struct HashedString {
     unsigned long long hash;
     const char* orig;
 
-    consteval HashedString(const char* str): hash(consteval_CalcHashString(str)), orig(str) {}
+    consteval HashedString(const char* str): hash(constexpr_CalcHashString(str)), orig(str) {}
+
+    static HashedString FromDynamic(const char* str) {
+        HashedString h("");
+        h.hash = constexpr_CalcHashString(str);
+        h.orig = str;
+        return h;
+    }
 
     operator unsigned long long() const { return hash; }
     operator const char*() const { return orig; }
@@ -58,7 +67,7 @@ public:
 
     static void Print() {
         for (auto& [_, orig, duration] : durations) {
-            DebugLog::Printf("%s time: %.3f ms", orig, (double)OSTicksToMilliseconds(duration)/1000.0);
+            DebugLog::Printf("%s time: %.1lf ms", orig, (double)OSTicksToMicroseconds(duration)/1000.0);
         }
         durations.clear();
     }
@@ -67,3 +76,12 @@ private:
     static std::vector<std::pair<unsigned long long, OSTick>> startTimes;
     static std::vector<TimedSegment> durations;
 };
+
+static void DebugWaitAndMeasureGPUDone(const char* name)
+{
+#if ENABLE_GPU_PROFILING > 0
+    DebugProfile::Start(HashedString::FromDynamic(name));
+    GX2DrawDone();
+    DebugProfile::End(HashedString::FromDynamic(name));
+#endif
+}

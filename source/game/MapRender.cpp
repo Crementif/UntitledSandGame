@@ -2,12 +2,14 @@
 #include "MapPixels.h"
 #include "../framework/render.h"
 #include "../framework/window.h"
+#include "../framework/debug.h"
 
 #include "../framework/fileformat/TGAFile.h"
 #include <coreinit/debug.h>
 #include <gx2/texture.h>
 
 #include <coreinit/debug.h>
+
 
 // shaders
 static ShaderSwitcher s_shaderDrawMap{"draw_map"};
@@ -134,10 +136,10 @@ public:
         s32 pixelMapHeight = visibleWorldPixelsY + MAP_RENDER_VIEW_BORDER * 2;
 
         m_pixelMap = new Framebuffer();
-        m_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, true);
+        m_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RGBA8888_UNORM, true, true);
 
         s_environmentMap = new Framebuffer();
-        s_environmentMap->SetColorBuffer(0, pixelMapWidth/4, pixelMapHeight/4, E_TEXFORMAT::RGBA8888_UNORM, true);
+        s_environmentMap->SetColorBuffer(0, pixelMapWidth/4, pixelMapHeight/4, E_TEXFORMAT::RGBA8888_UNORM, true, true);
 
         InitPixelColorLookupMap();
     }
@@ -165,6 +167,7 @@ public:
         Render::SetCameraPosition(cameraPosition / (f32)MAP_PIXEL_ZOOM);
 
         m_pixelMap->Apply();
+        DebugWaitAndMeasureGPUDone("[GPU] Map::UpdatePixelMap::ApplyPixelMap");
 
         MapCell* cellArray = map->GetCellPtrArray();
         s32 cellsX = (s32)map->GetCellsX();
@@ -178,6 +181,7 @@ public:
                 cellArray[x + y * cellsX].DrawCell();
             }
         }
+        DebugWaitAndMeasureGPUDone("[GPU] Map::UpdatePixelMap::DrawCells");
         // restore camera
         Render::SetCameraPosition(cameraPosition);
     }
@@ -186,6 +190,7 @@ public:
     static void DoEnvironmentPass()
     {
         s_environmentMap->Apply();
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::Apply");
 
         s_shaderEnvironmentPass.Activate();
 
@@ -193,7 +198,8 @@ public:
         GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 0);
 
         // draw fullscreen quad
-        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
+        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1); // environment_pass.ps
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::DrawQuad");
     }
 
     // draw map pixels to screen using m_pixelMap
@@ -240,6 +246,8 @@ public:
         GX2SetPixelUniformBlock(0, sizeof(s_mapDrawUFPixel), s_mapDrawUFPixel);
 
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
+
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DrawPixelsToScreen");
     }
 
 private:
@@ -374,11 +382,12 @@ void Map::Draw()
         s_mapRenderingIsInitialized = true;
     }
 
+    DebugWaitAndMeasureGPUDone("[GPU] Map::DrawStart");
     MapRenderManager::DrawBackground();
+    DebugWaitAndMeasureGPUDone("[GPU] Map::DrawBackground");
 
     // get visible area
     Rect2D visibleCells = _GetVisibleCells(this);
-
     MapRenderManager::UpdatePixelMap(this, visibleCells);
     MapRenderManager::DoEnvironmentPass();
     MapRenderManager::DrawPixelsToScreen(this);
