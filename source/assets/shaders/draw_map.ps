@@ -28,7 +28,7 @@ float noise( in vec2 n )
 float fbm(vec2 n) {
     float total = 0.0;
     float amplitude = 2.0f;
-    for (int i = 0; i < 14; i++) {
+    for (int i = 0; i < 6; i++) {
         total += noise(n) * amplitude;
         n += n;
         amplitude *= 0.55f;
@@ -50,7 +50,7 @@ vec3 CalculateLavaPixelColor(vec2 uv) {
     float q = fbm(nfbm);
     vec2 arg1 = vec2(uv + q +  uf_time * speed.x -uv.x -uv.y);
     vec2 arg2 = vec2 (uv + q - rand(vec2(100., 100.)) * speed.y);
-    vec2 r = vec2(fbm(arg1 ), fbm(arg2));
+    vec2 r = vec2(fbm(arg1), fbm(arg2));
 
     vec2 agr3 = vec2(uv + r);
     vec3 c = mix(col1, col2, fbm(agr3)) + mix(col3, col4, r.x) - mix(col5, col6, r.y);
