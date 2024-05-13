@@ -1,5 +1,5 @@
-#include "../common/common.h"
-#include "wav.h"
+#include "../../common/common.h"
+#include "ogg.h"
 
 class Audio {
     friend class AudioManager;
@@ -15,6 +15,7 @@ public:
     ~Audio();
 
     void SetVolume(uint32_t volume);
+    void SetLowPassFilter(uint32_t cutoff);
     void Play();
     void Reset();
     void Pause();
@@ -29,7 +30,7 @@ private:
     AXVoiceOffsets m_voiceOffsets;
 
     uint32_t m_volume = 100;
-    WavFile* m_wavFile = nullptr;
+    OggFile* m_wavFile = nullptr;
     StateEnum m_state;
     std::string m_path;
 
@@ -67,7 +68,7 @@ public:
     }
 
 private:
-    std::unordered_map<std::string, std::unique_ptr<WavFile>> sounds;
+    std::unordered_map<std::string, std::unique_ptr<OggFile>> sounds;
     std::vector<Audio*> voices;
     std::vector<Audio*> destroyQueue;
 };

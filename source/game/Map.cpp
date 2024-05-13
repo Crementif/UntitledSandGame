@@ -3,7 +3,7 @@
 #include "../framework/render.h"
 
 #include "../framework/fileformat/TGAFile.h"
-#include "../framework/Audio.h"
+#include "../framework/audio/audio.h"
 #include "MapFlungPixels.h"
 #include "MapGravityPixels.h"
 #include "../framework/debug.h"
@@ -115,10 +115,10 @@ Map::Map(const char* filename, u32 rngSeed)
     sprintf(strBuf, "%.04lf", dur);
     OSReport("Level loaded in %sms\n", strBuf);
 
-    m_lavaHiss0Audio = new Audio("/sfx/lava_hiss0.wav");
-    m_lavaHiss1Audio = new Audio("/sfx/lava_hiss1.wav");
-    m_lavaHiss2Audio = new Audio("/sfx/lava_hiss2.wav");
-    m_lavaHiss3Audio = new Audio("/sfx/lava_hiss3.wav");
+    m_lavaHiss0Audio = new Audio("/sfx/lava_hiss0.ogg");
+    m_lavaHiss1Audio = new Audio("/sfx/lava_hiss1.ogg");
+    m_lavaHiss2Audio = new Audio("/sfx/lava_hiss2.ogg");
+    m_lavaHiss3Audio = new Audio("/sfx/lava_hiss3.ogg");
 }
 
 Map::~Map()

@@ -1,7 +1,7 @@
 #include "audio.h"
 
 Audio::Audio(std::string path) {
-    const auto& newSound = AudioManager::GetInstance().sounds.try_emplace(path, std::make_unique<WavFile>(path));
+    const auto& newSound = AudioManager::GetInstance().sounds.try_emplace(path, std::make_unique<OggFile>(path));
 
     this->m_wavFile = newSound.first->second.get();
     this->m_state = StateEnum::LOADED;
@@ -31,6 +31,25 @@ void Audio::SetVolume(uint32_t volume) {
     AXSetVoiceVe(this->m_voiceHandle, &voiceData);
     AXVoiceEnd(this->m_voiceHandle);
 }
+
+
+// mario kart 8 calculates the water effect using 3200 as frequency
+void Audio::SetLowPassFilter(uint32_t cutoff) {
+    if (this->m_voiceHandle == nullptr)
+        return;
+
+    int16_t a0, b0;
+    AXComputeLpfCoefs(cutoff, &a0, &b0);
+    AXPBLPF_t lpf = {
+        .on = 1,
+        .yn1 = 0,
+        .a0 = a0,
+        .b0 = b0
+    };
+    AXSetVoiceLpf(this->m_voiceHandle, &lpf);
+    this->SetVolume(100);
+}
+
 
 void Audio::Play() {
     // Handle special states

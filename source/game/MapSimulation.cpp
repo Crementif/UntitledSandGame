@@ -3,7 +3,7 @@
 #include "GameSceneIngame.h"
 #include "MapFlungPixels.h"
 #include "MapGravityPixels.h"
-#include "../framework/audio.h"
+#include "../framework/audio/audio.h"
 #include "../framework/debug.h"
 
 void Map::SpawnMaterialPixel(MAP_PIXEL_TYPE materialType, u8 materialSeed, s32 x, s32 y)

@@ -4,7 +4,7 @@
 #include "GameClient.h"
 
 #include "GameSceneMenu.h"
-#include "../framework/audio.h"
+#include "../framework/audio/audio.h"
 #include "MapPixels.h"
 #include "../framework/debug.h"
 
@@ -30,12 +30,12 @@ Player::Player(GameScene* parent, u32 playerId, f32 posX, f32 posY) : Object(par
         s_tankWheelSprite = new Sprite("/tex/tank_wheel.tga", true);
     }
 
-    m_teleportAudio = new Audio("/sfx/teleport.wav");
-    m_deathAudio = new Audio("/sfx/death_explosion.wav");
-    m_hitAudio = new Audio("/sfx/hit.wav");
-    m_drillStartAudio = new Audio("/sfx/drill_start.wav");
-    m_drillMoveAudio = new Audio("/sfx/drill_loop.wav");
-    m_drillStopAudio = new Audio("/sfx/drill_stop.wav");
+    m_teleportAudio = new Audio("/sfx/teleport.ogg");
+    m_deathAudio = new Audio("/sfx/death_explosion.ogg");
+    m_hitAudio = new Audio("/sfx/hit.ogg");
+    m_drillStartAudio = new Audio("/sfx/drill_start.ogg");
+    m_drillMoveAudio = new Audio("/sfx/drill_loop.ogg");
+    m_drillStopAudio = new Audio("/sfx/drill_stop.ogg");
 }
 
 Player::~Player()

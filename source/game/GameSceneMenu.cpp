@@ -7,7 +7,7 @@
 #include "GameSceneIngame.h"
 #include "GameServer.h"
 #include "GameClient.h"
-#include "../framework/audio.h"
+#include "../framework/audio/audio.h"
 #include "../framework/debug.h"
 
 bool GameScene::s_showCrtFilter = true;
@@ -16,8 +16,8 @@ GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboa
     this->RegisterMap(new Map("menu.tga", 1337));
 
     m_lastInput = OSGetTime() + (OSTime)OSSecondsToTicks(1);
-    m_selectAudio = new Audio("/sfx/select.wav");
-    m_startAudio = new Audio("/sfx/start.wav");
+    m_selectAudio = new Audio("/sfx/select.ogg");
+    m_startAudio = new Audio("/sfx/start.ogg");
 
     m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, s_buttonSize, s_buttonColor, L"Sandbox");
     m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, s_buttonSize, s_buttonColor, L"Host");

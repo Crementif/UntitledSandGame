@@ -1,16 +1,16 @@
 #include "Blackhole.h"
 #include "Map.h"
 #include "Player.h"
-#include "../framework/audio.h"
+#include "../framework/audio/audio.h"
 
 Blackhole::Blackhole(GameScene *parent, u32 owner, float x, float y, float volX, float volY) : PhysicsObject(parent, AABB({x, y}, {(f32)32/MAP_PIXEL_ZOOM/4, (f32)32/MAP_PIXEL_ZOOM/4}), DRAW_LAYER_0), m_owner(owner) {
     // the blackhole will have a constant velocity
     this->SetVelocity(volX, volY);
     m_velocityAngle = Vector2f(0.0f, 0.0f).AngleTowards(m_velocity)+(float)M_PI_2;
 
-    m_loopSfx = new Audio("/sfx/gravity_loop.wav");
+    m_loopSfx = new Audio("/sfx/gravity_loop.ogg");
     m_loopSfx->SetLooping(true);
-    m_endSfx = new Audio("/sfx/gravity_end.wav");
+    m_endSfx = new Audio("/sfx/gravity_end.ogg");
 }
 
 void Blackhole::Update(float timestep) {

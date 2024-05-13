@@ -3,7 +3,7 @@
 #include "Object.h"
 #include "Map.h"
 #include "Player.h"
-#include "../framework/audio.h"
+#include "../framework/audio/audio.h"
 
 #include "GameServer.h"
 #include "GameClient.h"
@@ -28,10 +28,19 @@ GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique
     SpawnPlayers();
     SpawnCollectibles();
     m_prevCamPos = Render::GetCameraPosition();
+    m_ingameBgm = new Audio("/bgm/ingame.ogg");
+    m_ingameBgm->SetLooping(true);
+    m_ingameBgm->Play();
+    m_ingameBgm->SetLowPassFilter(500);
+    m_ingameBgm->SetVolume(100);
 }
 
 GameSceneIngame::~GameSceneIngame()
 {
+    m_ingameBgm->SetLooping(false);
+    m_ingameBgm->Pause();
+    m_ingameBgm->Reset();
+    m_ingameBgm->QueueDestroy();
 }
 
 void GameSceneIngame::SpawnPlayers()
@@ -178,7 +187,7 @@ void GameSceneIngame::UpdateMultiplayer()
                 float distance = (GetPlayer()->GetPosition().Distance(event.pos)+0.00000001f)/20.0f;
                 float volume = 20.0f - (distance/100.0f*20.0f);
 
-                Audio* explosionAudio = new Audio("/sfx/explosion.wav");
+                Audio* explosionAudio = new Audio("/sfx/explosion.ogg");
                 explosionAudio->Play();
                 explosionAudio->SetVolume((u32)volume);
                 explosionAudio->QueueDestroy();

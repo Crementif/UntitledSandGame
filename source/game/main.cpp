@@ -8,7 +8,7 @@
 #include "Blackhole.h"
 
 #include "../framework/navigation.h"
-#include "../framework/audio.h"
+#include "../framework/audio/audio.h"
 #include "../framework/debug.h"
 
 GameScene* GameScene::sActiveScene = nullptr;

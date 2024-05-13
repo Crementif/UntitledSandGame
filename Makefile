@@ -38,7 +38,7 @@ TARGET		:=	sand_dbg
 BUILD		:=	build_debug
 endif
 
-SOURCES		:=	source/common source/framework source/framework/physics source/framework/noise source/framework/fileformat source/framework/multiplayer source/game
+SOURCES		:=	source/common source/framework source/framework/physics source/framework/noise source/framework/fileformat source/framework/multiplayer source/framework/audio source/game
 DATA		:=	data
 INCLUDES	:=	include
 CONTENT		:=	source/assets

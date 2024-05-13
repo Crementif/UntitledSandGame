@@ -2,8 +2,6 @@
 #include "GameScene.h"
 #include "../framework/render.h"
 #include "../framework/physics/physics.h"
-#include "../framework/multiplayer/multiplayer.h"
-#include "NetCommon.h"
 
 class GameSceneIngame : public GameScene
 {
@@ -46,4 +44,6 @@ private:
 
     // misc
     f32 m_gameTime{};
+    class Audio* m_ingameBgm{};
+    class Audio* m_ingameMuffledBgm{};
 };

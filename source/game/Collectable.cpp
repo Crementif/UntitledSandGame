@@ -2,7 +2,7 @@
 #include "Player.h"
 #include "Map.h"
 
-#include "../framework/audio.h"
+#include "../framework/audio/audio.h"
 
 
 void Collectable::Draw(u32 layerIndex) {
@@ -36,7 +36,7 @@ void Collectable::Pickup(Player *player) {
     m_respawnTime = OSGetTime() + OSSecondsToTicks(45);
 
     if (player->IsSelf()) {
-        Audio* pickupAudio = new Audio("/sfx/pickup.wav");
+        Audio* pickupAudio = new Audio("/sfx/pickup.ogg");
         pickupAudio->Play();
         pickupAudio->QueueDestroy();
     }

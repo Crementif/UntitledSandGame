@@ -56,6 +56,26 @@
 
 #include "types.h"
 
+
+struct AXPBLPF_t
+{
+    /* +0x00 */ uint16_t on;
+    /* +0x02 */ int16_t yn1;
+    /* +0x04 */ int16_t a0;
+    /* +0x06 */ int16_t b0;
+};
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+    void AXComputeLpfCoefs(uint32_t freq, int16_t* a0, int16_t* b0);
+    void AXSetVoiceLpf(AXVoice* voice, AXPBLPF_t* lpf);
+    void AXSetVoiceLpfCoefs(AXVoice* voice, int16_t a0, int16_t b0);
+#ifdef __cplusplus
+}
+#endif
+
+
 [[noreturn]]
 void CriticalErrorHandler(const char* msg, ...);
 

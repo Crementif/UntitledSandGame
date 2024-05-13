@@ -2,7 +2,7 @@
 #include "Map.h"
 #include "Player.h"
 #include "Particle.h"
-#include "../framework/audio.h"
+#include "../framework/audio/audio.h"
 
 Missile::Missile(GameScene *parent, u32 owner, float x, float y, float volX, float volY) : PhysicsObject(parent, AABB({x, y}, {(f32)32/MAP_PIXEL_ZOOM/4, (f32)32/MAP_PIXEL_ZOOM/4}), DRAW_LAYER_0), m_owner(owner) {
     // the missile will have a constant velocity
@@ -21,7 +21,7 @@ void Missile::Update(float timestep) {
         float distance = (m_parent->GetPlayer()->GetPosition().Distance(this->m_aabb.GetCenter())+0.00000001f)/20.0f;
         float volume = 20.0f - (distance/100.0f*20.0f);
 
-        Audio* explosionAudio = new Audio("/sfx/explosion.wav");
+        Audio* explosionAudio = new Audio("/sfx/explosion.ogg");
         explosionAudio->Play();
         explosionAudio->SetVolume((u32)volume);
         explosionAudio->QueueDestroy();
