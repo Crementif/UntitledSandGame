@@ -274,13 +274,21 @@ void Player::Update(float timestep)
         // air movement
         if(m_moveFlags.walkingLeft)
         {
+            m_moveAnimRot -= M_PI_4/5.0f;
             if(m_speed.x > -1.0)
                 m_speed.x -= 0.2f;
+
+            if (m_moveAnimRot <= 0.01)
+                m_moveAnimRot = M_TWOPI;
         }
         else if(m_moveFlags.walkingRight)
         {
+            m_moveAnimRot += M_PI_4/5.0f;
             if(m_speed.x < 1.0)
                 m_speed.x += 0.2f;
+
+            if (m_moveAnimRot <= 0.01)
+                m_moveAnimRot = M_TWOPI;
         }
     }
     else
@@ -300,6 +308,7 @@ void Player::Update(float timestep)
             m_moveAnimRot += M_PI_4/10.0f;
             if(m_speed.x < 0.4)
                 m_speed.x += (IsTurboBoosting() ? 0.4f : 0.15f);
+
             if (m_moveAnimRot >= M_TWOPI)
                 m_moveAnimRot = 0.0;
         }
@@ -442,6 +451,12 @@ void Player::Update_DrillMode(float timestep)
         m_speed = m_speed * 0.9f;
 
     m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + (IsTurboBoosting() ? 3 : 1);
+
+    // move wheels slowly
+    if (m_speed.x > 0.1f)
+        m_moveAnimRot += 0.05f;
+    else if (m_speed.x < -0.1f)
+        m_moveAnimRot -= 0.05f;
 }
 
 void Player::Update_SpectatingMode(float timestep)
