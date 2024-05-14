@@ -15,8 +15,8 @@ Audio::~Audio() {
 }
 
 void Audio::SetVolume(uint32_t volume) {
-    if (volume > 100)
-        volume = 100;
+    if (volume > 199)
+        volume = 199;
 
     m_volume = volume;
 
@@ -47,7 +47,6 @@ void Audio::SetLowPassFilter(uint32_t cutoff) {
         .b0 = b0
     };
     AXSetVoiceLpf(this->m_voiceHandle, &lpf);
-    this->SetVolume(100);
 }
 
 
@@ -130,6 +129,31 @@ void Audio::Reset() {
     AXFreeVoice(this->m_voiceHandle);
     this->m_state = StateEnum::LOADED;
     this->Play();
+}
+
+void Audio::Stop() {
+    if (this->m_voiceHandle == nullptr)
+        return;
+
+    AXFreeVoice(this->m_voiceHandle);
+    this->m_voiceHandle = nullptr;
+    this->m_state = StateEnum::FINISHED;
+}
+
+uint32_t Audio::GetOffset() {
+    if (this->m_voiceHandle == nullptr)
+        return 0;
+
+    AXVoiceOffsets offsets;
+    AXGetVoiceOffsets(this->m_voiceHandle, &offsets);
+    return offsets.currentOffset;
+}
+
+void Audio::SetOffset(uint32_t offset) {
+    if (this->m_voiceHandle == nullptr)
+        return;
+
+    AXSetVoiceCurrentOffset(this->m_voiceHandle, offset);
 }
 
 void Audio::Update() {

@@ -194,6 +194,7 @@ void Map::Update()
     if ((m_lastLavaHiss + (OSTime)OSSecondsToTicks(5)) >= OSGetTime())
         return;
 
+    // for the entire screen, check if there is lava and play a hiss sound
     for (u32 i = 0; i < LAVA_HISS_ATTEMPTS; i++)
     {
         u32 ss_x = m_nonDeterministicRng.GetNext() % (u32)(Render::GetScreenSize().x / MAP_PIXEL_ZOOM);

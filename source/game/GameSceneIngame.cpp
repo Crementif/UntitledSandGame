@@ -31,16 +31,21 @@ GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique
     m_ingameBgm = new Audio("/bgm/ingame.ogg");
     m_ingameBgm->SetLooping(true);
     m_ingameBgm->Play();
-    m_ingameBgm->SetLowPassFilter(500);
     m_ingameBgm->SetVolume(100);
+
+    m_ingameMuffledBgm = new Audio("/bgm/ingame_muffled.ogg");
+    m_ingameMuffledBgm->SetLooping(true);
+    m_ingameMuffledBgm->Play();
+    m_ingameMuffledBgm->SetVolume(100);
+    m_ingameBgm->SetOffset(m_ingameMuffledBgm->GetOffset());
 }
 
 GameSceneIngame::~GameSceneIngame()
 {
-    m_ingameBgm->SetLooping(false);
-    m_ingameBgm->Pause();
-    m_ingameBgm->Reset();
+    m_ingameBgm->Stop();
     m_ingameBgm->QueueDestroy();
+    m_ingameMuffledBgm->Stop();
+    m_ingameMuffledBgm->QueueDestroy();
 }
 
 void GameSceneIngame::SpawnPlayers()
@@ -243,6 +248,8 @@ void GameSceneIngame::UpdateMultiplayer()
     }
 }
 
+constexpr s32 COLLISION_RADIUS = 9;
+constexpr s32 BGM_COLLISION_RADIUS = 16;
 void GameSceneIngame::HandlePlayerCollisions() {
     // check for collisions with other objects
     for (auto& collectible : m_collectibles) {
@@ -257,21 +264,62 @@ void GameSceneIngame::HandlePlayerCollisions() {
     Vector2f pos = m_selfPlayer->GetPosition();
     s32 posX = (s32)(pos.x + 0.5f);
     s32 posY = (s32)(pos.y + 0.5f);
-    for (s32 y=posY-9; y<=posY+9; y++) {
-        for (s32 x=posX-9; x<=posX+9; x++) {
+
+    s32 musicHits = 0;
+    s32 musicMisses = 0;
+    for (s32 y=posY-BGM_COLLISION_RADIUS; y<=posY+BGM_COLLISION_RADIUS; y++) {
+        const s32 dfy = y - posY;
+        const s32 dfySq = dfy * dfy;
+        for (s32 x=posX-BGM_COLLISION_RADIUS; x<=posX+BGM_COLLISION_RADIUS; x++) {
             s32 dfx = x - posX;
-            s32 dfy = y - posY;
-            s32 squareDist = dfx * dfx + dfy * dfy;
-            if (squareDist >= 9*9-3)
-                continue;
-            if (this->GetMap()->IsPixelOOB(x, y) )
-                continue;
-            PixelType& pt = this->GetMap()->GetPixel(x, y);
-            if (pt.GetPixelType() == MAP_PIXEL_TYPE::LAVA) {
-                m_selfPlayer->TakeDamage();
-                break;
+            s32 squareDist = dfx * dfx + dfySq;
+            if (squareDist < COLLISION_RADIUS*COLLISION_RADIUS-3) {
+                // for actual hitbox collision
+                if (this->GetMap()->IsPixelOOB(x, y) )
+                    continue;
+                PixelType& pt = this->GetMap()->GetPixel(x, y);
+                if (pt.GetPixelType() == MAP_PIXEL_TYPE::LAVA) {
+                    m_selfPlayer->TakeDamage();
+                    break;
+                }
+            }
+            else {
+                // for dynamic BGM we only check the border pixels
+                if (squareDist < BGM_COLLISION_RADIUS*BGM_COLLISION_RADIUS) {
+                    if (this->GetMap()->IsPixelOOB(x, y) )
+                        continue;
+                    PixelType& pt = this->GetMap()->GetPixel(x, y);
+                    // set pixel for debugging
+                    if (pt.IsFilled()) {
+                        musicHits++;
+                    }
+                    else {
+                        musicMisses++;
+                    }
+                }
             }
         }
+    }
+
+
+    // if the ratio of solid pixels to empty pixels is above a certain threshold, fade the dampened version in
+    const float ratio = musicHits / (float)(musicHits + musicMisses);
+    DebugLog::Printf("Music hits: %d, misses: %d, ratio: %f", musicHits, musicMisses, ratio);
+    constexpr float DAMP_FADE_START = 0.55f;
+    constexpr float DAMP_FADE_FINISH = 0.75f;
+    if (ratio > DAMP_FADE_START) {
+        if (ratio > DAMP_FADE_FINISH) {
+            m_ingameBgm->SetVolume(0);
+            m_ingameMuffledBgm->SetVolume(100);
+        }
+        else {
+            m_ingameBgm->SetVolume((u32)(100.0f - (ratio-DAMP_FADE_START) / (DAMP_FADE_FINISH-DAMP_FADE_START) * 100.0f));
+            m_ingameMuffledBgm->SetVolume((u32)((ratio-DAMP_FADE_START) / (DAMP_FADE_FINISH-DAMP_FADE_START) * 100.0f));
+        }
+    }
+    else {
+        m_ingameBgm->SetVolume(100);
+        m_ingameMuffledBgm->SetVolume(0);
     }
 }
 

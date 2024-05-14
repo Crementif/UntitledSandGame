@@ -18,6 +18,10 @@ public:
     void SetLowPassFilter(uint32_t cutoff);
     void Play();
     void Reset();
+    void Stop();
+    uint32_t GetOffset();
+    void SetOffset(uint32_t offset);
+
     void Pause();
     void SetLooping(bool looping);
     void Update();
