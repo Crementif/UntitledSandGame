@@ -27,10 +27,10 @@ inline void (*__GLSL_DestroyGLSLCompiler)();
 #ifndef GLSL_COMPILER_CAFE_RPL
 extern "C"
 {
-void InitGLSLCompiler();
-void DestroyGLSLCompiler();
-GX2VertexShader* CompileVertexShader(const char* shaderSource, char* infoLogOut, int infoLogMaxLength, GLSL_COMPILER_FLAG flags);
-GX2PixelShader* CompilePixelShader(const char* shaderSource, char* infoLogOut, int infoLogMaxLength, GLSL_COMPILER_FLAG flags);
+    void InitGLSLCompiler();
+    void DestroyGLSLCompiler();
+    GX2VertexShader* CompileVertexShader(const char* shaderSource, char* infoLogOut, int infoLogMaxLength, GLSL_COMPILER_FLAG flags);
+    GX2PixelShader* CompilePixelShader(const char* shaderSource, char* infoLogOut, int infoLogMaxLength, GLSL_COMPILER_FLAG flags);
 };
 #endif
 

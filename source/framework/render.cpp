@@ -224,10 +224,10 @@ void _InitShaderCompiler()
     {
         if (GLSL_Init())
             s_compilerInitialized = true;
-        else
-        {
-            OSFatal("Error: Place the glslcompiler.rpl in the /wiiu/libs/ folder on your SD card.");
-        }
+        // else
+        // {
+        //     OSFatal("Error: Place the glslcompiler.rpl in the /wiiu/libs/ folder on your SD card.");
+        // }
     }
 }
 
@@ -279,6 +279,11 @@ void Render::Init()
 void Render::Shutdown()
 {
     sft_freefont(s_fontFace.font);
+
+    if (s_compilerInitialized) {
+        GLSL_Shutdown();
+        s_compilerInitialized = false;
+    }
 
     WindowExit();
 }

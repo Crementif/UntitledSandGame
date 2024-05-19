@@ -33,7 +33,6 @@ int main()
     initializeInputs();
 
     Render::Init();
-    GLSL_Init();
 
     TextButton::s_buttonSelected = new Sprite("/tex/button_selected.tga", true);
     TextButton::s_buttonBackdrop = new Sprite("/tex/button_backdrop.tga", true);
@@ -52,28 +51,23 @@ int main()
 
     // set polygon mode
     GX2SetPolygonControl(
-            GX2_FRONT_FACE_CCW, // Front-face Mode
-            FALSE,              // Disable Culling
-            FALSE,              // ^^^^^^^^^^^^^^^
-            TRUE,               // Enable Polygon Mode
-            GX2_POLYGON_MODE_TRIANGLE, // Front Polygon Mode
-            GX2_POLYGON_MODE_TRIANGLE, // Back Polygon Mode
-            FALSE, // Disable Polygon Offset
-            FALSE, // ^^^^^^^^^^^^^^^^^^^^^^
-            FALSE  // ^^^^^^^^^^^^^^^^^^^^^^
+        GX2_FRONT_FACE_CCW, // Front-face Mode
+        FALSE,              // Disable Culling
+        FALSE,              // ^^^^^^^^^^^^^^^
+        TRUE,               // Enable Polygon Mode
+        GX2_POLYGON_MODE_TRIANGLE, // Front Polygon Mode
+        GX2_POLYGON_MODE_TRIANGLE, // Back Polygon Mode
+        FALSE, // Disable Polygon Offset
+        FALSE, // ^^^^^^^^^^^^^^^^^^^^^^
+        FALSE  // ^^^^^^^^^^^^^^^^^^^^^^
     );
 
     GameScene::ChangeTo(new GameSceneMenu());
 
     GameScene* currGameScene = nullptr;
-    double lastTotalTime = 0.0f;
-    double lastFrameWithoutPostProcessingTime = 0.0f;
-    double lastFrameTime = 0.0f;
     while (Render::IsRunning())
     {
         DebugProfile::Start("Total");
-
-        u64 startTime = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
 
         if (currGameScene != GameScene::sActiveScene)
             currGameScene = GameScene::sActiveScene;
@@ -111,7 +105,6 @@ int main()
         DebugProfile::Print();
     }
 
-    GLSL_Shutdown();
     Render::Shutdown();
 
     WHBLogCafeDeinit();

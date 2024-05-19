@@ -1,7 +1,7 @@
 #include "Object.h"
 #include "Map.h"
 
-Object::Object(class GameScene* parent, const AABB& boundingBox, bool requiresUpdating, u32 drawLayerMask): m_parent(parent), m_aabb(boundingBox), m_requiresUpdating(requiresUpdating), m_drawLayerMask(drawLayerMask)
+Object::Object(GameScene* parent, const AABB& boundingBox, bool requiresUpdating, u32 drawLayerMask): m_parent(parent), m_aabb(boundingBox), m_requiresUpdating(requiresUpdating), m_drawLayerMask(drawLayerMask)
 {
     m_parent->RegisterObject(this);
 }
@@ -11,7 +11,7 @@ Object::~Object()
     m_parent->UnregisterObject(this);
 }
 
-PhysicsObject::PhysicsObject(struct GameScene *parent, const AABB &bbox, u32 drawLayerMask) : Object(parent, bbox, true, drawLayerMask) {
+PhysicsObject::PhysicsObject(GameScene *parent, const AABB &bbox, u32 drawLayerMask) : Object(parent, bbox, true, drawLayerMask) {
 }
 
 void PhysicsObject::SetVelocity(float x, float y) {

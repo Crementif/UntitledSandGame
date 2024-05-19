@@ -265,8 +265,8 @@ void GameSceneIngame::HandlePlayerCollisions() {
     s32 posX = (s32)(pos.x + 0.5f);
     s32 posY = (s32)(pos.y + 0.5f);
 
-    s32 musicHits = 0;
-    s32 musicMisses = 0;
+    s8 musicHits = 0;
+    s8 musicMisses = 0;
     for (s32 y=posY-BGM_COLLISION_RADIUS; y<=posY+BGM_COLLISION_RADIUS; y++) {
         const s32 dfy = y - posY;
         const s32 dfySq = dfy * dfy;
@@ -283,19 +283,16 @@ void GameSceneIngame::HandlePlayerCollisions() {
                     break;
                 }
             }
-            else {
+            else if (squareDist < BGM_COLLISION_RADIUS*BGM_COLLISION_RADIUS) {
                 // for dynamic BGM we only check the border pixels
-                if (squareDist < BGM_COLLISION_RADIUS*BGM_COLLISION_RADIUS) {
-                    if (this->GetMap()->IsPixelOOB(x, y) )
-                        continue;
-                    PixelType& pt = this->GetMap()->GetPixel(x, y);
-                    // set pixel for debugging
-                    if (pt.IsFilled()) {
-                        musicHits++;
-                    }
-                    else {
-                        musicMisses++;
-                    }
+                if (this->GetMap()->IsPixelOOB(x, y) )
+                    continue;
+                PixelType& pt = this->GetMap()->GetPixel(x, y);
+                if (pt.IsFilled()) {
+                    musicHits++;
+                }
+                else {
+                    musicMisses++;
                 }
             }
         }

@@ -26,6 +26,8 @@ public:
 
     static void InitDefaultFetchShader();
 
+    void SerializeToFile(std::string path);
+
     //static GX2ShaderSet* Load(const char* name);
     //static void SwitchToShader();
 
@@ -81,6 +83,11 @@ public:
         if (!m_shaderSet->IsCompiledSuccessfully()) {
             CriticalErrorHandler("Failed to compile shader %s", m_name.data());
         }
+#ifdef DEBUG
+        // dump shader to file
+        m_shaderSet->SerializeToFile(std::string(m_name));
+#endif
+
         m_shaderSet->Activate();
     }
 

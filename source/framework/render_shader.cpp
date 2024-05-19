@@ -7,8 +7,9 @@
 #include <gx2/utils.h>
 #include <gx2/surface.h>
 
-std::string _LoadShaderSource(const std::string_view shaderName, std::string_view extension)
-{
+#include "../common/shader_serializer.h"
+
+std::vector<u8> _LoadShaderFile(const std::string_view shaderName, std::string_view extension) {
     std::string name = std::string(shaderName).append(extension);
     std::ifstream fs(("fs:/vol/content/shaders/" + name).c_str(), std::ios::in | std::ios::binary);
     if(!fs.is_open()) {
@@ -22,7 +23,12 @@ std::string _LoadShaderSource(const std::string_view shaderName, std::string_vie
 #endif
     }
     std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
-    return std::string{data.begin(), data.end()};
+    return data;
+}
+
+std::string _LoadShaderSource(const std::string_view shaderName, std::string_view extension) {
+    auto sourceFile = _LoadShaderFile(shaderName, extension);
+    return std::string(sourceFile.begin(), sourceFile.end());
 }
 
 GX2ShaderSet::GX2ShaderSet(const std::string_view name)
@@ -30,23 +36,34 @@ GX2ShaderSet::GX2ShaderSet(const std::string_view name)
     if (!s_defaultFetchShaderInitialized)
         InitDefaultFetchShader();
 
-    std::string vsSource = _LoadShaderSource(name, ".vs");
-    std::string psSource = _LoadShaderSource(name, ".ps");
+    if (GLSL_CompilePixelShader != nullptr) {
+        WHBLogPrintf("Compiling and loading shaders for %s", name.data());
+        std::string vsSource = _LoadShaderSource(name, ".vs");
+        std::string psSource = _LoadShaderSource(name, ".ps");
 
-    char outputBuff[1024];
-    GX2VertexShader* vs = GLSL_CompileVertexShader(vsSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
-    if (!vs) {
-        WHBLogPrintf("Failed to compile vertex shader: %s", outputBuff);
-        return;
+        char outputBuff[1024];
+        GX2VertexShader* vs = GLSL_CompileVertexShader(vsSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
+        if (!vs) {
+            WHBLogPrintf("Failed to compile vertex shader: %s", outputBuff);
+            return;
+        }
+        GX2PixelShader* ps = GLSL_CompilePixelShader(psSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
+        if (!ps) {
+            WHBLogPrintf("Failed to compile pixel shader: %s", outputBuff);
+            return;
+        }
+        this->vertexShader = vs;
+        this->fragmentShader = ps;
     }
-    GX2PixelShader* ps = GLSL_CompilePixelShader(psSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
-    if (!ps) {
-        WHBLogPrintf("Failed to compile pixel shader: %s", outputBuff);
-        return;
+    else {
+        WHBLogPrintf("Loading precompiled shaders for %s", name.data());
+        auto vertexBytes = _LoadShaderFile(name, ".precompiled.vs");
+        auto pixelBytes = _LoadShaderFile(name, ".precompiled.ps");
+
+        this->vertexShader = DeserializeVertexShader(vertexBytes);
+        this->fragmentShader = DeserializePixelShader(pixelBytes);
     }
 
-    this->vertexShader = vs;
-    this->fragmentShader = ps;
     this->fetchShader = &s_defaultFetchShader;
     this->Prepare();
     this->compiledSuccessfully = true;
@@ -96,4 +113,25 @@ void GX2ShaderSet::InitDefaultFetchShader()
     void* fetchShaderProgramCode = MEMAllocFromDefaultHeapEx(fetchShaderProgramSize, GX2_SHADER_PROGRAM_ALIGNMENT);
     GX2InitFetchShaderEx(&s_defaultFetchShader, (u8*)fetchShaderProgramCode, 2, streams, GX2_FETCH_SHADER_TESSELLATION_NONE, GX2_TESSELLATION_MODE_DISCRETE);
     s_defaultFetchShaderInitialized = true;
+}
+
+
+void GX2ShaderSet::SerializeToFile(std::string path) {
+    std::ofstream vertexFile(path+".precompiled.vs", std::ios::binary);
+    if (!vertexFile.is_open()) {
+        CriticalErrorHandler("Failed to open file %s\n", path.data());
+    }
+    std::vector<uint8_t> vertexBytes = SerializeVertexShader(this->vertexShader);
+    vertexFile.write(reinterpret_cast<const char*>(vertexBytes.data()), vertexBytes.size());
+    vertexFile.close();
+
+
+    std::ofstream pixelFile(path+".precompiled.ps", std::ios::binary);
+    if (!pixelFile.is_open()) {
+        CriticalErrorHandler("Failed to open file %s\n", path.data());
+    }
+
+    std::vector<uint8_t> pixelBytes = SerializePixelShader(this->fragmentShader);
+    pixelFile.write(reinterpret_cast<const char*>(pixelBytes.data()), pixelBytes.size());
+    pixelFile.close();
 }
