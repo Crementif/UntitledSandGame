@@ -29,13 +29,13 @@ GameSceneIngame::GameSceneIngame(std::unique_ptr<GameClient> client, std::unique
     SpawnCollectibles();
     m_prevCamPos = Render::GetCameraPosition();
     m_ingameBgm = new Audio("/bgm/ingame.ogg");
-    m_ingameBgm->SetLooping(true);
     m_ingameBgm->Play();
+    m_ingameBgm->SetLooping(true);
     m_ingameBgm->SetVolume(100);
 
     m_ingameMuffledBgm = new Audio("/bgm/ingame_muffled.ogg");
-    m_ingameMuffledBgm->SetLooping(true);
     m_ingameMuffledBgm->Play();
+    m_ingameMuffledBgm->SetLooping(true);
     m_ingameMuffledBgm->SetVolume(100);
     m_ingameBgm->SetOffset(m_ingameMuffledBgm->GetOffset());
 }
