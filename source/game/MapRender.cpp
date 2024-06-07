@@ -139,7 +139,7 @@ public:
         m_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RGBA8888_UNORM, true, true);
 
         s_environmentMap = new Framebuffer();
-        s_environmentMap->SetColorBuffer(0, pixelMapWidth/4, pixelMapHeight/4, E_TEXFORMAT::RGBA8888_UNORM, true, true);
+        s_environmentMap->SetColorBuffer(0, pixelMapWidth/4, pixelMapHeight/4, E_TEXFORMAT::RG88_UNORM, true, true);
 
         InitPixelColorLookupMap();
     }
