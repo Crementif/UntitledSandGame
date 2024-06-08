@@ -10,17 +10,18 @@
 #include "../common/shader_serializer.h"
 
 std::vector<u8> _LoadShaderFile(const std::string_view shaderName, std::string_view extension) {
+#ifdef DEBUG
+    std::string name = std::string(shaderName).append(extension);
+    std::ifstream fs(("./shaders/" + name).c_str(), std::ios::in | std::ios::binary);
+    if (!fs.is_open()) {
+        fs = std::ifstream(("fs:/vol/content/shaders/" + name).c_str(), std::ios::in | std::ios::binary);
+    }
+#else
     std::string name = std::string(shaderName).append(extension);
     std::ifstream fs(("fs:/vol/content/shaders/" + name).c_str(), std::ios::in | std::ios::binary);
-    if(!fs.is_open()) {
-#ifdef DEBUG
-        fs = std::ifstream(("./shaders/" + name).c_str(), std::ios::in | std::ios::binary);
-        if (!fs.is_open()) {
-            CriticalErrorHandler("Failed to open file shaders/%s\n", name.c_str());
-        }
-#else
-        CriticalErrorHandler("Failed to open file shaders/%s\n", name.c_str());
 #endif
+    if(!fs.is_open()) {
+        CriticalErrorHandler("Failed to open file shaders/%s\n", name.c_str());
     }
     std::vector<u8> data((std::istreambuf_iterator<char>(fs)), std::istreambuf_iterator<char>());
     return data;

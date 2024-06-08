@@ -57,7 +57,7 @@ CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -W
 CFLAGS		+=	$(INCLUDE) -DDEBUG -D__WIIU__ -D__WUT__
 endif
 
-CXXFLAGS	:=	$(CFLAGS) -std=gnu++20
+CXXFLAGS	:=	$(CFLAGS) -std=gnu++23
 
 ASFLAGS		:=	-g $(ARCH)
 LDFLAGS		=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map)

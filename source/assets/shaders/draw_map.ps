@@ -13,19 +13,18 @@ layout(binding = 0) uniform uf_data {
 
 layout(location = 0) out vec4 out_pixel0;
 
-
 float rand(vec2 n) {
-    return fract(sin(dot(n.xy ,vec2(12.9898,78.233))) * 43758.5453);
+    return fract(sin(dot(n.xy, vec2(12.9898, 78.233))) * 43758.5453);
 }
 
-float noise( in vec2 n )
-{
-    const vec2 d = vec2(0.0, 1.0);
-    vec2 b = floor(n), f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
+float noise(in vec2 n) {
+    vec2 d = vec2(0.0, 1.0);
+    vec2 b = floor(n);
+    vec2 f = smoothstep(vec2(0.0), vec2(1.0), fract(n));
     return mix(mix(rand(b), rand(b + d.yx), f.x), mix(rand(b + d.xy), rand(b + d.yy), f.x), f.y);
 }
 
-float fbm(vec2 n) {
+float fbm(in vec2 n) {
     float total = 0.0;
     float amplitude = 2.0f;
     for (int i = 0; i < 6; i++) {
@@ -44,12 +43,12 @@ vec3 CalculateLavaPixelColor(vec2 uv) {
     vec3 col5 = vec3(0.1, 0.4, 0.8);
     vec3 col6 = vec3(1.155);
 
-    vec2 speed = vec2(0.1f, 20.0f);
+    vec2 speed = vec2(0.1, 20.0);
 
-    vec2 nfbm = vec2( uv.x, uv.y); //  - rand(vec2(1.0f, 5.0f)
+    vec2 nfbm = vec2(uv.x, uv.y);
     float q = fbm(nfbm);
-    vec2 arg1 = vec2(uv + q +  uf_time * speed.x -uv.x -uv.y);
-    vec2 arg2 = vec2 (uv + q - rand(vec2(100., 100.)) * speed.y);
+    vec2 arg1 = vec2(uv + q + uf_time * speed.x - uv.x - uv.y);
+    vec2 arg2 = vec2(uv + q - rand(vec2(100.0, 100.0)) * speed.y);
     vec2 r = vec2(fbm(arg1), fbm(arg2));
 
     vec2 agr3 = vec2(uv + r);
@@ -80,9 +79,7 @@ void main()
 	else if (pixelType == 2)
 	{
 	   // soil detail
-	   //pixelColor.rgb = pixelColor.rgb*0.6 + texture(tex_dirtDetail, ws_uv * 1.0f).rgb*0.8;
 	   pixelColor.rgb = pixelColor.rgb*0.6 + (texture(tex_dirtDetail, ws_uv * 1.0f).rgb*0.8-vec3(0.1));
-	   //pixelColor.rgb = pixelColor.rgb*0.8 + (texture(tex_dirtDetail, ws_uv * 1.0f).rgb-vec3(0.11))*0.8;
 	}
 
 	pixelColor.rgb *= envSample.g;

@@ -300,7 +300,7 @@ void Render::BeginFrame()
     WindowMakeContextCurrent();
 }
 
-constexpr static __attribute__ ((aligned (32))) u16 s_idx_data[] =
+constexpr static __attribute__ ((aligned (256))) u16 s_idx_data[] =
 {
     0, 1, 2, 2, 1, 3
 };

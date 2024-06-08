@@ -20,9 +20,9 @@ static inline Framebuffer* m_pixelMap;
 static inline Framebuffer* s_environmentMap;
 
 // sprites
-static inline Sprite* m_backgroundSprite;
-static inline Sprite* m_dirtDetailSprite;
-static inline Sprite* m_pixelColorLookupMap;
+static Sprite* s_backgroundSprite;
+static Sprite* s_dirtDetailSprite;
+static Sprite* s_pixelColorLookupMap;
 
 
 bool s_mapRenderingIsInitialized{false};
@@ -57,8 +57,8 @@ alignas(256) u32 s_mapDrawUFPixel[4] =
 
 inline u32 EndianSwap_F32(f32 v)
 {
-    return __builtin_bswap32(*(u32*)&v);
-}
+    return std::byteswap(*(u32*)&v);
+};
 
 extern GX2Sampler sRenderBaseSampler1_nearest;
 extern GX2Sampler sRenderBaseSampler1_linear;
@@ -125,8 +125,8 @@ class MapRenderManager
 public:
     static void Init()
     {
-        m_backgroundSprite = new Sprite("/tex/background_tile_a.tga", false);
-        m_dirtDetailSprite = new Sprite("/tex/dirt_detail.tga", false);
+        s_backgroundSprite = new Sprite("/tex/background_tile_a.tga", false);
+        s_dirtDetailSprite = new Sprite("/tex/dirt_detail.tga", false);
 
         // calculate how many pixels will be visible
         s32 visibleWorldPixelsX = (WindowGetWidth() + (MAP_PIXEL_ZOOM-1)) / MAP_PIXEL_ZOOM;
@@ -154,7 +154,7 @@ public:
         {
             for(s32 x=0; x<12; x++)
             {
-                Render::RenderSprite(m_backgroundSprite, (bgTileOffsetX + x) * 300, (bgTileOffsetY + y) * 300, m_backgroundSprite->GetWidth()*MAP_PIXEL_ZOOM, m_backgroundSprite->GetHeight()*MAP_PIXEL_ZOOM);
+                Render::RenderSprite(s_backgroundSprite, (bgTileOffsetX + x) * 300, (bgTileOffsetY + y) * 300, s_backgroundSprite->GetWidth()*MAP_PIXEL_ZOOM, s_backgroundSprite->GetHeight()*MAP_PIXEL_ZOOM);
             }
         }
     }
@@ -166,7 +166,7 @@ public:
         Vector2f cameraPosition = Render::GetUnfilteredCameraPosition();
         Render::SetCameraPosition(cameraPosition / (f32)MAP_PIXEL_ZOOM);
 
-        m_pixelMap->Apply();
+        s_pixelMap->Apply();
         DebugWaitAndMeasureGPUDone("[GPU] Map::UpdatePixelMap::ApplyPixelMap");
 
         MapCell* cellArray = map->GetCellPtrArray();
@@ -209,14 +209,14 @@ public:
         // draw fullscreen quad
         s_shaderDrawMap.Activate();
 
-        GX2Texture* pixelMapTexture = m_pixelMap->GetColorBufferTexture(0);
+        GX2Texture* pixelMapTexture = s_pixelMap->GetColorBufferTexture(0);
         GX2SetPixelTexture(pixelMapTexture, 0);
         GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 0);
         GX2SetPixelTexture(s_environmentMap->GetColorBufferTexture(0), 1);
         GX2SetPixelSampler(&sRenderBaseSampler1_linear, 1);
-        GX2SetPixelTexture(m_pixelColorLookupMap->GetTexture(), 2);
+        GX2SetPixelTexture(s_pixelColorLookupMap->GetTexture(), 2);
         GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 2);
-        GX2SetPixelTexture(m_dirtDetailSprite->GetTexture(), 3);
+        GX2SetPixelTexture(s_dirtDetailSprite->GetTexture(), 3);
         GX2SetPixelSampler(&sRenderBaseSampler1_linear_repeat, 3);
 
         // some math magic to allow for 1-pixel-precise scrolling regardless of zoom factor
@@ -253,19 +253,19 @@ public:
 private:
     static void InitPixelColorLookupMap()
     {
-        m_pixelColorLookupMap = new Sprite(32, 32, false, E_TEXFORMAT::RGBA8888_UNORM);
-        m_pixelColorLookupMap->Clear(0x00000000);
+        s_pixelColorLookupMap = new Sprite(32, 32, false, E_TEXFORMAT::RGBA8888_UNORM);
+        s_pixelColorLookupMap->Clear(0x00000000);
 
         s32 selectedMaterialIndex = 0;
         auto SelectMat = [&](MAP_PIXEL_TYPE materialIndex) { selectedMaterialIndex = static_cast<u32>(materialIndex); };
 
         auto SetMatColor = [&](s32 seedIndex, u32 color)
         {
-            m_pixelColorLookupMap->SetPixelRGBA8888(seedIndex , selectedMaterialIndex, color);
+            s_pixelColorLookupMap->SetPixelRGBA8888(seedIndex , selectedMaterialIndex, color);
         };
         auto GenerateDimmerMatColor = [&](s32 seedIndex, s32 seedDimOffset, float seedDimFactor)
         {
-            u32 color = m_pixelColorLookupMap->GetPixelRGBA8888(seedIndex, selectedMaterialIndex);
+            u32 color = s_pixelColorLookupMap->GetPixelRGBA8888(seedIndex, selectedMaterialIndex);
             u8 r = (color >> 24) & 0xFF;
             u8 g = (color >> 16) & 0xFF;
             u8 b = (color >> 8) & 0xFF;
@@ -275,7 +275,7 @@ private:
             g = std::max(0, static_cast<int>(g * (1.0f - seedDimFactor)));
             b = std::max(0, static_cast<int>(b * (1.0f - seedDimFactor)));
 
-            m_pixelColorLookupMap->SetPixelRGBA8888(seedDimOffset + seedIndex, selectedMaterialIndex, (u32)((r << 24) | (g << 16) | (b << 8) | a));
+            s_pixelColorLookupMap->SetPixelRGBA8888(seedDimOffset + seedIndex, selectedMaterialIndex, (u32)((r << 24) | (g << 16) | (b << 8) | a));
         };
         constexpr float dimFactor = 0.15f;
 
@@ -344,7 +344,7 @@ private:
         SetMatColor(1, 0x50505080);
         SetMatColor(2, 0x54545480);
 
-        m_pixelColorLookupMap->FlushCache();
+        s_pixelColorLookupMap->FlushCache();
     }
 };
 

@@ -2,30 +2,24 @@
 #include "../common/common.h"
 #include "../common/schrift.h"
 
-enum class E_TEXFORMAT
-{
+enum class E_TEXFORMAT {
     RGBA8888_UNORM,
     RG88_UNORM,
     RGB565_UNORM
 };
 
-struct Vertex
-{
+struct Vertex {
     f32 pos[2];
     f32 tex_coord[2];
 };
 
-class GX2ShaderSet
-{
+class GX2ShaderSet {
 public:
     explicit GX2ShaderSet(std::string_view name);
 
     void Prepare() const;
     void Activate() const;
     bool IsCompiledSuccessfully() const { return compiledSuccessfully; }
-
-    static void InitDefaultFetchShader();
-
     void SerializeToFile(std::string path);
 
     //static GX2ShaderSet* Load(const char* name);
@@ -37,27 +31,27 @@ private:
     GX2VertexShader* vertexShader;
     GX2PixelShader* fragmentShader;
 
+    // static fetch shader data
+public:
+    static void InitDefaultFetchShader();
+
+private:
     static bool s_defaultFetchShaderInitialized;
     static GX2FetchShader s_defaultFetchShader;
 };
 
 // helper class to simplify shader loading and management
-class ShaderSwitcher
-{
+class ShaderSwitcher {
 public:
-    explicit ShaderSwitcher(const std::string_view shaderName)
-    {
+    explicit ShaderSwitcher(const std::string_view shaderName) {
         m_name = shaderName;
     }
 
-    void CheckForReload()
-    {
-        if (m_lastRefresh < OSGetTime())
-        {
+    void CheckForReload() {
+        if (m_lastRefresh < OSGetTime()) {
             m_lastRefresh = OSGetTime() + (OSTime)OSMillisecondsToTicks(10 * 1000);
             auto reloadedShader = std::make_unique<GX2ShaderSet>(m_name);
-            if (reloadedShader->IsCompiledSuccessfully())
-            {
+            if (reloadedShader->IsCompiledSuccessfully()) {
                 m_shaderSet = std::move(reloadedShader);
             }
             else {
@@ -66,14 +60,12 @@ public:
         }
     }
 
-    void Activate()
-    {
-        if (m_shaderSet)
-        {
- #ifdef DEBUG
+    void Activate() {
+        if (m_shaderSet) {
+#ifdef DEBUG
              // check for reload in debug mode
              CheckForReload();
- #endif
+#endif
 
             // activate and exit
             m_shaderSet->Activate();
@@ -97,10 +89,10 @@ private:
     OSTime m_lastRefresh = 0;
 };
 
-class Framebuffer
-{
+class Framebuffer {
     friend class Render;
     static constexpr u32 MAX_COLOR_BUFFERS = 8;
+
 public:
     void SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear = false, bool allocateInMEM1 = false);
     void Apply();
@@ -108,9 +100,8 @@ public:
     static void ApplyBackbuffer();
     static Framebuffer* GetActiveFramebuffer();
 
-    GX2Texture* GetColorBufferTexture(u32 index)
-    {
-        if(index >= MAX_COLOR_BUFFERS)
+    GX2Texture* GetColorBufferTexture(u32 index) {
+        if (index >= MAX_COLOR_BUFFERS)
             return nullptr;
         return m_colorBufferTexture[index];
     }
@@ -126,11 +117,12 @@ private:
     static inline f32 m_activePixelHeight{};
 };
 
-class Sprite
-{
+class Sprite {
     friend class Render;
+
 public:
     Sprite(const char* path, bool hasTransparency = false);
+
     Sprite(u32 width, u32 height, bool hasTransparency, E_TEXFORMAT format = E_TEXFORMAT::RGBA8888_UNORM); // create sprite with uninitialized pixels
     struct GX2Texture* GetTexture() { return m_tex; }
 
@@ -147,10 +139,10 @@ public:
 
     s32 GetWidth() const { return m_width; }
     s32 GetHeight() const { return m_height; }
-private:
 
-    struct GX2Texture* m_tex;
-    struct GX2Sampler* m_sampler;
+private:
+    GX2Texture* m_tex;
+    GX2Sampler* m_sampler;
     s32 m_width;
     s32 m_height;
     bool m_hasTransparency;
@@ -158,9 +150,9 @@ private:
     bool m_isAlias{false};
 };
 
-class Render
-{
+class Render {
     friend class Framebuffer;
+
 public:
     static void Init();
     static void Shutdown();
@@ -174,9 +166,9 @@ public:
     static void RenderSprite(Sprite* sprite, s32 x, s32 y);
     static void RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight);
     static void RenderSprite(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight, f32 angle);
-    static void RenderSpritePortion(Sprite *sprite, s32 x, s32 y, u32 cx, u32 cy, u32 cw, u32 ch);
+    static void RenderSpritePortion(Sprite* sprite, s32 x, s32 y, u32 cx, u32 cy, u32 cw, u32 ch);
     static void RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y);
-    static void RenderSpriteScreenRelative(Sprite *sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight);
+    static void RenderSpriteScreenRelative(Sprite* sprite, s32 x, s32 y, s32 pxWidth, s32 pxHeight);
     static void RenderSpritePortionScreenRelative(Sprite*, s32, s32, u32, u32, u32, u32);
 
     static void SetCameraPosition(Vector2f pos);
@@ -186,6 +178,7 @@ public:
 
     static void RenderText(u32 x, u32 y, u8 blackLevel, const char* text, ...);
     static Sprite* RenderTextSprite(u8 size, u32 color, const wchar_t* string);
+
 protected:
     static void UpdateCameraCachedValues();
 
@@ -193,11 +186,9 @@ protected:
     static Sprite* sSmallFontTextureWhite;
 };
 
-class RenderState
-{
+class RenderState {
 public:
-    enum class E_TRANSPARENCY_MODE
-    {
+    enum class E_TRANSPARENCY_MODE {
         OPAQUE,
         ADDITIVE,
     };
@@ -213,5 +204,4 @@ private:
     static GX2ColorControlReg sRenderColorControl_transparency;
     static GX2BlendControlReg sRenderBlendReg_transparency;
     static GX2ShaderMode sShaderMode;
-
 };
