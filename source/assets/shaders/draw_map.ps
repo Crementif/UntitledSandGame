@@ -61,7 +61,7 @@ void main()
 	// env:
 	// r -> lavaGlowIntensity
 	// b -> pixelObstructionFactor (1.0 means not obstructed)
-    vec4 envSample = texture(tex_environment, ss_uv).rgba;
+    vec2 envSample = texture(tex_environment, ss_uv).rg;
 
 	vec2 pixelMapSample = texture(tex_base, ss_uv).rg;
 	int pixelType = int(pixelMapSample.r * 255.0f + 0.5);
@@ -82,8 +82,10 @@ void main()
 	   pixelColor.rgb = pixelColor.rgb*0.6 + (texture(tex_dirtDetail, ws_uv * 1.0f).rgb*0.8-vec3(0.1));
 	}
 
-	pixelColor.rgb *= envSample.g;
-	// lava glow
+    // apply ambient occlusion
+	pixelColor.rgb *= min(max((envSample.g*0.5f)+(sqrt(envSample.g)*0.5f), 0.0f), 1.0f);
+
+    // apply lava glow
 	if(!isSolid && envSample.r > 0.001)
 	{
 		pixelColor.rgb = vec3(236.0/255.0, 50.0/255.0, 0.0);

@@ -1,0 +1,27 @@
+#version 450
+
+// inputs
+layout(location = 0) in vec2 attr_uv;
+layout(binding = 0) uniform sampler2D tex_base;
+
+// outputs
+layout(location = 0) out vec2 out_pixel0;
+
+void main()
+{
+	// convert the texture types into their own channels
+	// red channel is for lava glow types, used for bloom blur
+	// green channel is for solid walls, used for ambient occlusion
+	float pixelMapTypeFloat = texture(tex_base, attr_uv).r;
+	int pixelType = int(pixelMapTypeFloat * 255.0 + 0.5);
+
+	out_pixel0 = vec2(0.0, 0.0);
+
+	// excludes lava from ambient occlusion
+	if (pixelType == 4) {
+		out_pixel0.x = 1.0;
+	}
+	if (pixelType != 0) {
+		out_pixel0.y = 1.0;
+	}
+}

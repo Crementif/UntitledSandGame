@@ -14,10 +14,13 @@
 // shaders
 static ShaderSwitcher s_shaderDrawMap{"draw_map"};
 static ShaderSwitcher s_shaderEnvironmentPass{"environment_pass"};
+static ShaderSwitcher s_shaderEnvironmentPrepass{"environment_prepass"};
 
 // framebuffers
-static inline Framebuffer* m_pixelMap;
-static inline Framebuffer* s_environmentMap;
+static Framebuffer* s_pixelMap;
+static Framebuffer* s_environmentPrepass;
+static Framebuffer* s_environmentTempMap;
+static Framebuffer* s_environmentMap;
 
 // sprites
 static Sprite* s_backgroundSprite;
@@ -32,27 +35,37 @@ constexpr s32 MAP_RENDER_VIEW_BORDER = 8; // size of off-screen pixel border. Ne
 // quad
 alignas(256) u16 s_idx_data[] =
 {
-        0, 1, 2, 2, 1, 3
+    0, 1, 2, 2, 1, 3
 };
 
 alignas(256) u32 s_mapDrawUFVertex[4 * 4 + 4] =
 {
-        // [0]: 2 channels xy pos, 2 channels uv coordinates
-        0, 0, 0, 0,
-        // [1]: 2 channels xy pos, 2 channels uv coordinates
-        0, 0, 0, 0,
-        // [2]: 2 channels xy pos, 2 channels uv coordinates
-        0, 0, 0, 0,
-        // [3]: 2 channels xy pos, 2 channels uv coordinates
-        0, 0, 0, 0,
+    // [0]: 2 channels xy pos, 2 channels uv coordinates
+    0, 0, 0, 0,
+    // [1]: 2 channels xy pos, 2 channels uv coordinates
+    0, 0, 0, 0,
+    // [2]: 2 channels xy pos, 2 channels uv coordinates
+    0, 0, 0, 0,
+    // [3]: 2 channels xy pos, 2 channels uv coordinates
+    0, 0, 0, 0,
 
-        // [4]: render bounds top left xy, render bounds size xy
-        0, 0, 0, 0,
+    // [4]: render bounds top left xy, render bounds size xy
+    0, 0, 0, 0,
 };
 
 alignas(256) u32 s_mapDrawUFPixel[4] =
 {
-        // [0]: time, 0, 0, 0
+    // [0]: time, 0, 0, 0
+};
+
+alignas(256) u32 s_envBlurUFPixelHorizontal[4] =
+{
+    // [0]: pixelSizeX, pixelSizeY, isVertical, 0
+};
+
+alignas(256) u32 s_envBlurUFPixelVertical[4] =
+{
+    // [0]: pixelSizeX, pixelSizeY, isVertical, 0
 };
 
 inline u32 EndianSwap_F32(f32 v)
@@ -135,11 +148,17 @@ public:
         s32 pixelMapWidth = visibleWorldPixelsX + MAP_RENDER_VIEW_BORDER * 2;
         s32 pixelMapHeight = visibleWorldPixelsY + MAP_RENDER_VIEW_BORDER * 2;
 
-        m_pixelMap = new Framebuffer();
-        m_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RGBA8888_UNORM, true, true);
+        s_pixelMap = new Framebuffer();
+        s_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RGBA8888_UNORM, true, true);
+
+        s_environmentPrepass = new Framebuffer();
+        s_environmentPrepass->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, true, true);
+
+        s_environmentTempMap = new Framebuffer();
+        s_environmentTempMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, true, true);
 
         s_environmentMap = new Framebuffer();
-        s_environmentMap->SetColorBuffer(0, pixelMapWidth/4, pixelMapHeight/4, E_TEXFORMAT::RG88_UNORM, true, true);
+        s_environmentMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, true, true);
 
         InitPixelColorLookupMap();
     }
@@ -189,17 +208,51 @@ public:
     // handle lava glow and light obstruction by preprocessing the pixel map
     static void DoEnvironmentPass()
     {
-        s_environmentMap->Apply();
-        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::Apply");
+        // prepass to turn map pixels into two channels:
+        // - lava pixels in the red channel
+        // - solid objects (light obstructions) in the green channel (for ambient occlusion)
+        s_environmentPrepass->Apply();
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::Prepass::Apply");
 
+        s_shaderEnvironmentPrepass.Activate();
+
+        GX2SetPixelTexture(s_pixelMap->GetColorBufferTexture(0), 0);
+        GX2SetPixelSampler(&sRenderBaseSampler1_linear, 0);
+
+        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, s_idx_data, 0, 1); // environment_prepass.ps
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::Prepass::DrawQuad");
+
+
+        // do environment blur/bloom-like pass to create a glow effect around lava pixels and blur solids (light obstructions) to create ambient occlusion
         s_shaderEnvironmentPass.Activate();
 
-        GX2SetPixelTexture(m_pixelMap->GetColorBufferTexture(0), 0);
-        GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 0);
+        // horizontal pass
+        s_environmentTempMap->Apply();
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::HorizontalPass::Apply");
 
-        // draw fullscreen quad
-        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1); // environment_pass.ps
-        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::DrawQuad");
+        GX2SetPixelTexture(s_environmentPrepass->GetColorBufferTexture(0), 0);
+        GX2SetPixelSampler(&sRenderBaseSampler1_linear, 0);
+
+        s_envBlurUFPixelHorizontal[0] = EndianSwap_F32(1.0f / s_environmentPrepass->GetColorBufferTexture(0)->surface.width);
+        s_envBlurUFPixelHorizontal[1] = EndianSwap_F32(1.0f / s_environmentPrepass->GetColorBufferTexture(0)->surface.height);
+        s_envBlurUFPixelHorizontal[2] = 0;
+        GX2SetPixelUniformBlock(0, sizeof(s_envBlurUFPixelHorizontal), s_envBlurUFPixelHorizontal);
+        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, s_idx_data, 0, 1); // environment_pass.ps
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::HorizontalPass::DrawQuad");
+
+        // vertical pass
+        s_environmentMap->Apply();
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::VerticalPass::Apply");
+
+        GX2SetPixelTexture(s_environmentTempMap->GetColorBufferTexture(0), 0);
+        GX2SetPixelSampler(&sRenderBaseSampler1_linear, 0);
+
+        s_envBlurUFPixelVertical[0] = EndianSwap_F32(1.0f / s_environmentTempMap->GetColorBufferTexture(0)->surface.width);
+        s_envBlurUFPixelVertical[1] = EndianSwap_F32(1.0f / s_environmentTempMap->GetColorBufferTexture(0)->surface.height);
+        s_envBlurUFPixelVertical[2] = 1;
+        GX2SetPixelUniformBlock(0, sizeof(s_envBlurUFPixelVertical), s_envBlurUFPixelVertical);
+        GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, s_idx_data, 0, 1); // environment_pass.ps
+        DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::VerticalPass::DrawQuad");
     }
 
     // draw map pixels to screen using m_pixelMap
