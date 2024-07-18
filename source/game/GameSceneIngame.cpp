@@ -328,9 +328,9 @@ void GameSceneIngame::Draw()
     if (!m_selfPlayer->IsSpectating())
         HandlePlayerCollisions();
 
-    DebugProfile::Start("Scene -> Simulation");
+    DebugProfile::Start("[CPU] Scene -> Simulation");
     RunDeterministicSimulationStep();
-    DebugProfile::End("Scene -> Simulation");
+    DebugProfile::End("[CPU] Scene -> Simulation");
 
     UpdateCamera();
 

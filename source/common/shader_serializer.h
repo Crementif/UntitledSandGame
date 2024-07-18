@@ -405,3 +405,183 @@ GX2PixelShader* DeserializePixelShader(const std::vector<uint8_t>& data) {
 
     return pixelShader;
 }
+
+
+void CompareVertexShader(GX2VertexShader* a, GX2VertexShader* b) {
+    const auto compareValues = [](const char* name, auto a, auto b) {
+        if (a != b) {
+            WHBLogPrintf("Vertex shader %s differs: %d != %d", name, a, b);
+        }
+    };
+    const auto compareStrings = [](const char* name, const char* a, const char* b) {
+        // if (strcmp(a, b) != 0) {
+        //     WHBLogPrintf("Vertex shader %s differs: %s != %s", name, a, b);
+        // }
+    };
+
+    // compare regs
+    compareValues("sq_pgm_resources_vs", a->regs.sq_pgm_resources_vs, b->regs.sq_pgm_resources_vs);
+    compareValues("vgt_primitiveid_en", a->regs.vgt_primitiveid_en, b->regs.vgt_primitiveid_en);
+    compareValues("spi_vs_out_config", a->regs.spi_vs_out_config, b->regs.spi_vs_out_config);
+    compareValues("num_spi_vs_out_id", a->regs.num_spi_vs_out_id, b->regs.num_spi_vs_out_id);
+    for (uint32_t i = 0; i < 4; i++) {
+        compareValues("spi_vs_out_id", a->regs.spi_vs_out_id[i], b->regs.spi_vs_out_id[i]);
+    }
+    compareValues("pa_cl_vs_out_cntl", a->regs.pa_cl_vs_out_cntl, b->regs.pa_cl_vs_out_cntl);
+    compareValues("sq_vtx_semantic_clear", a->regs.sq_vtx_semantic_clear, b->regs.sq_vtx_semantic_clear);
+    compareValues("num_sq_vtx_semantic", a->regs.num_sq_vtx_semantic, b->regs.num_sq_vtx_semantic);
+    for (uint32_t i = 0; i < 16; i++) {
+        compareValues("sq_vtx_semantic", a->regs.sq_vtx_semantic[i], b->regs.sq_vtx_semantic[i]);
+    }
+    compareValues("vgt_strmout_buffer_en", a->regs.vgt_strmout_buffer_en, b->regs.vgt_strmout_buffer_en);
+    compareValues("vgt_vertex_reuse_block_cntl", a->regs.vgt_vertex_reuse_block_cntl, b->regs.vgt_vertex_reuse_block_cntl);
+    compareValues("vgt_hos_reuse_depth", a->regs.vgt_hos_reuse_depth, b->regs.vgt_hos_reuse_depth);
+
+    // compare program
+    // if (a->size != b->size) {
+    //     WHBLogPrintf("Vertex shader size differs: %d != %d", a->size, b->size);
+    // }
+    // for (uint32_t i = 0; i < a->size; i++) {
+    //     if (((uint8_t*)a->program)[i] != ((uint8_t*)b->program)[i]) {
+    //         WHBLogPrintf("Vertex shader program differs at byte %d: %d != %d", i, ((uint8_t*)a->program)[i], ((uint8_t*)b->program)[i]);
+    //     }
+    // }
+    compareValues("mode", a->mode, b->mode);
+
+    // compare uniform blocks
+    compareValues("uniformBlockCount", a->uniformBlockCount, b->uniformBlockCount);
+    for (uint32_t i = 0; i < a->uniformBlockCount && i < b->uniformBlockCount; i++) {
+        // compareStrings("uniformBlocks.name", a->uniformBlocks[i].name, b->uniformBlocks[i].name);
+        compareValues("uniformBlocks.offset", a->uniformBlocks[i].offset, b->uniformBlocks[i].offset);
+        compareValues("uniformBlocks.size", a->uniformBlocks[i].size, b->uniformBlocks[i].size);
+    }
+
+    // compare uniform vars
+    compareValues("uniformVarCount", a->uniformVarCount, b->uniformVarCount);
+    for (uint32_t i = 0; i < a->uniformVarCount && i < b->uniformVarCount; i++) {
+        // compareStrings("uniformVars.name", a->uniformVars[i].name, b->uniformVars[i].name);
+        compareValues("uniformVars.type", a->uniformVars[i].type, b->uniformVars[i].type);
+        compareValues("uniformVars.count", a->uniformVars[i].count, b->uniformVars[i].count);
+        compareValues("uniformVars.offset", a->uniformVars[i].offset, b->uniformVars[i].offset);
+        compareValues("uniformVars.block", a->uniformVars[i].block, b->uniformVars[i].block);
+    }
+
+    // compare initial values
+    compareValues("initialValueCount", a->initialValueCount, b->initialValueCount);
+    for (uint32_t i = 0; i < a->initialValueCount && i < b->initialValueCount; i++) {
+        for (uint32_t j = 0; j < 4; j++) {
+            compareValues("initialValues.value", a->initialValues[i].value[j], b->initialValues[i].value[j]);
+        }
+        compareValues("initialValues.offset", a->initialValues[i].offset, b->initialValues[i].offset);
+    }
+
+    // compare loop vars
+    compareValues("loopVarCount", a->loopVarCount, b->loopVarCount);
+    for (uint32_t i = 0; i < a->loopVarCount && i < b->loopVarCount; i++) {
+        compareValues("loopVars.offset", a->loopVars[i].offset, b->loopVars[i].offset);
+        compareValues("loopVars.value", a->loopVars[i].value, b->loopVars[i].value);
+    }
+
+    // compare sampler vars
+    compareValues("samplerVarCount", a->samplerVarCount, b->samplerVarCount);
+    for (uint32_t i = 0; i < a->samplerVarCount && i < b->samplerVarCount; i++) {
+        // compareStrings("samplerVars.name", a->samplerVars[i].name, b->samplerVars[i].name);
+        compareValues("samplerVars.type", a->samplerVars[i].type, b->samplerVars[i].type);
+        compareValues("samplerVars.location", a->samplerVars[i].location, b->samplerVars[i].location);
+    }
+
+    // compare attribute vars
+    compareValues("attribVarCount", a->attribVarCount, b->attribVarCount);
+    for (uint32_t i = 0; i < a->attribVarCount && i < b->attribVarCount; i++) {
+        compareStrings("attribVars.name", a->attribVars[i].name, b->attribVars[i].name);
+        compareValues("attribVars.type", a->attribVars[i].type, b->attribVars[i].type);
+        compareValues("attribVars.count", a->attribVars[i].count, b->attribVars[i].count);
+        compareValues("attribVars.location", a->attribVars[i].location, b->attribVars[i].location);
+    }
+
+    // compare ring item size
+    compareValues("ringItemsize", a->ringItemsize, b->ringItemsize);
+
+    // compare stream out
+    compareValues("hasStreamOut", a->hasStreamOut, b->hasStreamOut);
+    for (uint32_t i = 0; i < 4; i++) {
+        compareValues("streamOutStride", a->streamOutStride[i], b->streamOutStride[i]);
+    }
+
+    // compare gx2rBuffer
+    compareValues("gx2rBuffer.flags", a->gx2rBuffer.flags, b->gx2rBuffer.flags);
+}
+
+void ComparePixelShader(GX2PixelShader* a, GX2PixelShader* b) {
+    const auto compareValues = [](const char* name, auto a, auto b) {
+        if (a != b) {
+            WHBLogPrintf("Pixel shader %s differs: %d != %d", name, a, b);
+        }
+    };
+    const auto compareStrings = [](const char* name, const char* a, const char* b) {
+        // if (strcmp(a, b) != 0) {
+        //     WHBLogPrintf("Pixel shader %s differs: %s != %s", name, a, b);
+        // }
+    };
+
+    // compare regs
+    compareValues("sq_pgm_resources_ps", a->regs.sq_pgm_resources_ps, b->regs.sq_pgm_resources_ps);
+    compareValues("sq_pgm_exports_ps", a->regs.sq_pgm_exports_ps, b->regs.sq_pgm_exports_ps);
+    compareValues("spi_ps_in_control_0", a->regs.spi_ps_in_control_0, b->regs.spi_ps_in_control_0);
+    compareValues("spi_ps_in_control_1", a->regs.spi_ps_in_control_1, b->regs.spi_ps_in_control_1);
+    compareValues("num_spi_ps_input_cntl", a->regs.num_spi_ps_input_cntl, b->regs.num_spi_ps_input_cntl);
+    for (uint32_t i = 0; i < 16; i++) {
+        compareValues("spi_ps_input_cntls", a->regs.spi_ps_input_cntls[i], b->regs.spi_ps_input_cntls[i]);
+    }
+    compareValues("cb_shader_mask", a->regs.cb_shader_mask, b->regs.cb_shader_mask);
+    compareValues("cb_shader_control", a->regs.cb_shader_control, b->regs.cb_shader_control);
+    compareValues("db_shader_control", a->regs.db_shader_control, b->regs.db_shader_control);
+    compareValues("spi_input_z", a->regs.spi_input_z, b->regs.spi_input_z);
+
+    // compare program
+
+    // compare uniform blocks
+    compareValues("uniformBlockCount", a->uniformBlockCount, b->uniformBlockCount);
+    for (uint32_t i = 0; i < a->uniformBlockCount && i < b->uniformBlockCount; i++) {
+        // compareStrings("uniformBlocks.name", a->uniformBlocks[i].name, b->uniformBlocks[i].name);
+        compareValues("uniformBlocks.offset", a->uniformBlocks[i].offset, b->uniformBlocks[i].offset);
+        compareValues("uniformBlocks.size", a->uniformBlocks[i].size, b->uniformBlocks[i].size);
+    }
+
+    // compare uniform vars
+    compareValues("uniformVarCount", a->uniformVarCount, b->uniformVarCount);
+    for (uint32_t i = 0; i < a->uniformVarCount && i < b->uniformVarCount; i++) {
+        compareStrings("uniformVars.name", a->uniformVars[i].name, b->uniformVars[i].name);
+        compareValues("uniformVars.type", a->uniformVars[i].type, b->uniformVars[i].type);
+        compareValues("uniformVars.count", a->uniformVars[i].count, b->uniformVars[i].count);
+        compareValues("uniformVars.offset", a->uniformVars[i].offset, b->uniformVars[i].offset);
+        compareValues("uniformVars.block", a->uniformVars[i].block, b->uniformVars[i].block);
+    }
+
+    // compare initial values
+    compareValues("initialValueCount", a->initialValueCount, b->initialValueCount);
+    for (uint32_t i = 0; i < a->initialValueCount && i < b->initialValueCount; i++) {
+        for (uint32_t j = 0; j < 4; j++) {
+            compareValues("initialValues.value", a->initialValues[i].value[j], b->initialValues[i].value[j]);
+        }
+        compareValues("initialValues.offset", a->initialValues[i].offset, b->initialValues[i].offset);
+    }
+
+    // compare loop vars
+    compareValues("loopVarCount", a->loopVarCount, b->loopVarCount);
+    for (uint32_t i = 0; i < a->loopVarCount && i < b->loopVarCount; i++) {
+        compareValues("loopVars.offset", a->loopVars[i].offset, b->loopVars[i].offset);
+        compareValues("loopVars.value", a->loopVars[i].value, b->loopVars[i].value);
+    }
+
+    // compare sampler vars
+    compareValues("samplerVarCount", a->samplerVarCount, b->samplerVarCount);
+    for (uint32_t i = 0; i < a->samplerVarCount && i < b->samplerVarCount; i++) {
+        // compareStrings("samplerVars.name", a->samplerVars[i].name, b->samplerVars[i].name);
+        compareValues("samplerVars.type", a->samplerVars[i].type, b->samplerVars[i].type);
+        compareValues("samplerVars.location", a->samplerVars[i].location, b->samplerVars[i].location);
+    }
+
+    // compare gx2rBuffer
+    compareValues("gx2rBuffer.flags", a->gx2rBuffer.flags, b->gx2rBuffer.flags);
+}

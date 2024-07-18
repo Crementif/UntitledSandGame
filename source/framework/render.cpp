@@ -316,6 +316,7 @@ void Render::DoPostProcessing() {
         GX2SetPixelTexture(WindowGetColorBufferTexture(), 0);
         GX2SetPixelSampler(&sRenderBaseSampler1_nearest, 0);
         RenderState::SetTransparencyMode(RenderState::E_TRANSPARENCY_MODE::OPAQUE);
+        // GX2SetShaderModeEx(GX2_SHADER_MODE_UNIFORM_BLOCK, 0x30/shaderRegisterDivider, 0x40/shaderRegisterDivider, 0x0, 0x0, 0xc8/shaderRegisterDivider, 0xc0/shaderRegisterDivider);
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, (void*)s_idx_data, 0, 1);
         DebugWaitAndMeasureGPUDone("[GPU] DoPostProcessing::CRTFilter");
     }
@@ -682,10 +683,8 @@ GX2Texture* _InitSpriteTexture(u32 width, u32 height, E_TEXFORMAT format)
 {
     GX2Texture* texture = (GX2Texture*)MEMAllocFromDefaultHeap(sizeof(GX2Texture));
     memset(texture, 0, sizeof(GX2Texture));
-    GX2SurfaceFormat gx2Format;
 
-
-    _GX2InitTexture(texture, width, height, 1, 1, _TexFormatToGX2Format(format), GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_LINEAR_ALIGNED);
+    _GX2InitTexture(texture, width, height, 1, 1, _TexFormatToGX2Format(format), GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_LINEAR_ALIGNED, 0);
     if(texture->surface.imageSize == 0)
     {
         CriticalErrorHandler("Failed to init texture");

@@ -25,7 +25,6 @@ Sprite* Blackhole::s_blackhole1Sprite = nullptr;
 Sprite* Blackhole::s_blackhole2Sprite = nullptr;
 Sprite* Collectable::s_collectableSprite = nullptr;
 
-#include <chrono>
 
 int main()
 {

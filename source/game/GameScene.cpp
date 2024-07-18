@@ -81,7 +81,7 @@ void GameScene::UnregisterObject(struct Object *obj) {
 }
 
 void GameScene::DoUpdates(float timestep) {
-    DebugProfile::Start("Scene -> Update Objects");
+    DebugProfile::Start("[CPU] Scene -> Update Objects");
     for (auto& it : m_objectsToUpdate) {
         it->Update(timestep);
     }
@@ -90,15 +90,13 @@ void GameScene::DoUpdates(float timestep) {
         UnregisterObject(m_deletionQueue.back());
         m_deletionQueue.pop_back();
     }
-    DebugProfile::End("Scene -> Update Objects");
+    DebugProfile::End("[CPU] Scene -> Update Objects");
 }
 
 void GameScene::DoDraws() {
-    DebugProfile::Start("Scene -> Draw Objects");
     for (u32 i=0; i<Object::NUM_DRAW_LAYERS; i++) {
         for (auto& obj : m_drawLayers[i]) {
             obj->Draw(i);
         }
     }
-    DebugProfile::End("Scene -> Draw Objects");
 }

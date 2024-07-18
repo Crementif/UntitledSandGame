@@ -157,15 +157,15 @@ void Map::SimulateTick()
 {
     HandleSynchronizedEvents();
 
-    DebugProfile::Start("Scene -> Simulation -> Find Volatile Static Pixels");
+    DebugProfile::Start("[CPU] Scene -> Simulation -> Find Volatile Static Pixels");
     FindRandomHotspots();
     UpdateVolatilityHotspots();
-    DebugProfile::End("Scene -> Simulation -> Find Volatile Static Pixels");
-    DebugProfile::Start("Scene -> Simulation -> Simulate Active Pixels");
+    DebugProfile::End("[CPU] Scene -> Simulation -> Find Volatile Static Pixels");
+    DebugProfile::Start("[CPU] Scene -> Simulation -> Simulate Active Pixels");
     SimulateMaterial(this, m_activePixels->sandPixels);
     SimulateMaterial(this, m_activePixels->lavaPixels);
     SimulateMaterial(this, m_activePixels->smokePixels);
-    DebugProfile::End("Scene -> Simulation -> Simulate Active Pixels");
+    DebugProfile::End("[CPU] Scene -> Simulation -> Simulate Active Pixels");
     DebugLog::Printf("Currently Active Pixels: Sand: %u Lava: %u Smoke: %u", m_activePixels->sandPixels.size(), m_activePixels->lavaPixels.size(), m_activePixels->smokePixels.size());
     DebugLog::Printf("Currently Active Hotspot Locations: %u", m_volatilityHotspots.size());
 
