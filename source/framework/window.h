@@ -34,6 +34,8 @@ void WindowSetSwapInterval(u32 swap_interval);
 // Function to determine whether the program should continue running or exit
 bool WindowIsRunning();
 
+void WindowWaitForPreviousFrame(u32 framesToQueue);
+
 // Swap the front and back buffers
 // This function will perform a GPU flush and block until swapping is done
 // For Wii U, TV output is automatically duplicated to the Gamepad

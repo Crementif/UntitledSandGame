@@ -130,7 +130,9 @@ public:
 
     void Clear(u32 color = 0x00000000);
     u32 GetPixelRGBA8888(u32 x, u32 y);
+    u32 GetPixelRGB565(u32 x, u32 y);
     void SetPixelRGBA8888(u32 x, u32 y, u32 color);
+    void SetPixelRGB565(u32 x, u32 y, u32 color);
     void SetPixelRG88(u32 x, u32 y, u32 color);
     void FlushCache();
 

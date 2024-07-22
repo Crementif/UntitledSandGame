@@ -9,6 +9,7 @@ public:
     explicit GameSceneIngame(std::unique_ptr<GameClient> client, std::unique_ptr<GameServer> server);
     ~GameSceneIngame() override;
 
+    void Update() override;
     void Draw() override;
     void HandleInput() override;
 
@@ -19,7 +20,6 @@ private:
     void SpawnCollectibles();
     void SpawnPlayers();
 
-    void DrawBackground();
     void DrawHUD();
 
     void UpdateCamera();

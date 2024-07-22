@@ -3,7 +3,7 @@
 void initializeInputs();
 void updateInputs();
 
-void vpadGetTouchInfo(bool& isTouchValid, s32& screenX, s32& screenY);
+bool vpadGetTouchInfo(s32* screenX, s32* screenY);
 void vpadUpdateSWKBD();
 Vector2f getLeftStick();
 

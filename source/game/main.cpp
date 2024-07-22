@@ -10,6 +10,7 @@
 #include "../framework/navigation.h"
 #include "../framework/audio/audio.h"
 #include "../framework/debug.h"
+#include "../framework/window.h"
 
 GameScene* GameScene::s_activeScene = nullptr;
 
@@ -76,13 +77,25 @@ int main()
 
         assert(currGameScene != nullptr);
 
+        // update inputs
         updateInputs();
+        currGameScene->HandleInput();
+
+        // update audio
         AudioManager::GetInstance().ProcessAudio();
 
+        // update scene and objects
+        currGameScene->Update();
+
+        // wait for buffers from the previous frame to be finished before drawing
+        DebugProfile::Start("WaitForPreviousFrame");
+        WindowWaitForPreviousFrame(1);
+        DebugProfile::End("WaitForPreviousFrame");
+
+        // draw the frame
         Render::BeginFrame();
         Render::SetStateForSpriteRendering();
 
-        currGameScene->HandleInput();
         DebugProfile::Start("Scene");
         currGameScene->Draw();
         DebugProfile::End("Scene");

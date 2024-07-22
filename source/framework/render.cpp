@@ -306,7 +306,7 @@ constexpr static __attribute__ ((aligned (256))) u16 s_idx_data[] =
 };
 
 void Render::DoPostProcessing() {
-    if (GameScene::IsCrtFilterEnabled()) {
+    if (GameScene::s_settings.showCrtFilter) {
         DebugWaitAndMeasureGPUDone("[GPU] DoPostProcessing::Start"); // this is here to "reset" any time spent in the previous code
         Framebuffer::ApplyBackbuffer();
         GX2SetColorBuffer(WindowGetPostBuffer(), GX2_RENDER_TARGET_0);
@@ -324,7 +324,7 @@ void Render::DoPostProcessing() {
 
 void Render::SwapBuffers()
 {
-    WindowSwapBuffers(GameScene::IsCrtFilterEnabled());
+    WindowSwapBuffers(GameScene::s_settings.showCrtFilter);
 }
 
 Vector2f sRenderCamUnfiltered{0.0, 0.0};
@@ -644,6 +644,28 @@ u32 Sprite::GetPixelRGBA8888(u32 x, u32 y)
     return (p[0]<<24) | (p[1]<<16) | (p[2]<<8) | (p[3]<<0);
 }
 
+u32 Sprite::GetPixelRGB565(u32 x, u32 y)
+{
+    // Read from texture
+    u16* p = (u16*)((u8*)m_tex->surface.image + (x + y * m_tex->surface.pitch) * 2);
+    u16 rgb565 = _swapU16(*p);
+
+    // Extract r, g, b values from RGB565
+    u8 b5 = (rgb565 >> 11) & 0x1F;
+    u8 g6 = (rgb565 >> 5) & 0x3F;
+    u8 r5 = rgb565 & 0x1F;
+
+    // Convert from 565 to 888
+    u8 r = (r5 << 3) | (r5 >> 2);
+    u8 g = (g6 << 2) | (g6 >> 4);
+    u8 b = (b5 << 3) | (b5 >> 2);
+
+    // Combine r, g, b into RGBA format
+    u32 color = (r << 24) | (g << 16) | (b << 8) | 0xFF; // Assuming full alpha (0xFF)
+
+    return color;
+}
+
 void Sprite::SetPixelRGBA8888(u32 x, u32 y, u32 color)
 {
     u8* p = (u8*)m_tex->surface.image + (x + y * m_tex->surface.pitch) * 4;
@@ -660,6 +682,23 @@ void Sprite::SetPixelRG88(u32 x, u32 y, u32 color)
     p[1] = (u8)(color>>16);
 }
 
+void Sprite::SetPixelRGB565(u32 x, u32 y, u32 color)
+{
+    // Extract r, g, b values from RGBA color
+    u8 r = (color >> 24) & 0xFF;
+    u8 g = (color >> 16) & 0xFF;
+    u8 b = (color >> 8) & 0xFF;
+
+    // Convert from 888 to 565
+    u8 r5 = (r >> 3) & 0x1F;
+    u8 g6 = (g >> 2) & 0x3F;
+    u8 b5 = (b >> 3) & 0x1F;
+
+    // Write to texture
+    u16* p = (u16*)((u8*)m_tex->surface.image + (x + y * m_tex->surface.pitch) * 2);
+    *p = _swapU16((b5 << 11) | (g6 << 5) | r5);
+}
+
 void Sprite::FlushCache()
 {
     GX2Invalidate(GX2_INVALIDATE_MODE_CPU_TEXTURE, m_tex->surface.image, m_tex->surface.imageSize);
@@ -673,6 +712,7 @@ GX2SurfaceFormat _TexFormatToGX2Format(E_TEXFORMAT format)
     {
         case E_TEXFORMAT::RGBA8888_UNORM: return GX2_SURFACE_FORMAT_UNORM_R8_G8_B8_A8;
         case E_TEXFORMAT::RG88_UNORM: return GX2_SURFACE_FORMAT_UNORM_R8_G8;
+        case E_TEXFORMAT::RGB565_UNORM: return GX2_SURFACE_FORMAT_UNORM_R5_G6_B5;
         default:
             CriticalErrorHandler("Unsupported sprite format %d", (s32)format);
     }

@@ -25,11 +25,11 @@ public:
     ~GameSceneMenu() override;
 
     void HandleInput() override;
+    void Update() override;
     void Draw() override;
 
 private:
-    void SimulateAndDrawLevel();
-    void DrawButtons();
+    void SimulateLevel();
 
     TextButton* m_sandbox_btn;
     TextButton* m_host_btn;
@@ -53,8 +53,6 @@ private:
     Sprite* m_lostScoreboardSprite = Render::RenderTextSprite(32, 0xFF0000FF, L"YOU LOST!");
     Sprite* m_diedScoreboardSprite = Render::RenderTextSprite(32, 0xFF0000FF, L"YOU DIED!");
     uint32_t m_selectedButton = 0;
+    bool m_pressSelectedButton = false;
     OSTime m_lastInput = 0;
-
-    bool m_startSandboxImmediately{false};
-    bool m_startPacketSent{false};
 };

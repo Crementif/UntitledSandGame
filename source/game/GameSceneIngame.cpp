@@ -128,10 +128,6 @@ void GameSceneIngame::DrawHUD() {
     }
 }
 
-void GameSceneIngame::DrawBackground()
-{
-}
-
 void GameSceneIngame::UpdateCamera()
 {
     const f32 SCREEN_WIDTH = 1920.0f;
@@ -320,11 +316,17 @@ void GameSceneIngame::HandlePlayerCollisions() {
     }
 }
 
-void GameSceneIngame::Draw()
+void GameSceneIngame::HandleInput()
+{
+    UpdateCamera();
+
+    m_selfPlayer->HandleLocalPlayerControl();
+}
+
+void GameSceneIngame::Update()
 {
     UpdateMultiplayer();
 
-    m_selfPlayer->HandleLocalPlayerControl();
     if (!m_selfPlayer->IsSpectating())
         HandlePlayerCollisions();
 
@@ -332,16 +334,15 @@ void GameSceneIngame::Draw()
     RunDeterministicSimulationStep();
     DebugProfile::End("[CPU] Scene -> Simulation");
 
-    UpdateCamera();
+    DoObjectUpdates(1.0f / 60.0f);
+}
 
-    DoUpdates(1.0f / 60.0f);
-
-    DrawBackground();
-
+void GameSceneIngame::Draw()
+{
     this->GetMap()->Draw();
     Render::SetStateForSpriteRendering(); // restore sprite drawing state
 
-    DoDraws();
+    DoObjectDraws();
     DebugWaitAndMeasureGPUDone("[GPU] Scene::DoDraws");
     DrawHUD();
     DebugWaitAndMeasureGPUDone("[GPU] Scene::DrawHUD");
@@ -355,10 +356,6 @@ void GameSceneIngame::Draw()
 AABB GameSceneIngame::GetWorldBounds()
 {
     return AABB(0, 0, 256*8, 256*5);
-}
-
-void GameSceneIngame::HandleInput()
-{
 }
 
 void GameSceneIngame::RunDeterministicSimulationStep()

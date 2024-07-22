@@ -283,9 +283,6 @@ static bool WindowForegroundAcquire()
         GX2SetDepthBuffer(&gDepthBuffer);
     }
 
-//    if (!WHBMountSdCard())
-//        return false;
-
     // Initialize GQR2 to GQR5
     asm volatile ("mtspr %0, %1" : : "i" (898), "r" (0x00040004));
     asm volatile ("mtspr %0, %1" : : "i" (899), "r" (0x00050005));
@@ -409,6 +406,14 @@ bool WindowIsRunning()
     return gIsRunning;
 }
 
+const OSTime goalFramerate = (OSTime)OSSecondsToTicks(1.0f/59.9f);
+void WindowWaitForPreviousFrame(u32 framesToQueue) {
+    if (!WindowIsRunning())
+        return;
+
+    GX2WaitForVsync();
+}
+
 void WindowSwapBuffers(bool usePostBuffer)
 {
     // Make sure to flush all commands to GPU before copying the color buffer to the scan buffers
@@ -432,9 +437,13 @@ void WindowSwapBuffers(bool usePostBuffer)
     GX2SetDRCEnable(true);
 
     // Wait until swapping is done
-    DebugProfile::Start("Swap Buffers -> GX2WaitForFlip");
-    GX2WaitForFlip();
-    DebugProfile::End("Swap Buffers -> GX2WaitForFlip");
+    // DebugProfile::Start("Swap Buffers -> GX2DrawDone");
+    // GX2DrawDone();
+    // DebugProfile::End("Swap Buffers -> GX2DrawDone");
+
+    // DebugProfile::Start("Swap Buffers -> GX2WaitForFlip");
+    // GX2WaitForFlip();
+    // DebugProfile::End("Swap Buffers -> GX2WaitForFlip");
 
     // ProcUI
     ProcUIStatus status = ProcUIProcessMessages(true);

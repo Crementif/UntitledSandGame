@@ -20,7 +20,7 @@ GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboa
     m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, s_buttonSize, s_buttonColor, L"Sandbox");
     m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, s_buttonSize, s_buttonColor, L"Host");
     m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, s_buttonSize, s_buttonColor, L"Join");
-    m_crt_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+450, 500, 80}, s_buttonSize, s_buttonColor, s_showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
+    m_crt_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+450, 500, 80}, s_buttonSize, s_buttonColor, s_settings.showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
 
     m_fsClient = (FSClient*)MEMAllocFromDefaultHeap(sizeof(FSClient));
     FSAddClient(m_fsClient, FS_ERROR_FLAG_NONE);
@@ -52,24 +52,44 @@ GameSceneMenu::~GameSceneMenu() {
 
 
 void GameSceneMenu::HandleInput() {
-    bool isTouchValid = false;
-    s32 screenX, screenY;
-    vpadGetTouchInfo(isTouchValid, screenX, screenY);
+    // reset last input
+    m_pressSelectedButton = false;
 
-    const bool activeInputDebounce = (m_lastInput + (OSTime)OSMillisecondsToTicks(600)) >= OSGetTime();
-    if (navigatedUp() && m_selectedButton > 0 && !activeInputDebounce) {
-        m_lastInput = OSGetTime();
-        m_selectedButton--;
-        if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
-        else m_selectAudio->Play();
-    }
-    else if (navigatedDown() && m_selectedButton < 3 && !activeInputDebounce) {
-        m_lastInput = OSGetTime();
-        m_selectedButton++;
-        if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
-        else m_selectAudio->Play();
+    // handle spawning visuals
+    Vector2i touchPos = {};
+    bool pressedTouchScreen = vpadGetTouchInfo(&touchPos.x, &touchPos.y);
+    if (pressedTouchScreen) {
+        // use render
+        s32 ws_screen_x = (s32)(Render::GetCameraPosition().x / MAP_PIXEL_ZOOM);
+        s32 ws_screen_y = (s32)(Render::GetCameraPosition().y / MAP_PIXEL_ZOOM);
+        s32 ws_touch_x = ws_screen_x + (touchPos.x / MAP_PIXEL_ZOOM);
+        s32 ws_touch_y = ws_screen_y + (touchPos.y / MAP_PIXEL_ZOOM);
+
+        if (!this->GetMap()->IsPixelOOB(ws_touch_x, ws_touch_y)) {
+            PixelType& pt = this->GetMap()->GetPixelNoBoundsCheck(ws_touch_x, ws_touch_y);
+            pt.SetStaticPixelToAir();
+            this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::LAVA), ws_touch_x, ws_touch_y);
+        }
     }
 
+    // update touchscreen navigation
+    u32 newSelectedButton = std::numeric_limits<u32>::max();
+    bool pressedTouchScreenButton = false;
+    if (pressedTouchScreen) {
+        pressedTouchScreenButton = true;
+        if (m_sandbox_btn->GetBoundingBox().Contains(touchPos))
+            newSelectedButton = 0;
+        else if (m_host_btn->GetBoundingBox().Contains(touchPos))
+            newSelectedButton = 1;
+        else if (m_join_btn->GetBoundingBox().Contains(touchPos))
+            newSelectedButton = 2;
+        else if (m_crt_btn->GetBoundingBox().Contains(touchPos))
+            newSelectedButton = 3;
+        else
+            pressedTouchScreenButton = false;
+    }
+
+    // update software keyboard
     vpadUpdateSWKBD();
     if (nn::swkbd::IsNeedCalcSubThreadFont()) {
         nn::swkbd::CalcSubThreadFont();
@@ -78,73 +98,61 @@ void GameSceneMenu::HandleInput() {
         nn::swkbd::CalcSubThreadPredict();
     }
 
-    if (m_gameServer)
-        m_gameServer->Update();
-    if (m_gameClient) {
-        m_gameClient->Update();
-        if (m_gameClient->GetGameState() == GameClient::GAME_STATE::STATE_INGAME)
-            GameScene::ChangeTo(new GameSceneIngame(std::move(m_gameClient), std::move(m_gameServer)));
+    // handle keyboard actions
+    if (nn::swkbd::GetStateInputForm() == nn::swkbd::State::Visible) {
+        if (nn::swkbd::IsDecideOkButton(nullptr)) {
+            auto ipAddress = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(nn::swkbd::GetInputFormString());
+            m_gameClient = std::make_unique<GameClient>(ipAddress);
+
+            nn::swkbd::DisappearInputForm();
+        }
+        if (nn::swkbd::IsDecideCancelButton(nullptr)) {
+            nn::swkbd::DisappearInputForm();
+        }
     }
 
-    // Client-specific states
-    bool pressedOkButton = false;
-    if (m_state == MenuState::WAIT_FOR_INPUT && nn::swkbd::IsDecideOkButton(&pressedOkButton)) {
-        nn::swkbd::DisappearInputForm();
-        m_state = MenuState::WAIT_FOR_CONNECTION;
+    // update button navigation
+    if (navigatedUp() && m_selectedButton > 0)
+        newSelectedButton = m_selectedButton - 1;
+    else if (navigatedDown() && m_selectedButton < 3)
+        newSelectedButton = m_selectedButton + 1;
 
-        auto ipAddress = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(nn::swkbd::GetInputFormString());
-        m_gameClient = std::make_unique<GameClient>(ipAddress);
-    }
-    bool pressedCancelButton = false;
-    if (m_state == MenuState::WAIT_FOR_INPUT && nn::swkbd::IsDecideCancelButton(&pressedCancelButton)) {
-        nn::swkbd::DisappearInputForm();
-        m_state = MenuState::NORMAL;
-    }
-
-    // Server states
-    if (m_state == MenuState::WAIT_FOR_GAME && m_gameServer && (pressedStart() || this->m_startSandboxImmediately) && !this->m_startPacketSent) {
-        // tell server to start game
-        this->m_startPacketSent = true;
-        m_gameServer->StartGame();
-        //GameScene::ChangeTo(new GameSceneIngame(m_gameClient, m_gameServer)); -> The client controls this
+    // do navigation
+    bool activeConnection = m_gameClient != nullptr;
+    bool activeInputDebounce = (m_lastInput + (OSTime)OSMillisecondsToTicks(600)) >= OSGetTime();
+    bool activeKeyboardInput = nn::swkbd::GetStateInputForm() != nn::swkbd::State::Hidden;
+    if ((newSelectedButton != std::numeric_limits<u32>::max() && newSelectedButton != m_selectedButton) && !(activeInputDebounce || activeKeyboardInput || activeConnection)) {
+        m_lastInput = OSGetTime();
+        m_selectedButton = newSelectedButton;
+        m_selectAudio->ResetAndPlay();
+        pressedTouchScreenButton = false;
     }
 
-    // Client and server states
-    if (m_state == MenuState::WAIT_FOR_CONNECTION && m_gameClient->IsConnected()) {
-        m_state = MenuState::WAIT_FOR_GAME;
+    // do selection
+    if ((pressedOk() || pressedTouchScreenButton) && !(activeInputDebounce || activeKeyboardInput || activeConnection)) {
+        m_lastInput = OSGetTime();
+        m_pressSelectedButton = true;
+        m_selectAudio->ResetAndPlay();
     }
 
-    if (m_state == MenuState::NORMAL) {
-        if (activeInputDebounce)
-            return;
+    // react to input states
+    if (!m_pressSelectedButton)
+        return;
 
-        Vector2f touchPos = Vector2f{isTouchValid ? (f32)screenX : 0.0f, isTouchValid ? (f32)screenY : 0.0f};
-        if (m_sandbox_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 0 && pressedOk())) {
-            m_lastInput = OSGetTime();
-            this->m_state = MenuState::WAIT_FOR_CONNECTION;
-            if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
-            else m_selectAudio->Play();
-
+    switch (m_selectedButton) {
+        case 0: { // sandbox button
             this->m_gameServer = std::make_unique<GameServer>();
             this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
-
-            this->m_startSandboxImmediately = true;
-        }
-        else if (m_host_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 1 && pressedOk())) {
-            m_lastInput = OSGetTime();
             this->m_state = MenuState::WAIT_FOR_CONNECTION;
-            if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
-            else m_selectAudio->Play();
-
+            break;
+        }
+        case 1: { // host button
             this->m_gameServer = std::make_unique<GameServer>();
             this->m_gameClient = std::make_unique<GameClient>("127.0.0.1");
+            this->m_state = MenuState::WAIT_FOR_CONNECTION;
+            break;
         }
-        else if (m_join_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 2 && pressedOk())) {
-            m_lastInput = OSGetTime();
-            this->m_state = MenuState::WAIT_FOR_INPUT;
-            if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
-            else m_selectAudio->Play();
-
+        case 2: { // join button
             nn::swkbd::AppearArg appearArg = {
                 .keyboardArg = {
                     .configArg = nn::swkbd::ConfigArg(),
@@ -164,20 +172,19 @@ void GameSceneMenu::HandleInput() {
             appearArg.inputFormArg.drawInput0Cursor = true;
             if (!nn::swkbd::AppearInputForm(appearArg))
                 OSFatal("nn::swkbd::AppearInputForm failed");
+            break;
         }
-        else if (m_crt_btn->GetBoundingBox().Contains(touchPos) || (m_selectedButton == 3 && pressedOk())) {
-            m_lastInput = OSGetTime();
-            if (m_selectAudio->GetState() == Audio::StateEnum::PLAYING) m_selectAudio->Reset();
-            else m_selectAudio->Play();
-
+        case 3: { // crt button
+            s_settings.showCrtFilter = !s_settings.showCrtFilter;
             delete m_crt_btn;
-            s_showCrtFilter = !s_showCrtFilter;
-            m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_buttonSize, s_buttonColor, s_showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
+            m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_buttonSize, s_buttonColor, s_settings.showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
         }
+        default:
+            OSFatal("Tried to select a button but the current button that is selected isn't handled properly.");
     }
 }
 
-void GameSceneMenu::SimulateAndDrawLevel() {
+void GameSceneMenu::SimulateLevel() {
     if ((this->GetMap()->GetRNGNumber()&0x7) < 1)
         this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::SAND, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::SAND), 430, 2);
 
@@ -188,35 +195,63 @@ void GameSceneMenu::SimulateAndDrawLevel() {
         this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::LAVA), 2, 178);
 
     this->GetMap()->SimulateTick();
-    this->GetMap()->Draw();
     this->GetMap()->Update(); // map objects are always independent of the world simulation?
 }
 
-void GameSceneMenu::DrawButtons() {
+void GameSceneMenu::Update() {
+    // update camera
+    // todo: technically we could be spawning something in the air on the first frame, if the touch screen is used?
+    Render::SetCameraPosition(Vector2f(2, 2) * MAP_PIXEL_ZOOM);
+
+    // update map
+    this->SimulateLevel();
+
+    // update buttons
     m_sandbox_btn->SetSelected(m_selectedButton == 0);
     m_host_btn->SetSelected(m_selectedButton == 1);
     m_join_btn->SetSelected(m_selectedButton == 2);
     m_crt_btn->SetSelected(m_selectedButton == 3);
-    this->DoDraws();
+
+    // handle updates
+    if (m_gameServer) {
+        m_gameServer->Update();
+        if (m_gameServer->GetPlayerCount() == 1 && m_selectedButton == 0) {
+            m_gameServer->StartGame();
+        }
+    }
+    if (m_gameClient) {
+        m_gameClient->Update();
+        if (m_gameClient->GetGameState() == GameClient::GAME_STATE::STATE_INGAME)
+            GameScene::ChangeTo(new GameSceneIngame(std::move(m_gameClient), std::move(m_gameServer)));
+    }
 }
 
 void GameSceneMenu::Draw() {
-    Render::SetCameraPosition(Vector2f(2, 2) * MAP_PIXEL_ZOOM);
-    this->SimulateAndDrawLevel();
-    Render::SetStateForSpriteRendering();
-    this->DrawButtons();
+    // draw map
+    this->GetMap()->Draw();
 
-    if (this->m_state == MenuState::NORMAL && m_scoreboard == MenuScoreboard::WON) {
+    // setup sprite drawing
+    Render::SetStateForSpriteRendering();
+
+    // draw objects (buttons)
+    this->DoObjectDraws();
+
+    // draw scoreboard
+    if (m_scoreboard == MenuScoreboard::WON) {
         Render::RenderSprite(m_wonScoreboardSprite, 1920/2-(m_wonScoreboardSprite->GetWidth()/2), 1080/2-(m_wonScoreboardSprite->GetHeight()/2)+60);
     }
-    if (this->m_state == MenuState::NORMAL && m_scoreboard == MenuScoreboard::LOST) {
+    if (m_scoreboard == MenuScoreboard::LOST) {
         Render::RenderSprite(m_lostScoreboardSprite, 1920/2-(m_lostScoreboardSprite->GetWidth()/2), 1080/2-(m_lostScoreboardSprite->GetHeight()/2)+60);
     }
-    if (this->m_state == MenuState::NORMAL && m_scoreboard == MenuScoreboard::DIED) {
+    if (m_scoreboard == MenuScoreboard::DIED) {
         Render::RenderSprite(m_diedScoreboardSprite, 1920/2-(m_diedScoreboardSprite->GetWidth()/2), 1080/2-(m_diedScoreboardSprite->GetHeight()/2)+60);
     }
 
-    if (this->m_state == MenuState::WAIT_FOR_GAME && this->m_gameServer) {
+    // draw matchmaking status
+    const bool isHosting = this->m_gameServer != nullptr;
+    const bool isJoining = this->m_gameServer == nullptr && this->m_gameClient != nullptr && !this->m_gameClient->IsConnected();
+    const bool isJoined = this->m_gameServer == nullptr && this->m_gameClient != nullptr && this->m_gameClient->IsConnected();
+    if (isHosting) {
         u32 joinedPlayers = this->m_gameServer->GetPlayerCount();
         if (joinedPlayers != this->m_prevPlayerCount) {
             this->m_prevPlayerCount = joinedPlayers;
@@ -226,14 +261,17 @@ void GameSceneMenu::Draw() {
         }
         Render::RenderSprite(m_startGameWithPlayersSprite, 1920/2-(m_startGameWithPlayersSprite->GetWidth()/2), 1080/2-(m_startGameWithPlayersSprite->GetHeight()/2)+60);
     }
-    else if (this->m_state == MenuState::WAIT_FOR_GAME) {
+    else if (isJoining) {
         Render::RenderSprite(m_waitingForGameStartSprite, 1920/2-(m_waitingForGameStartSprite->GetWidth()/2), 1080/2-(m_waitingForGameStartSprite->GetHeight()/2)+60);
     }
-    else if (this->m_state == MenuState::WAIT_FOR_CONNECTION) {
+    else if (isJoined) {
         Render::RenderSprite(m_connectingToServerSprite, 1920/2-(m_connectingToServerSprite->GetWidth()/2), 1080/2-(m_connectingToServerSprite->GetHeight()/2)+60);
     }
+
+    // draw debug log
     DebugLog::Draw();
 
+    // draw software keyboard
     nn::swkbd::DrawTV();
     nn::swkbd::DrawDRC();
 }

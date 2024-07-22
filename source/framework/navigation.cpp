@@ -45,27 +45,25 @@ void updateInputs() {
 
 // Navigation Actions
 
-void vpadGetTouchInfo(bool& isTouchValid, s32& screenX, s32& screenY) {
-    isTouchValid = false;
+bool vpadGetTouchInfo(s32* screenX, s32* screenY) {
     VPADTouchData calibratedTP;
     VPADGetTPCalibratedPointEx(VPAD_CHAN_0, VPAD_TP_1920X1080, &calibratedTP, &vpadBuffer[0].tpNormal);
     // use filtered data which might be smoother?
     if(calibratedTP.touched == 0)
     {
         vpadBuffer[0].tpNormal = calibratedTP;
-        isTouchValid = false;
-        return;
+        return false;
     }
     // OSReport("TOUCH-CAL touched %d xy: %d/%d\n", (u32)calibratedTP.touched, (s32)calibratedTP.x, (s32)calibratedTP.y);
-    isTouchValid = true;
-    screenX = calibratedTP.x;
-    screenY = calibratedTP.y;
+    *screenX = calibratedTP.x;
+    *screenY = calibratedTP.y;
     vpadBuffer[0].tpNormal = {
         .x = (u16)(calibratedTP.x / 1.5),
         .y = (u16)(calibratedTP.y / 1.5),
         .touched = calibratedTP.touched,
         .validity = calibratedTP.validity,
     };
+    return true;
 }
 
 void vpadUpdateSWKBD() {
