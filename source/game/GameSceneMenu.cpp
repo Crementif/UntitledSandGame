@@ -10,8 +10,6 @@
 #include "../framework/audio/audio.h"
 #include "../framework/debug.h"
 
-bool GameScene::s_showCrtFilter = true;
-
 GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboard(scoreboard) {
     this->RegisterMap(new Map("menu.tga", 1337));
 

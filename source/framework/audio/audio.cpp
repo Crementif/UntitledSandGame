@@ -53,7 +53,7 @@ void Audio::SetLowPassFilter(uint32_t cutoff) {
 void Audio::Play() {
     // Handle special states
     if (this->m_state == StateEnum::PLAYING) {
-        CriticalErrorHandler("Use additional audio objects for sound effect \"%s\" if you want to play more then one time", this->m_path.c_str());
+        CriticalErrorHandler("Use additional audio objects for sound effect \"%s\" if you want to play more then one at the same time", this->m_path.c_str());
     }
 
     if (this->m_state == StateEnum::PAUSED) {
@@ -124,6 +124,14 @@ void Audio::Pause() {
     AXSetVoiceState(this->m_voiceHandle, AX_VOICE_STATE_STOPPED);
     this->m_state = StateEnum::PAUSED;
 }
+
+void Audio::ResetAndPlay() {
+    if (this->GetState() == StateEnum::PLAYING)
+        this->Reset();
+    else
+        this->Play();
+}
+
 
 void Audio::Reset() {
     AXFreeVoice(this->m_voiceHandle);

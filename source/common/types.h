@@ -42,6 +42,7 @@ s32 inline _swapS32(s32 v)
 
 struct Vector2i
 {
+    Vector2i(): x(0), y(0) {}
     Vector2i(s32 x, s32 y) : x(x), y(y) {}
 
     s32 x;
@@ -174,7 +175,12 @@ struct AABB
     bool Contains(const Vector2f& point) const
     {
         return point.x >= pos.x && point.x < (pos.x + scale.x) &&
-                point.y >= pos.y && point.y < (pos.y + scale.y);
+            point.y >= pos.y && point.y < (pos.y + scale.y);
+    }
+
+    bool Contains(const Vector2i& point) const {
+        return point.x >= pos.x && point.x < (pos.x + scale.x) &&
+            point.y >= pos.y && point.y < (pos.y + scale.y);
     }
 
     bool Intersects(const AABB& other) const

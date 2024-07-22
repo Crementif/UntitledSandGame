@@ -30,8 +30,7 @@ u32 RelayServer::HandleConnectingPlayers() {
         if ((newClient.socket = accept(receiving_socket, (struct sockaddr*)&newClient.addr, (socklen_t*)&sockAddrSize)) < 0) {
             if (errno == EWOULDBLOCK || errno == EAGAIN)
                 break;
-            OSFatal("Error: Failed to accept an incoming connection");
-            exit(EXIT_FAILURE);
+            CriticalErrorHandler("Error: Failed to accept an incoming connection. errno: %d\n", errno);
         }
 
         int sockOptionEnable = 1;

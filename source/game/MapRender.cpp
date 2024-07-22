@@ -222,7 +222,6 @@ public:
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, s_idx_data, 0, 1); // environment_prepass.ps
         DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::Prepass::DrawQuad");
 
-
         // do environment blur/bloom-like pass to create a glow effect around lava pixels and blur solids (light obstructions) to create ambient occlusion
         s_shaderEnvironmentPass.Activate();
 

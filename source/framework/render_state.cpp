@@ -40,7 +40,7 @@ void RenderState::ReapplyState()
 void RenderState::SetShaderMode(GX2ShaderMode mode)
 {
     if (sShaderMode != mode) {
-        GX2SetShaderMode(mode);
+        GX2SetShaderModeEx(mode, 0x30, 0x40, 0x0, 0x0, 0xc8, 0xc0);
         sShaderMode = mode;
     }
 }

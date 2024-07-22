@@ -25,7 +25,7 @@ void initializeInputs() {
 
 void updateInputs() {
     // Read VPAD (Gamepad) input
-    VPADRead(VPADChan::VPAD_CHAN_0, vpadBuffer, 1, &vpadError);
+    VPADRead(VPAD_CHAN_0, vpadBuffer, 1, &vpadError);
 
     // Read WPAD (Pro Controller, Wiimote, Classic) input
     // Loop over each controller channel
@@ -163,7 +163,7 @@ bool getKPADSticksDirection(bool XAxis, float threshold) {
     for (const auto& pad : KPADControllers) {
         if (!pad.connected) continue;
         if (pad.status.extensionType == KPADExtensionType::WPAD_EXT_NUNCHUK || pad.status.extensionType == KPADExtensionType::WPAD_EXT_MPLUS_NUNCHUK) {
-            return getStickDirection(XAxis ? pad.status.nunchuck.stick.x : pad.status.nunchuck.stick.y, threshold);
+            return getStickDirection(XAxis ? pad.status.nunchuk.stick.x : pad.status.nunchuk.stick.y, threshold);
         }
         if (pad.status.extensionType == KPADExtensionType::WPAD_EXT_CLASSIC || pad.status.extensionType == KPADExtensionType::WPAD_EXT_MPLUS_CLASSIC) {
             return getStickDirection(XAxis ? pad.status.classic.leftStick.x : pad.status.classic.leftStick.y, threshold);

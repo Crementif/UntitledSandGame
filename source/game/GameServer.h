@@ -12,13 +12,15 @@ public:
 
     void Update();
 
-    u32 GetPlayerCount()
-    {
+    bool HasGameStarted() const {
+        return m_gameStarted;
+    }
+
+    u32 GetPlayerCount() const {
         return m_server->GetPlayerCount();
     }
 
-    u32 GetPlayerId(u32 playerIndex)
-    {
+    u32 GetPlayerId(u32 playerIndex) const {
         return m_server->GetPlayerId(playerIndex);
     }
 

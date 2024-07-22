@@ -119,28 +119,29 @@ void Player::HandleLocalPlayerControl_WalkMode(ButtonState& buttonState, Vector2
 {
     // bomb placing (temporary)
     if (buttonState.buttonB.changedState && buttonState.buttonB.isDown) {
+        const bool cheatModeEnabled = DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer();
         if (m_ability == GameClient::GAME_ABILITY::LANDMINE) {
             Vector2f slightlyAbove = m_pos;
             slightlyAbove.y -= 20.0f;
 
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::LANDMINE, {slightlyAbove.x, slightlyAbove.y}, {0.0f, 0.0f});
-            GiveAbility(DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::LANDMINE : GameClient::GAME_ABILITY::NONE);
+            GiveAbility(cheatModeEnabled ? GameClient::GAME_ABILITY::LANDMINE : GameClient::GAME_ABILITY::NONE);
         }
         else if (m_ability == GameClient::GAME_ABILITY::MISSILE) {
             Vector2f shootPosition = m_parent->GetPlayer()->GetPosition() + Vector2f(0.0f, -15.0f) + (Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*20.0f);
             Vector2f shootDirection = Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*6.0f;
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::MISSILE, shootPosition, shootDirection);
-            GiveAbility(DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::MISSILE : GameClient::GAME_ABILITY::NONE);
+            GiveAbility(cheatModeEnabled ? GameClient::GAME_ABILITY::MISSILE : GameClient::GAME_ABILITY::NONE);
         }
         else if (m_ability == GameClient::GAME_ABILITY::BLACKHOLE) {
             Vector2f shootPosition = m_parent->GetPlayer()->GetPosition() + Vector2f(0.0f, -15.0f) + (Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*20.0f);
             Vector2f shootDirection = Vector2f(1.0f, 0.0f).Rotate(m_visualDrillAngle).GetNormalized()*6.0f;
             m_parent->GetClient()->SendAbility(GameClient::GAME_ABILITY::BLACKHOLE, shootPosition, shootDirection);
-            GiveAbility(DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::BLACKHOLE : GameClient::GAME_ABILITY::NONE);
+            GiveAbility(cheatModeEnabled ? GameClient::GAME_ABILITY::BLACKHOLE : GameClient::GAME_ABILITY::NONE);
         }
         else if (m_ability == GameClient::GAME_ABILITY::TURBO_DRILL) {
             m_turboBoost = OSGetTime() + OSSecondsToTicks(25);
-            GiveAbility(DebugLog::IsLoggingEnabled() && m_parent->IsSingleplayer() ? GameClient::GAME_ABILITY::TURBO_DRILL : GameClient::GAME_ABILITY::NONE);
+            GiveAbility(cheatModeEnabled ? GameClient::GAME_ABILITY::TURBO_DRILL : GameClient::GAME_ABILITY::NONE);
         }
     }
 

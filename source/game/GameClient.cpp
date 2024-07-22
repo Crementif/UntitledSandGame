@@ -74,7 +74,7 @@ bool GameClient::ProcessPacket_Start(PacketParser& pp)
     m_gameInfo.levelId = pp.ReadU32();
     m_gameInfo.rngSeed = pp.ReadU32();
     m_gameInfo.ourPlayerId = pp.ReadU32();
-    MP_OSReport("[Client] GameClient::ProcessPacket_Start: Our player id: %08x\n", m_gameInfo.ourPlayerId);
+    MP_OSReport("[Client] GameClient::ProcessPacket_Start: Our player id: %08x, levelId: %u, seed: %u\n", m_gameInfo.ourPlayerId, m_gameInfo.levelId, m_gameInfo.rngSeed);
     u32 playerCount = pp.ReadU32();
     m_gameInfo.playerIds.clear();
     for(u32 i=0; i<playerCount; i++)

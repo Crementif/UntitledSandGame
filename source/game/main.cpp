@@ -11,7 +11,7 @@
 #include "../framework/audio/audio.h"
 #include "../framework/debug.h"
 
-GameScene* GameScene::sActiveScene = nullptr;
+GameScene* GameScene::s_activeScene = nullptr;
 
 Sprite* TextButton::s_buttonSelected = nullptr;
 Sprite* TextButton::s_buttonBackdrop = nullptr;
@@ -24,6 +24,9 @@ Sprite* Blackhole::s_blackhole0Sprite = nullptr;
 Sprite* Blackhole::s_blackhole1Sprite = nullptr;
 Sprite* Blackhole::s_blackhole2Sprite = nullptr;
 Sprite* Collectable::s_collectableSprite = nullptr;
+
+Settings GameScene::s_settings = {
+};
 
 
 int main()
@@ -51,8 +54,8 @@ int main()
     // set polygon mode
     GX2SetPolygonControl(
         GX2_FRONT_FACE_CCW, // Front-face Mode
-        FALSE,              // Disable Culling
-        FALSE,              // ^^^^^^^^^^^^^^^
+        TRUE,              // Disable cullFront
+        FALSE,              // Disable cullBack
         TRUE,               // Enable Polygon Mode
         GX2_POLYGON_MODE_TRIANGLE, // Front Polygon Mode
         GX2_POLYGON_MODE_TRIANGLE, // Back Polygon Mode
@@ -68,8 +71,8 @@ int main()
     {
         DebugProfile::Start("Total");
 
-        if (currGameScene != GameScene::sActiveScene)
-            currGameScene = GameScene::sActiveScene;
+        if (currGameScene != GameScene::s_activeScene)
+            currGameScene = GameScene::s_activeScene;
 
         assert(currGameScene != nullptr);
 
@@ -91,13 +94,13 @@ int main()
         Render::SwapBuffers();
         DebugProfile::End("Swap Buffers");
 
-        if (currGameScene != GameScene::sActiveScene)
+        if (currGameScene != GameScene::s_activeScene)
         {
             delete currGameScene;
             currGameScene = nullptr;
         }
 
-        if (GameScene::sActiveScene == nullptr)
+        if (GameScene::s_activeScene == nullptr)
             break;
         DebugProfile::End("Total");
 

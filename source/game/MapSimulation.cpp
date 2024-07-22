@@ -177,7 +177,7 @@ void Map::SimulateTick()
 
 void Map::HandleSynchronizedEvents()
 {
-    GameClient* client = GameScene::sActiveScene->GetClient();
+    GameClient* client = GameScene::s_activeScene->GetClient();
     if(!client)
         return;
     std::vector<GameClient::SynchronizedEvent> syncedEvents;
