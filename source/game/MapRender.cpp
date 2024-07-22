@@ -152,13 +152,13 @@ public:
         s_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RGBA8888_UNORM, true, true);
 
         s_environmentPrepass = new Framebuffer();
-        s_environmentPrepass->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, true, true);
+        s_environmentPrepass->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, 2, true, true);
 
         s_environmentTempMap = new Framebuffer();
-        s_environmentTempMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, true, true);
+        s_environmentTempMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, 3, true, true);
 
         s_environmentMap = new Framebuffer();
-        s_environmentMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, true, true);
+        s_environmentMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, 4, true, true);
 
         InitPixelColorLookupMap();
     }

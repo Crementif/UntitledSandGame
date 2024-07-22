@@ -94,7 +94,7 @@ class Framebuffer {
     static constexpr u32 MAX_COLOR_BUFFERS = 8;
 
 public:
-    void SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear = false, bool allocateInMEM1 = false);
+    void SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, u32 swizzle, bool clear = false, bool allocateInMEM1 = false);
     void Apply();
 
     static void ApplyBackbuffer();

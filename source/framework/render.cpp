@@ -25,7 +25,7 @@ ShaderSwitcher Shader_CRT{"crt"};
 
 static SFT s_fontFace;
 
-void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u32 numMips, GX2SurfaceFormat surfaceFormat, GX2SurfaceDim surfaceDim, GX2TileMode tileMode)
+void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u32 numMips, GX2SurfaceFormat surfaceFormat, GX2SurfaceDim surfaceDim, GX2TileMode tileMode, uint32_t swizzle)
 {
     texturePtr->surface.dim = surfaceDim;
     texturePtr->surface.width = width;
@@ -37,7 +37,7 @@ void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u
     texturePtr->surface.use = GX2_SURFACE_USE_TEXTURE;
     texturePtr->surface.dim = surfaceDim;
     texturePtr->surface.tileMode = tileMode;
-    texturePtr->surface.swizzle = 0;
+    texturePtr->surface.swizzle = swizzle;
     texturePtr->viewFirstMip = 0;
     texturePtr->viewNumMips = numMips;
     texturePtr->viewFirstSlice = 0;
@@ -114,8 +114,7 @@ E_TEXFORMAT _GetGX2Format(GX2SurfaceFormat surfaceFormat)
     return E_TEXFORMAT::RGBA8888_UNORM;
 }
 
-
-void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, bool clear, bool allocateInMEM1)
+void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT texFormat, u32 swizzle, bool clear, bool allocateInMEM1)
 {
     if (index >= MAX_COLOR_BUFFERS)
         return;
@@ -131,7 +130,7 @@ void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT t
     // allocate and initialize GX2Surface/GX2Texture
     m_colorBufferTexture[index] = (GX2Texture*)malloc(sizeof(GX2Texture));
     memset(m_colorBufferTexture[index], 0, sizeof(sizeof(GX2Texture)));
-    _GX2InitTexture(m_colorBufferTexture[index], width, height, 1, 1, _GetGX2SurfaceFormat(texFormat), GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_DEFAULT);
+    _GX2InitTexture(m_colorBufferTexture[index], width, height, 1, 1, _GetGX2SurfaceFormat(texFormat), GX2_SURFACE_DIM_TEXTURE_2D, GX2_TILE_MODE_TILED_1D_THIN1, swizzle);
     _GX2AllocateTexture(m_colorBufferTexture[index], allocateInMEM1);
     m_colorBufferTexture[index]->surface.use = (GX2SurfaceUse)(m_colorBufferTexture[index]->surface.use | GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV);
     if(clear)
@@ -141,9 +140,11 @@ void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT t
     }
     // allocate and initialize GX2ColorBuffer
     m_colorBuffer[index] = (GX2ColorBuffer*)malloc(sizeof(GX2ColorBuffer));
-    _GX2InitColorBufferFromSurface(m_colorBuffer[index], &m_colorBufferTexture[index]->surface);
 
-    OSReport("Framebuffer::SetColorBuffer. Set texture with res %d/%d in slot %d\n", width, height, index);
+    GX2SetSurfaceSwizzle(&m_colorBufferTexture[index]->surface, swizzle);
+    _GX2InitColorBufferFromSurface(m_colorBuffer[index], &m_colorBufferTexture[index]->surface);
+    GX2SetSurfaceSwizzle(&m_colorBufferTexture[index]->surface, swizzle);
+    OSReport("Framebuffer::SetColorBuffer. Set texture with res %d/%d in slot %d with swizzle %d\n", width, height, index, swizzle);
 }
 
 void Framebuffer::Apply()
