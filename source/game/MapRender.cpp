@@ -305,7 +305,7 @@ public:
 private:
     static void InitPixelColorLookupMap()
     {
-        s_pixelColorLookupMap = new Sprite(32, 32, false, E_TEXFORMAT::RGBA8888_UNORM);
+        s_pixelColorLookupMap = new Sprite(32, 32, false, E_TEXFORMAT::RGB565_UNORM);
         s_pixelColorLookupMap->Clear(0x00000000);
 
         s32 selectedMaterialIndex = 0;
@@ -313,23 +313,19 @@ private:
 
         auto SetMatColor = [&](s32 seedIndex, u32 color)
         {
-            s_pixelColorLookupMap->SetPixelRGBA8888(seedIndex , selectedMaterialIndex, color);
+            s_pixelColorLookupMap->SetPixelRGB565(seedIndex, selectedMaterialIndex, color);
         };
-        auto GenerateDimmerMatColor = [&](s32 seedIndex, s32 seedDimOffset, float seedDimFactor)
+        auto GenerateDimmerMatColor = [&](s32 seedIndex, u32 color, float seedDimFactor)
         {
-            u32 color = s_pixelColorLookupMap->GetPixelRGBA8888(seedIndex, selectedMaterialIndex);
-            u8 r = (color >> 24) & 0xFF;
-            u8 g = (color >> 16) & 0xFF;
-            u8 b = (color >> 8) & 0xFF;
-            u8 a = color & 0xFF;
+            // dim the color
+            const u8 r = (u8)((color & 0xFF000000) >> 24) * seedDimFactor;
+            const u8 g = (u8)((color & 0x00FF0000) >> 16) * seedDimFactor;
+            const u8 b = (u8)((color & 0x0000FF00) >> 8) * seedDimFactor;
+            const u32 dimmedColor = (r << 24) | (g << 16) | (b << 8) | 0xFF;
 
-            r = std::max(0, static_cast<int>(r * (1.0f - seedDimFactor)));
-            g = std::max(0, static_cast<int>(g * (1.0f - seedDimFactor)));
-            b = std::max(0, static_cast<int>(b * (1.0f - seedDimFactor)));
-
-            s_pixelColorLookupMap->SetPixelRGBA8888(seedDimOffset + seedIndex, selectedMaterialIndex, (u32)((r << 24) | (g << 16) | (b << 8) | a));
+            s_pixelColorLookupMap->SetPixelRGB565(seedIndex, selectedMaterialIndex, dimmedColor);
         };
-        constexpr float dimFactor = 0.15f;
+        constexpr float dimFactor = 0.85f;
 
         // Setting AIR color
         SelectMat(MAP_PIXEL_TYPE::AIR);
@@ -340,27 +336,27 @@ private:
         SetMatColor(0, 0xE9B356FF);
         SetMatColor(1, 0xEEC785FF);
         SetMatColor(2, 0xDEB56FFF);
-        GenerateDimmerMatColor(0, 2, dimFactor);
-        GenerateDimmerMatColor(1, 2, dimFactor);
-        GenerateDimmerMatColor(2, 2, dimFactor);
+        GenerateDimmerMatColor(3, 0xE9B356FF, dimFactor);
+        GenerateDimmerMatColor(4, 0xEEC785FF, dimFactor);
+        GenerateDimmerMatColor(5, 0xDEB56FFF, dimFactor);
 
         // Setting SOIL colors
         SelectMat(MAP_PIXEL_TYPE::SOIL);
         SetMatColor(0, 0x5F3300FF);
         SetMatColor(1, 0x512B00FF);
         SetMatColor(2, 0x472600FF);
-        GenerateDimmerMatColor(0, 2, dimFactor);
-        GenerateDimmerMatColor(1, 2, dimFactor);
-        GenerateDimmerMatColor(2, 2, dimFactor);
+        GenerateDimmerMatColor(3, 0x5F3300FF, dimFactor);
+        GenerateDimmerMatColor(4, 0x512B00FF, dimFactor);
+        GenerateDimmerMatColor(5, 0x472600FF, dimFactor);
 
         // Setting GRASS colors
         SelectMat(MAP_PIXEL_TYPE::GRASS);
         SetMatColor(0, 0x2F861FFF);
         SetMatColor(1, 0x3E932BFF);
-        SetMatColor(1, 0x3D9629FF);
-        GenerateDimmerMatColor(0, 2, dimFactor);
-        GenerateDimmerMatColor(1, 2, dimFactor);
-        GenerateDimmerMatColor(2, 2, dimFactor);
+        SetMatColor(2, 0x3D9629FF);
+        GenerateDimmerMatColor(3, 0x2F861FFF, dimFactor);
+        GenerateDimmerMatColor(4, 0x3E932BFF, dimFactor);
+        GenerateDimmerMatColor(5, 0x3D9629FF, dimFactor);
 
         // Setting LAVA colors
         SelectMat(MAP_PIXEL_TYPE::LAVA);
@@ -380,15 +376,15 @@ private:
         SetMatColor(6, 0x414142FF);
         SetMatColor(7, 0x414142FF);
         SetMatColor(8, 0x414142FF);
-        GenerateDimmerMatColor(0, 9, dimFactor);
-        GenerateDimmerMatColor(1, 9, dimFactor);
-        GenerateDimmerMatColor(2, 9, dimFactor);
-        GenerateDimmerMatColor(3, 9, dimFactor);
-        GenerateDimmerMatColor(4, 9, dimFactor);
-        GenerateDimmerMatColor(5, 9, dimFactor);
-        GenerateDimmerMatColor(6, 9, dimFactor);
-        GenerateDimmerMatColor(7, 9, dimFactor);
-        GenerateDimmerMatColor(8, 9, dimFactor);
+        GenerateDimmerMatColor(9, 0x515152FF, dimFactor);
+        GenerateDimmerMatColor(10, 0x484849FF, dimFactor);
+        GenerateDimmerMatColor(11, 0x484849FF, dimFactor);
+        GenerateDimmerMatColor(12, 0x484849FF, dimFactor);
+        GenerateDimmerMatColor(13, 0x414142FF, dimFactor);
+        GenerateDimmerMatColor(14, 0x414142FF, dimFactor);
+        GenerateDimmerMatColor(15, 0x414142FF, dimFactor);
+        GenerateDimmerMatColor(16, 0x414142FF, dimFactor);
+        GenerateDimmerMatColor(17, 0x414142FF, dimFactor);
 
         // Setting SMOKE colors
         SelectMat(MAP_PIXEL_TYPE::SMOKE);
