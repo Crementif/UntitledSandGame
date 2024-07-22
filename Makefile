@@ -190,7 +190,8 @@ $(OUTPUT).wua: $(OUTPUT).rpx
 	@mkdir $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
 	@cp -r $(TOPDIR)/$(CONTENT)/. $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
 	@rm -f $(OUTPUT).wua
-	@$(TOPDIR)/dist/zarchive.exe $(shell wslpath -m $(TOPDIR)/dist/wua || echo $(TOPDIR)/dist/wua) $(shell wslpath -m $(OUTPUT).wua || echo $(OUTPUT).wua) || echo "zarchive.exe couldn't be executed, skipping wua creation..."
+	# If you are trying to run this makefile on Windows, you need to swap zarchive_static.elf with zarchive.exe.
+	@$(TOPDIR)/dist/zarchive_static.elf $(TOPDIR)/dist/wua $(OUTPUT).wua
 	@echo built ... sand.wua
 $(OUTPUT).rpx: $(OUTPUT).elf $(CONTENT_DEPENDS)
 $(OUTPUT).elf: $(OFILES)
