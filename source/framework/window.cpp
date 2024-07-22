@@ -195,7 +195,7 @@ static bool WindowForegroundAcquire()
         buffer.surface.aa = GX2_AA_MODE1X;
         buffer.surface.use = GX2_SURFACE_USE_TEXTURE_COLOR_BUFFER_TV;
         buffer.surface.mipmaps = NULL;
-        buffer.surface.tileMode = GX2_TILE_MODE_DEFAULT;
+        buffer.surface.tileMode = GX2_TILE_MODE_TILED_1D_THIN1;
         buffer.surface.swizzle  = 0;
         buffer.viewMip = 0;
         buffer.viewFirstSlice = 0;
