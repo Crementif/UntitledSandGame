@@ -245,7 +245,7 @@ void GameSceneIngame::UpdateMultiplayer()
 }
 
 constexpr s32 COLLISION_RADIUS = 9;
-constexpr s32 BGM_COLLISION_RADIUS = 16;
+constexpr s32 BGM_COLLISION_RADIUS = 18;
 void GameSceneIngame::HandlePlayerCollisions() {
     // check for collisions with other objects
     for (auto& collectible : m_collectibles) {
@@ -259,18 +259,19 @@ void GameSceneIngame::HandlePlayerCollisions() {
     // check for collisions with lava
     Vector2f pos = m_selfPlayer->GetPosition();
     s32 posX = (s32)(pos.x + 0.5f);
-    s32 posY = (s32)(pos.y + 0.5f);
+    s32 posY = (s32)(pos.y + 0.5f) - m_selfPlayer->GetBoundingBox().scale.y/2;
 
-    s8 musicHits = 0;
-    s8 musicMisses = 0;
+    s32 musicHits = 0;
+    s32 musicMisses = 0;
     for (s32 y=posY-BGM_COLLISION_RADIUS; y<=posY+BGM_COLLISION_RADIUS; y++) {
         const s32 dfy = y - posY;
         const s32 dfySq = dfy * dfy;
         for (s32 x=posX-BGM_COLLISION_RADIUS; x<=posX+BGM_COLLISION_RADIUS; x++) {
             s32 dfx = x - posX;
             s32 squareDist = dfx * dfx + dfySq;
-            if (squareDist < COLLISION_RADIUS*COLLISION_RADIUS-3) {
-                // for actual hitbox collision
+
+            if (squareDist <= COLLISION_RADIUS * COLLISION_RADIUS) {
+                // for dynamic BGM we only check the border pixels
                 if (this->GetMap()->IsPixelOOB(x, y) )
                     continue;
                 PixelType& pt = this->GetMap()->GetPixel(x, y);
@@ -279,9 +280,9 @@ void GameSceneIngame::HandlePlayerCollisions() {
                     break;
                 }
             }
-            else if (squareDist < BGM_COLLISION_RADIUS*BGM_COLLISION_RADIUS) {
+            else if (squareDist >= BGM_COLLISION_RADIUS * BGM_COLLISION_RADIUS && squareDist <= (BGM_COLLISION_RADIUS+1) * (BGM_COLLISION_RADIUS+1)) {
                 // for dynamic BGM we only check the border pixels
-                if (this->GetMap()->IsPixelOOB(x, y) )
+                if (this->GetMap()->IsPixelOOB(x, y))
                     continue;
                 PixelType& pt = this->GetMap()->GetPixel(x, y);
                 if (pt.IsFilled()) {
@@ -298,8 +299,8 @@ void GameSceneIngame::HandlePlayerCollisions() {
     // if the ratio of solid pixels to empty pixels is above a certain threshold, fade the dampened version in
     const float ratio = musicHits / (float)(musicHits + musicMisses);
     DebugLog::Printf("Music hits: %d, misses: %d, ratio: %f", musicHits, musicMisses, ratio);
-    constexpr float DAMP_FADE_START = 0.55f;
-    constexpr float DAMP_FADE_FINISH = 0.75f;
+    constexpr float DAMP_FADE_START = 0.45f;
+    constexpr float DAMP_FADE_FINISH = 0.65f;
     if (ratio > DAMP_FADE_START) {
         if (ratio > DAMP_FADE_FINISH) {
             m_ingameBgm->SetVolume(0);
@@ -348,6 +349,8 @@ void GameSceneIngame::Draw()
     DebugWaitAndMeasureGPUDone("[GPU] Scene::DrawHUD");
     DebugLog::Draw();
     DebugWaitAndMeasureGPUDone("[GPU] DebugLog::Draw");
+    DebugOverlay::Draw();
+    DebugWaitAndMeasureGPUDone("[GPU] DebugOverlay::Draw");
 
     m_gameTime += 1.0/60.0;
 }
