@@ -33,3 +33,23 @@ void DebugLog::Draw() {
 
 std::vector<std::pair<unsigned long long, OSTick>> DebugProfile::startTimes = {};
 std::vector<TimedSegment> DebugProfile::durations = {};
+
+
+void DebugOverlay::AddPoint(s32 x, s32 y) {
+    if (s_pointSprite == nullptr) {
+        s_pointSprite = new Sprite("/tex/test_sprite_1px.tga", true);
+    }
+    s_points.emplace_back(x, y);
+}
+
+void DebugOverlay::Draw() {
+    s_pointSprite->SetupSampler(false);
+    for (const Vector2i& point : s_points) {
+
+        Render::RenderSprite(s_pointSprite, point.x, point.y);
+    }
+    s_points.clear();
+}
+
+Sprite* DebugOverlay::s_pointSprite = nullptr;
+std::vector<Vector2i> DebugOverlay::s_points = {};

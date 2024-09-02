@@ -77,6 +77,16 @@ private:
     static std::vector<TimedSegment> durations;
 };
 
+class DebugOverlay {
+public:
+    static void AddPoint(s32 x, s32 y);
+    static void Draw();
+
+private:
+    static class Sprite* s_pointSprite;
+    static std::vector<Vector2i> s_points;
+};
+
 static void DebugWaitAndMeasureGPUDone(const char* name)
 {
 #if ENABLE_GPU_PROFILING > 0
