@@ -55,7 +55,7 @@ int main()
     // set polygon mode
     GX2SetPolygonControl(
         GX2_FRONT_FACE_CCW, // Front-face Mode
-        TRUE,              // Disable cullFront
+        FALSE,              // Disable cullFront
         FALSE,              // Disable cullBack
         TRUE,               // Enable Polygon Mode
         GX2_POLYGON_MODE_TRIANGLE, // Front Polygon Mode

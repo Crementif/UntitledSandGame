@@ -1,5 +1,6 @@
 #pragma once
 #include "GameScene.h"
+#include "Map.h"
 #include "TextButton.h"
 #include "../framework/render.h"
 #include "../framework/physics/physics.h"
@@ -54,5 +55,7 @@ private:
     Sprite* m_diedScoreboardSprite = Render::RenderTextSprite(32, 0xFF0000FF, L"YOU DIED!");
     uint32_t m_selectedButton = 0;
     bool m_pressSelectedButton = false;
+    bool m_touchSpawning = false;
+    MAP_PIXEL_TYPE m_touchSpawningType = MAP_PIXEL_TYPE::SAND;
     OSTime m_lastInput = 0;
 };

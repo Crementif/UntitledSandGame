@@ -55,27 +55,13 @@ void GameSceneMenu::HandleInput() {
     // reset last input
     m_pressSelectedButton = false;
 
-    // handle spawning visuals
     Vector2i touchPos = {};
     bool pressedTouchScreen = vpadGetTouchInfo(&touchPos.x, &touchPos.y);
-    if (pressedTouchScreen) {
-        // use render
-        s32 ws_screen_x = (s32)(Render::GetCameraPosition().x / MAP_PIXEL_ZOOM);
-        s32 ws_screen_y = (s32)(Render::GetCameraPosition().y / MAP_PIXEL_ZOOM);
-        s32 ws_touch_x = ws_screen_x + (touchPos.x / MAP_PIXEL_ZOOM);
-        s32 ws_touch_y = ws_screen_y + (touchPos.y / MAP_PIXEL_ZOOM);
-
-        if (!this->GetMap()->IsPixelOOB(ws_touch_x, ws_touch_y)) {
-            PixelType& pt = this->GetMap()->GetPixelNoBoundsCheck(ws_touch_x, ws_touch_y);
-            pt.SetStaticPixelToAir();
-            this->GetMap()->SpawnMaterialPixel(MAP_PIXEL_TYPE::LAVA, _GetRandomSeedFromPixelType(MAP_PIXEL_TYPE::LAVA), ws_touch_x, ws_touch_y);
-        }
-    }
 
     // update touchscreen navigation
     u32 newSelectedButton = std::numeric_limits<u32>::max();
     bool pressedTouchScreenButton = false;
-    if (pressedTouchScreen) {
+    if (pressedTouchScreen && !m_touchSpawning) {
         pressedTouchScreenButton = true;
         if (m_sandbox_btn->GetBoundingBox().Contains(touchPos))
             newSelectedButton = 0;
@@ -87,6 +73,45 @@ void GameSceneMenu::HandleInput() {
             newSelectedButton = 3;
         else
             pressedTouchScreenButton = false;
+    }
+
+    // handle spawning visuals
+    if (pressedTouchScreen && !pressedTouchScreenButton) {
+        s32 ws_screen_x = (s32)(Render::GetCameraPosition().x / MAP_PIXEL_ZOOM);
+        s32 ws_screen_y = (s32)(Render::GetCameraPosition().y / MAP_PIXEL_ZOOM);
+        s32 ws_touch_x = ws_screen_x + (touchPos.x / MAP_PIXEL_ZOOM);
+        s32 ws_touch_y = ws_screen_y + (touchPos.y / MAP_PIXEL_ZOOM);
+
+        // choose next material type each time we touch the screen
+        if (!m_touchSpawning) {
+            if (m_touchSpawningType == MAP_PIXEL_TYPE::SMOKE)
+                m_touchSpawningType = MAP_PIXEL_TYPE::SAND;
+            else
+                m_touchSpawningType = (MAP_PIXEL_TYPE)((u8)m_touchSpawningType + 1);
+            m_touchSpawning = true;
+        }
+
+        // spawn material pixels
+        constexpr s32 SPAWN_RADIUS = 2;
+        for (s32 y = ws_touch_y - SPAWN_RADIUS; y <= ws_touch_y + SPAWN_RADIUS; y++) {
+            for (s32 x = ws_touch_x - SPAWN_RADIUS; x <= ws_touch_x + SPAWN_RADIUS; x++) {
+                if (!this->GetMap()->IsPixelOOB(x, y)) {
+                    PixelType& pt = this->GetMap()->GetPixelNoBoundsCheck(x, y);
+                    if (pt.IsDynamic()) {
+                        pt.SetStaticPixelToAir();
+                        this->GetMap()->SpawnMaterialPixel(m_touchSpawningType, _GetRandomSeedFromPixelType(m_touchSpawningType), x, y);
+                    }
+                    else {
+                        if (!pt.IsFilled())
+                            pt.SetStaticPixel(m_touchSpawningType, _GetRandomSeedFromPixelType(m_touchSpawningType));
+                        this->GetMap()->SetPixelColor(x, y, pt.CalculatePixelColor());
+                    }
+                }
+            }
+        }
+    }
+    else {
+        m_touchSpawning = false;
     }
 
     // update software keyboard
@@ -178,9 +203,10 @@ void GameSceneMenu::HandleInput() {
             s_settings.showCrtFilter = !s_settings.showCrtFilter;
             delete m_crt_btn;
             m_crt_btn = new TextButton(this, AABB{1920.0f / 2, 1080.0f / 2 + 450, 500, 80}, s_buttonSize, s_buttonColor, s_settings.showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
+            break;
         }
         default:
-            OSFatal("Tried to select a button but the current button that is selected isn't handled properly.");
+            CriticalErrorHandler("Tried to select %d button but the current button that is selected isn't handled properly.", m_selectedButton);
     }
 }
 
@@ -216,6 +242,9 @@ void GameSceneMenu::Update() {
     if (m_gameServer) {
         m_gameServer->Update();
         if (m_gameServer->GetPlayerCount() == 1 && m_selectedButton == 0) {
+            m_gameServer->StartGame();
+        }
+        if (m_selectedButton == 1 && pressedStart() && m_gameServer->GetPlayerCount() >= 1) {
             m_gameServer->StartGame();
         }
     }

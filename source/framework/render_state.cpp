@@ -50,7 +50,7 @@ void RenderState::SetTransparencyMode(E_TRANSPARENCY_MODE mode)
     if(sRenderTransparencyMode != mode)
     {
         GX2SetColorControlReg(mode == E_TRANSPARENCY_MODE::ADDITIVE ? &sRenderColorControl_transparency : &sRenderColorControl_noTransparency);
-        if(mode == E_TRANSPARENCY_MODE::ADDITIVE)
+        if (mode == E_TRANSPARENCY_MODE::ADDITIVE)
             GX2SetBlendControlReg(&sRenderBlendReg_transparency);
         sRenderTransparencyMode = mode;
     }

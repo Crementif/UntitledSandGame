@@ -11,9 +11,6 @@
 #include <gx2/surface.h>
 #include <whb/gfx.h>
 
-#include <whb/file.h>
-#include <whb/sdcard.h>
-
 #include "window.h"
 
 #include "render_data.h"
@@ -37,7 +34,7 @@ void _GX2InitTexture(GX2Texture* texturePtr, u32 width, u32 height, u32 depth, u
     texturePtr->surface.use = GX2_SURFACE_USE_TEXTURE;
     texturePtr->surface.dim = surfaceDim;
     texturePtr->surface.tileMode = tileMode;
-    texturePtr->surface.swizzle = swizzle;
+    texturePtr->surface.swizzle = 0; /* don't set the swizzle here */
     texturePtr->viewFirstMip = 0;
     texturePtr->viewNumMips = numMips;
     texturePtr->viewFirstSlice = 0;
@@ -118,7 +115,7 @@ void Framebuffer::SetColorBuffer(u32 index, u32 width, u32 height, E_TEXFORMAT t
 {
     if (index >= MAX_COLOR_BUFFERS)
         return;
-    if(m_colorBufferTexture[index])
+    if (m_colorBufferTexture[index])
     {
         // destroy existing color buffer
         _GX2DeallocateTexture(m_colorBufferTexture[index]);
@@ -299,6 +296,17 @@ void Render::BeginFrame()
     Framebuffer::ApplyBackbuffer();
     GX2ClearColor(WindowGetColorBuffer(), 0.2f, 0.3f, 0.3f, 1.0f); // we could skip this if we were to overdraw the full screen
     WindowMakeContextCurrent();
+    GX2SetPolygonControl(
+        GX2_FRONT_FACE_CCW, // Front-face Mode
+        FALSE,              // Disable cullFront
+        FALSE,              // Disable cullBack
+        TRUE,               // Enable Polygon Mode
+        GX2_POLYGON_MODE_TRIANGLE, // Front Polygon Mode
+        GX2_POLYGON_MODE_TRIANGLE, // Back Polygon Mode
+        FALSE, // Disable Polygon Offset
+        FALSE, // ^^^^^^^^^^^^^^^^^^^^^^
+        FALSE  // ^^^^^^^^^^^^^^^^^^^^^^
+    );
 }
 
 constexpr static __attribute__ ((aligned (256))) u16 s_idx_data[] =

@@ -149,7 +149,7 @@ public:
         s32 pixelMapHeight = visibleWorldPixelsY + MAP_RENDER_VIEW_BORDER * 2;
 
         s_pixelMap = new Framebuffer();
-        s_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RGBA8888_UNORM, true, true);
+        s_pixelMap->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RGBA8888_UNORM, 1, true, true);
 
         s_environmentPrepass = new Framebuffer();
         s_environmentPrepass->SetColorBuffer(0, pixelMapWidth, pixelMapHeight, E_TEXFORMAT::RG88_UNORM, 2, true, true);

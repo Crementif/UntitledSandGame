@@ -13,6 +13,7 @@ public:
 private:
     static bool s_enableLogging;
     static OSTime s_lastInput;
+    static std::mutex s_logQueueMutex;
     static std::vector<std::string> s_logQueue;
 };
 
@@ -83,6 +84,7 @@ public:
     static void Draw();
 
 private:
+    static std::mutex s_pointsMutex;
     static class Sprite* s_pointSprite;
     static std::vector<Vector2i> s_points;
 };
