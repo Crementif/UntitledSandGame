@@ -1,8 +1,9 @@
 ![Tank Trap Banner](./dist/has-banner.png)
 # Tank Trap
 **Tank Trap**, formerly Untitled Sand Game, is a Wii U homebrew game made in a game jam with a simple premise. You control a drill tank in a multiplayer arena with dynamic, 2D physics-based terrain, inspired by games like Noita.
+It was developed by [@Exzap](https://github.com/Exzap) and [@Crementif](https://github.com/Crementif).
 
-Navigate through sand and lava, collect (explosive) items to use against opponents, and watch as the landscape changes with each interaction.
+Drill through sand and lava, collect (explosive) items to use against opponents, and watch as the landscape changes with each interaction.
 Create traps and obstacles for your opponents to fall into, or use the terrain to burn your enemies in all the chaos.
 
 A sandbox mode is also available for solo play.
@@ -13,7 +14,7 @@ A sandbox mode is also available for solo play.
  - Fully multiplayer physics simulation
  - Random item pickups for terrain manipulation
  - Interactive title screen to play around with the physics and materials
- - Dynamic shader effects (made possible with [CafeGLSL](https://github.com/Exzap/CafeGLSL), which was ported by our team)
+ - Dynamic shader effects (made possible with [CafeGLSL](https://github.com/Exzap/CafeGLSL))
  - Works (only) on the Wii U (and Wii U emulators like Cemu), since it was also made as a tech demo for the Wii U
 
 ## Screenshots
