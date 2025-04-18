@@ -46,7 +46,7 @@ void Missile::Update(float timestep) {
         return triggerExplosion(m_parent->GetPlayer());
     }
 
-    // check if missile is in lava
+    // check if the missile is in lava
     Map* map = m_parent->GetMap();
     if (DoesAABBCollide(m_aabb, [map](Vector2f cornerPos) { return map->DoesPixelCollideWithType((s32) cornerPos.x, (s32) cornerPos.y, MAP_PIXEL_TYPE::LAVA); })) {
         return triggerExplosion(m_parent->GetPlayer());

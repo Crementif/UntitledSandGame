@@ -17,10 +17,13 @@ GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboa
     m_selectAudio = new Audio("/sfx/select.ogg");
     m_startAudio = new Audio("/sfx/start.ogg");
 
-    m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+150, 500, 80}, s_buttonSize, s_buttonColor, L"Sandbox");
-    m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+250, 500, 80}, s_buttonSize, s_buttonColor, L"Host");
-    m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+350, 500, 80}, s_buttonSize, s_buttonColor, L"Join");
-    m_crt_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+450, 500, 80}, s_buttonSize, s_buttonColor, s_settings.showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
+    m_sandbox_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+175, 500, 75}, s_buttonSize, s_buttonColor, L"Sandbox");
+    m_host_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+175+90, 500, 75}, s_buttonSize, s_buttonColor, L"Host");
+    m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+175+90+90, 500, 75}, s_buttonSize, s_buttonColor, L"Join");
+    m_crt_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+175+90+90+90, 500, 75}, s_buttonSize, s_buttonColor, s_settings.showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
+
+    std::wstring ipAddress = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(GameServer::GetLocalIPAddress());
+    m_localIpAddress = Render::RenderTextSprite(24, 0xFFFFFFFF, (L"Your IP address is "+ipAddress).c_str());
 
     m_fsClient = (FSClient*)MEMAllocFromDefaultHeap(sizeof(FSClient));
     FSAddClient(m_fsClient, FS_ERROR_FLAG_NONE);
@@ -41,6 +44,15 @@ GameSceneMenu::~GameSceneMenu() {
     delete m_host_btn;
     delete m_join_btn;
     delete m_crt_btn;
+
+    delete m_startGameWithPlayersSprite;
+    delete m_startingGameInSandboxSprite;
+    delete m_localIpAddress;
+    delete m_waitingForGameStartSprite;
+    delete m_connectingToServerSprite;
+    delete m_wonScoreboardSprite;
+    delete m_lostScoreboardSprite;
+    delete m_diedScoreboardSprite;
 
     delete m_selectAudio;
     delete m_startAudio;
@@ -265,22 +277,12 @@ void GameSceneMenu::Draw() {
     // draw objects (buttons)
     this->DoObjectDraws();
 
-    // draw scoreboard
-    if (m_scoreboard == MenuScoreboard::WON) {
-        Render::RenderSprite(m_wonScoreboardSprite, 1920/2-(m_wonScoreboardSprite->GetWidth()/2), 1080/2-(m_wonScoreboardSprite->GetHeight()/2)+60);
-    }
-    if (m_scoreboard == MenuScoreboard::LOST) {
-        Render::RenderSprite(m_lostScoreboardSprite, 1920/2-(m_lostScoreboardSprite->GetWidth()/2), 1080/2-(m_lostScoreboardSprite->GetHeight()/2)+60);
-    }
-    if (m_scoreboard == MenuScoreboard::DIED) {
-        Render::RenderSprite(m_diedScoreboardSprite, 1920/2-(m_diedScoreboardSprite->GetWidth()/2), 1080/2-(m_diedScoreboardSprite->GetHeight()/2)+60);
-    }
-
     // draw matchmaking status
     const bool isHosting = this->m_gameServer != nullptr;
+    const bool isSinglePlayer = isHosting && m_selectedButton == 0;
     const bool isJoining = this->m_gameServer == nullptr && this->m_gameClient != nullptr && !this->m_gameClient->IsConnected();
     const bool isJoined = this->m_gameServer == nullptr && this->m_gameClient != nullptr && this->m_gameClient->IsConnected();
-    if (isHosting) {
+    if (isHosting && !isSinglePlayer) {
         u32 joinedPlayers = this->m_gameServer->GetPlayerCount();
         if (joinedPlayers != this->m_prevPlayerCount) {
             this->m_prevPlayerCount = joinedPlayers;
@@ -288,13 +290,29 @@ void GameSceneMenu::Draw() {
             delete m_startGameWithPlayersSprite;
             m_startGameWithPlayersSprite = Render::RenderTextSprite(32, 0xFFFFFFFF, joinedPlayersText.c_str());
         }
-        Render::RenderSprite(m_startGameWithPlayersSprite, 1920/2-(m_startGameWithPlayersSprite->GetWidth()/2), 1080/2-(m_startGameWithPlayersSprite->GetHeight()/2)+60);
+        Render::RenderSprite(m_startGameWithPlayersSprite, 1920/2-(m_startGameWithPlayersSprite->GetWidth()/2), 1080/2-(m_startGameWithPlayersSprite->GetHeight()/2)+48);
+        Render::RenderSprite(m_localIpAddress, 1920/2-(m_localIpAddress->GetWidth()/2), 1080/2-(m_localIpAddress->GetHeight()/2)+48+32+14);
+    }
+    else if (isHosting && isSinglePlayer) {
+        Render::RenderSprite(m_startingGameInSandboxSprite, 1920/2-(m_startingGameInSandboxSprite->GetWidth()/2), 1080/2-(m_startingGameInSandboxSprite->GetHeight()/2)+60);
     }
     else if (isJoining) {
         Render::RenderSprite(m_waitingForGameStartSprite, 1920/2-(m_waitingForGameStartSprite->GetWidth()/2), 1080/2-(m_waitingForGameStartSprite->GetHeight()/2)+60);
     }
     else if (isJoined) {
         Render::RenderSprite(m_connectingToServerSprite, 1920/2-(m_connectingToServerSprite->GetWidth()/2), 1080/2-(m_connectingToServerSprite->GetHeight()/2)+60);
+    }
+    else {
+        // draw scoreboard
+        if (m_scoreboard == MenuScoreboard::WON) {
+            Render::RenderSprite(m_wonScoreboardSprite, 1920/2-(m_wonScoreboardSprite->GetWidth()/2), 1080/2-(m_wonScoreboardSprite->GetHeight()/2)+64);
+        }
+        if (m_scoreboard == MenuScoreboard::LOST) {
+            Render::RenderSprite(m_lostScoreboardSprite, 1920/2-(m_lostScoreboardSprite->GetWidth()/2), 1080/2-(m_lostScoreboardSprite->GetHeight()/2)+64);
+        }
+        if (m_scoreboard == MenuScoreboard::DIED) {
+            Render::RenderSprite(m_diedScoreboardSprite, 1920/2-(m_diedScoreboardSprite->GetWidth()/2), 1080/2-(m_diedScoreboardSprite->GetHeight()/2)+64);
+        }
     }
 
     // draw debug log

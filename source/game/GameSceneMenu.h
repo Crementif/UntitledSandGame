@@ -47,12 +47,14 @@ private:
     MenuState m_state = MenuState::NORMAL;
     uint32_t m_prevPlayerCount = 1;
     Sprite* m_startGameWithPlayersSprite = Render::RenderTextSprite(32, 0xFFFFFFFF, L"Press START button to start match with 1 player...");
+    Sprite* m_startingGameInSandboxSprite = Render::RenderTextSprite(32, 0xFFFFFFFF, L"Starting game...");
+    Sprite* m_localIpAddress;
     Sprite* m_waitingForGameStartSprite = Render::RenderTextSprite(32, 0xFFFFFFFF, L"Waiting for game to start...");
     Sprite* m_connectingToServerSprite = Render::RenderTextSprite(32, 0xFFFFFFFF, L"Connecting to server...");
     MenuScoreboard m_scoreboard = MenuScoreboard::NORMAL;
-    Sprite* m_wonScoreboardSprite = Render::RenderTextSprite(32, 0x00FF00FF, L"YOU WON!");
-    Sprite* m_lostScoreboardSprite = Render::RenderTextSprite(32, 0xFF0000FF, L"YOU LOST!");
-    Sprite* m_diedScoreboardSprite = Render::RenderTextSprite(32, 0xFF0000FF, L"YOU DIED!");
+    Sprite* m_wonScoreboardSprite = Render::RenderTextSprite(64, 0x00FF00FF, L"YOU WON!");
+    Sprite* m_lostScoreboardSprite = Render::RenderTextSprite(64, 0xFF0000FF, L"YOU LOST!");
+    Sprite* m_diedScoreboardSprite = Render::RenderTextSprite(64, 0xFF0000FF, L"YOU DIED!");
     uint32_t m_selectedButton = 0;
     bool m_pressSelectedButton = false;
     bool m_touchSpawning = false;

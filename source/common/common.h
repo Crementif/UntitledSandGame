@@ -5,6 +5,7 @@
 #include <cstdarg>
 
 #include <sys/unistd.h>
+#include <netdb.h>
 
 #include <array>
 #include <unordered_map>

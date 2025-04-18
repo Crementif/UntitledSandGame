@@ -1,6 +1,4 @@
 #include "GameServer.h"
-#include <coreinit/debug.h>
-#include <coreinit/time.h>
 
 GameServer::GameServer()
 {
