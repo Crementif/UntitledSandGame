@@ -8,12 +8,13 @@ Create traps and obstacles for your opponents to fall into, or use the terrain t
 A sandbox mode is also available for solo play.
 
 ## Features
- - Play Solo In Sandbox Mode
- - Battle Up To 10+ Players Online
- - Fully Multiplayer Physics Simulation
- - Random Item Pickups For Terrain Manipulation
- - Cool, Dynamic Shader Effects (made possible with [CafeGLSL](https://github.com/Exzap/CafeGLSL))
- - Works (only) on Wii U and Cemu
+ - Play solo in Sandbox Mode
+ - Battle up to 10+ players online
+ - Fully multiplayer physics simulation
+ - Random item pickups for terrain manipulation
+ - Interactive title screen to play around with the physics and materials
+ - Dynamic shader effects (made possible with [CafeGLSL](https://github.com/Exzap/CafeGLSL), which was ported by our team)
+ - Works (only) on the Wii U (and Wii U emulators like Cemu), since it was also made as a tech demo for the Wii U
 
 ## Screenshots
 ![Screenshot of a multiplayer match of Tank Trap, showing a black hole getting shot at another player which causes the nearby ground to explode](./dist/screenshot.png)
@@ -36,7 +37,7 @@ A sandbox mode is also available for solo play.
  - Press B to use your item
  - Press Select to toggle the debug overlay
 
-<sub><sup>Secret cheat: In sandbox mode, having the debug overlay open allows you to keep your item after using it. Infinite items!</sup></sub>
+<sub>Secret cheat: In sandbox mode, having the debug overlay open allows you to keep your item after using it, meaning you have infinite items!</sub>
 
 ## How To Compile
 
