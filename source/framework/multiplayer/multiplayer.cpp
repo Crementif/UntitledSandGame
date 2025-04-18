@@ -1,25 +1,45 @@
 #include "multiplayer.h"
 
 bool RelayServer::AcceptConnections() {
-    if ((receiving_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+    if ((receiving_socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0) {
+        CriticalErrorHandler("Error: Failed to create socket. errno: %d\n", errno);
         return false;
+    }
     int sockOptionEnable = 1;
-    setsockopt(receiving_socket, SOL_SOCKET, SO_NONBLOCK, &sockOptionEnable, sizeof(sockOptionEnable));
+    if (setsockopt(receiving_socket, SOL_SOCKET, SO_NONBLOCK, &sockOptionEnable, sizeof(sockOptionEnable)) < 0) {
+        CriticalErrorHandler("Error: Failed to set socket options. errno: %d\n", errno);
+        return false;
+    }
+
+    if (setsockopt(receiving_socket, SOL_SOCKET, SO_REUSEADDR, &sockOptionEnable, sizeof(sockOptionEnable)) < 0) {
+        CriticalErrorHandler("Error: Failed to set socket options. errno: %d\n", errno);
+        return false;
+    }
 
     receiving_addr.sin_port = htons(8890);
     receiving_addr.sin_family = AF_INET;
     receiving_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    if (bind(receiving_socket, (struct sockaddr*)&receiving_addr, sizeof(receiving_addr)) < 0) return false;
+    if (bind(receiving_socket, (struct sockaddr*)&receiving_addr, sizeof(receiving_addr)) < 0) {
+        CriticalErrorHandler("Error: Failed to bind socket. errno: %d\n", errno);
+        return false;
+    }
 
-    if (listen(receiving_socket, 1) < 0) return false;
+    if (listen(receiving_socket, 1) < 0) {
+        CriticalErrorHandler("Error: Failed to listen on socket. errno: %d\n", errno);
+        return false;
+    }
     return true;
 };
 
 RelayServer::~RelayServer() {
     for (auto& client : clients) {
-        close(client.socket);
+        if (close(client.socket) < 0) {
+            CriticalErrorHandler("Error: Failed to close client socket. errno: %d\n",  errno);
+        }
     }
-    close(receiving_socket);
+    if (close(receiving_socket) < 0) {
+        CriticalErrorHandler("Error: Failed to close socket. errno: %d\n", errno);
+    }
 };
 
 u32 RelayServer::HandleConnectingPlayers() {
