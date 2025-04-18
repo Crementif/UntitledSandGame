@@ -237,7 +237,7 @@ void PhysicsManager::ProcessBall(PhysicsMovingBall* obj, f32 timestep)
 
             Vector2f reflectionVelocity = reflectionVec * velocityLength;
             obj->m_velocity = reflectionVelocity * forceDampFactor;
-            // and set move vec to the remaining distance to be travelled for this update cycle
+            // and set move vec to the remaining distance to be traveled for this update cycle
             moveVec = obj->m_velocity * (1.0 - nearestTOC);
             if(velocityLength > 50.0) // only consider it a reported collision if the force was strong enough
                 obj->m_hasCollisionQueued = true;

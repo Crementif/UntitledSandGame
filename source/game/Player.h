@@ -14,6 +14,7 @@ public:
             bool walkingLeft : 1;
             bool walkingRight : 1;
             bool isDrilling : 1;
+            bool isTurboBoost : 1;
         };
         u8 rawBits;
     };
@@ -39,7 +40,10 @@ public:
     u32 TakeDamage(u8 damage = 1);
     bool IsInvincible() const { return m_invincibility >= OSGetTime(); }
     bool IsSpectating() const { return m_spectating; }
-    bool IsTurboBoosting() const { return m_turboBoost >= OSGetTime(); }
+    bool IsTurboBoosting() {
+        m_moveFlags.isTurboBoost = m_turboBoost >= OSGetTime();
+        return m_moveFlags.isTurboBoost;
+    }
     void ChangeToSpectator();
     GameClient::GAME_ABILITY GetAbility() const { return m_ability; }
     void GiveAbility(GameClient::GAME_ABILITY ability) { m_ability = ability; }

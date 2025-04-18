@@ -279,8 +279,8 @@ public:
         s32 pixelY = (s32)camPos.y;
         s32 subscrollX = pixelX % MAP_PIXEL_ZOOM;
         s32 subscrollY = pixelY % MAP_PIXEL_ZOOM;
-        f32 gridOffsetX = pixelWidth * -(f32)subscrollX * 0.66f; // why 0.66?
-        f32 gridOffsetY = pixelHeight * 0.5f * (f32)subscrollY;
+        s32 gridOffsetX = (s32)(pixelWidth * (f32)MAP_PIXEL_ZOOM * (f32)subscrollX);
+        s32 gridOffsetY = (s32)(pixelHeight * (f32)MAP_PIXEL_ZOOM * (f32)subscrollY);
 
         s32 pixelMapWidth = pixelMapTexture->surface.width;
         s32 pixelMapHeight = pixelMapTexture->surface.height;

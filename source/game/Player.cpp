@@ -252,6 +252,7 @@ void Player::HandleLocalPlayerControl()
 // "down" is +y
 // "up" is -y
 // top left corner of the level is 0/0
+constexpr f32 PLAYER_SPEED = 1.5f;
 void Player::Update(float timestep)
 {
     Map* map = m_parent->GetMap();
@@ -275,18 +276,18 @@ void Player::Update(float timestep)
         // air movement
         if(m_moveFlags.walkingLeft)
         {
-            m_moveAnimRot -= M_PI_4/5.0f;
+            m_moveAnimRot -= (M_PI_4/5.0f)*PLAYER_SPEED;
             if(m_speed.x > -1.0)
-                m_speed.x -= 0.2f;
+                m_speed.x -= 0.2f*PLAYER_SPEED;
 
             if (m_moveAnimRot <= 0.01)
                 m_moveAnimRot = M_TWOPI;
         }
         else if(m_moveFlags.walkingRight)
         {
-            m_moveAnimRot += M_PI_4/5.0f;
+            m_moveAnimRot += (M_PI_4/5.0f)*PLAYER_SPEED;
             if(m_speed.x < 1.0)
-                m_speed.x += 0.2f;
+                m_speed.x += 0.2f*PLAYER_SPEED;
 
             if (m_moveAnimRot <= 0.01)
                 m_moveAnimRot = M_TWOPI;
@@ -297,18 +298,18 @@ void Player::Update(float timestep)
         // ground movement
         if(m_moveFlags.walkingLeft)
         {
-            m_moveAnimRot -= M_PI_4/10.0f;
-            if(m_speed.x > -0.4)
-                m_speed.x -= (IsTurboBoosting() ? 0.4f : 0.15f);
+            m_moveAnimRot -= (M_PI_4/10.0f)*PLAYER_SPEED;
+            if(m_speed.x > -0.4*PLAYER_SPEED)
+                m_speed.x -= (IsTurboBoosting() ? 0.4f*PLAYER_SPEED : 0.15f*PLAYER_SPEED);
 
             if (m_moveAnimRot <= 0.01)
                 m_moveAnimRot = M_TWOPI;
         }
         else if(m_moveFlags.walkingRight)
         {
-            m_moveAnimRot += M_PI_4/10.0f;
-            if(m_speed.x < 0.4)
-                m_speed.x += (IsTurboBoosting() ? 0.4f : 0.15f);
+            m_moveAnimRot += (M_PI_4/10.0f)*PLAYER_SPEED;
+            if(m_speed.x < 0.4*PLAYER_SPEED)
+                m_speed.x += (IsTurboBoosting() ? 0.4f*PLAYER_SPEED : 0.15f*PLAYER_SPEED);
 
             if (m_moveAnimRot >= M_TWOPI)
                 m_moveAnimRot = 0.0;
@@ -433,7 +434,7 @@ void Player::Update_MovementSFX(float timestep) {
 
 void Player::Update_DrillMode(float timestep)
 {
-    m_speed = Vector2f((IsTurboBoosting() ? 1.0f : 0.4f), 0.0f).Rotate(m_drillAngle);
+    m_speed = Vector2f((IsTurboBoosting() ? 1.0f*PLAYER_SPEED : 0.4f*PLAYER_SPEED), 0.0f).Rotate(m_drillAngle);
     Vector2f newPos = m_pos + m_speed;
 
     Map* map = m_parent->GetMap();
@@ -445,19 +446,19 @@ void Player::Update_DrillMode(float timestep)
     if(!DoesPlayerCollideAtPos(newPos.x, newPos.y + 2.0f))
     {
         // falling!
-        m_speed.x = m_speed.x * 0.9f;
+        m_speed.x = m_speed.x * 0.95f;
         m_speed.y += 0.16f;
     }
     else
-        m_speed = m_speed * 0.9f;
+        m_speed = m_speed * 0.95f;
 
-    m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + (IsTurboBoosting() ? 3 : 1);
+    m_drillAnimIdx = m_drillAnimIdx > 45 ? 0 : m_drillAnimIdx + (IsTurboBoosting() ? 3 : 2);
 
     // move wheels slowly
     if (m_speed.x > 0.1f)
-        m_moveAnimRot += 0.05f;
+        m_moveAnimRot += 0.05f*PLAYER_SPEED;
     else if (m_speed.x < -0.1f)
-        m_moveAnimRot -= 0.05f;
+        m_moveAnimRot -= 0.05f*PLAYER_SPEED;
 }
 
 void Player::Update_SpectatingMode(float timestep)
