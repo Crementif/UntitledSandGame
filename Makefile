@@ -18,6 +18,7 @@ APP_SHORTNAME	:=	Tank Trap
 APP_AUTHOR		:=	I made this :)
 
 include $(DEVKITPRO)/wut/share/wut_rules
+export GLSLCOMPILER	:=	$(TOPDIR)/dist/glslcompiler.elf
 
 #-------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -42,6 +43,7 @@ SOURCES		:=	source/common source/framework source/framework/physics source/frame
 DATA		:=	data
 INCLUDES	:=	include
 CONTENT		:=	source/assets
+SHADERS		:=	source/assets/shaders
 ICON		:=	dist/icon.png
 TV_SPLASH	:=	dist/tv-splash.png
 DRC_SPLASH	:=	dist/drc-splash.png
@@ -108,6 +110,8 @@ export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 export OFILES 		:=	$(OFILES_BIN) $(OFILES_SRC)
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
+export GLSLFILES	:=	$(foreach dir,$(SHADERS),/$(wildcard $(TOPDIR)/$(dir)/*.vs)) \
+						$(foreach dir,$(SHADERS),/$(wildcard $(TOPDIR)/$(dir)/*.ps))
 
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
@@ -143,6 +147,8 @@ else ifneq (,$(wildcard $(TOPDIR)/splash.png))
 	export APP_DRC_SPLASH := $(TOPDIR)/splash.png
 endif
 
+export SHADER_DIRS := $(TOPDIR)/$(SHADERS)
+
 .PHONY: $(BUILD) both release debug clean all
 
 #-------------------------------------------------------------------------------
@@ -176,6 +182,7 @@ else
 
 DEPENDS			:=	$(OFILES:.o=.d)
 CONTENT_DEPENDS	:=	$(shell find $(APP_CONTENT) -type f) $(APP_ICON) $(APP_TV_SPLASH) $(APP_DRC_SPLASH)
+SHADER_DEPENDS	:=  $(GLSLFILES:%=%.gsh)
 
 #-------------------------------------------------------------------------------
 # main targets
@@ -190,21 +197,28 @@ $(OUTPUT).wua: $(OUTPUT).rpx
 	@mkdir $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
 	@cp -r $(TOPDIR)/$(CONTENT)/. $(TOPDIR)/dist/wua/00050000102b2b2b_v0/content/
 	@rm -f $(OUTPUT).wua
-	# If you are trying to run this makefile on Windows, you need to swap zarchive_static.elf with zarchive.exe.
+	@# If you are trying to run this makefile on Windows, you need to swap zarchive_static.elf with zarchive.exe.
 	@$(TOPDIR)/dist/zarchive_static.elf $(TOPDIR)/dist/wua $(OUTPUT).wua
 	@echo built ... sand.wua
-$(OUTPUT).rpx: $(OUTPUT).elf $(CONTENT_DEPENDS)
+$(OUTPUT).rpx: $(OUTPUT).elf $(SHADER_DEPENDS) $(CONTENT_DEPENDS)
 $(OUTPUT).elf: $(OFILES)
 
-$(OFILES_SRC)	: $(HFILES_BIN)
+$(OFILES_SRC): $(HFILES_BIN)
 
 #-------------------------------------------------------------------------------
 # you need a rule like this for each extension you use as binary data
 #-------------------------------------------------------------------------------
-%.bin.o	%_bin.h :	%.bin
-#-------------------------------------------------------------------------------
+%.bin.o	%_bin.h: %.bin
 	@echo $(notdir $<)
 	@$(bin2o)
+
+%.vs.gsh: %.vs
+	@echo "compiling $(notdir $<)..."
+	@$(GLSLCOMPILER) -vs $< -o $@ 2>&1 >&-
+
+%.ps.gsh: %.ps
+	@echo "compiling $(notdir $<)..."
+	@$(GLSLCOMPILER) -ps $< -o $@ 2>&1 >&-
 
 -include $(DEPENDS)
 

@@ -44,6 +44,7 @@ build_debug/
 /cemu/*
 !/cemu/.gitkeep
 !/cemu/cafeLibs/glslcompiler.rpl
+!/dist/glslcompiler.elf
 !/dist/zarchive.exe
 !/dist/zarchive_static.elf
 /tools/**
@@ -52,5 +53,6 @@ build_debug/
 # Assets folder
 /source/assets/font/*
 !/source/assets/font/*.tga
+/source/assets/shaders/*.gsh
 
 dist/wua/00050000102b2b2b_v0/content/

@@ -16,6 +16,7 @@ struct Vertex {
 class GX2ShaderSet {
 public:
     explicit GX2ShaderSet(std::string_view name);
+    ~GX2ShaderSet();
 
     void Prepare() const;
     void Activate() const;
@@ -27,6 +28,7 @@ public:
 
 private:
     bool compiledSuccessfully = false;
+    bool precompiled = false;
     GX2FetchShader* fetchShader;
     GX2VertexShader* vertexShader;
     GX2PixelShader* fragmentShader;

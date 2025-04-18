@@ -53,21 +53,34 @@ GX2ShaderSet::GX2ShaderSet(const std::string_view name)
             WHBLogPrintf("Failed to compile pixel shader: %s", outputBuff);
             return;
         }
+        this->precompiled = false;
         this->vertexShader = vs;
         this->fragmentShader = ps;
     }
     else {
         WHBLogPrintf("Loading precompiled shaders for %s", name.data());
-        auto vertexBytes = _LoadShaderFile(name, ".precompiled.vs");
-        auto pixelBytes = _LoadShaderFile(name, ".precompiled.ps");
+        auto vertexBytes = _LoadShaderFile(name, ".vs.gsh");
+        auto pixelBytes = _LoadShaderFile(name, ".ps.gsh");
 
-        this->vertexShader = DeserializeVertexShader(vertexBytes);
-        this->fragmentShader = DeserializePixelShader(pixelBytes);
+        this->precompiled = true;
+        this->vertexShader = WHBGfxLoadGFDVertexShader(0, vertexBytes.data());
+        this->fragmentShader = WHBGfxLoadGFDPixelShader(0, pixelBytes.data());
     }
 
     this->fetchShader = &s_defaultFetchShader;
     this->Prepare();
     this->compiledSuccessfully = true;
+}
+
+GX2ShaderSet::~GX2ShaderSet() {
+    if (vertexShader && precompiled) {
+        WHBGfxFreeVertexShader(vertexShader);
+        vertexShader = nullptr;
+    }
+    if (fragmentShader && precompiled) {
+        WHBGfxFreePixelShader(fragmentShader);
+        fragmentShader = nullptr;
+    }
 }
 
 void GX2ShaderSet::Prepare() const
