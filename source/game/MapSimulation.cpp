@@ -205,7 +205,7 @@ void Map::HandleSynchronizedEvents()
     }
 }
 
-#define DIGGING_RADIUS      11
+#define DIGGING_RADIUS      12
 #define TRANSITION_RADIUS   14
 #define SIMULATE_RADIUS     15
 void Map::HandleSynchronizedEvent_Drilling(u32 playerId, Vector2f pos)

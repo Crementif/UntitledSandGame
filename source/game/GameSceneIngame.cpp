@@ -244,7 +244,7 @@ void GameSceneIngame::UpdateMultiplayer()
     }
 }
 
-constexpr s32 COLLISION_RADIUS = 9;
+constexpr s32 COLLISION_RADIUS = 14;
 constexpr s32 BGM_COLLISION_RADIUS = 18;
 void GameSceneIngame::HandlePlayerCollisions() {
     // check for collisions with other objects
