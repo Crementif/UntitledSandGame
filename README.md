@@ -23,13 +23,13 @@ A sandbox mode is also available for solo play.
 ## How To Install
 #### For Wii U:
  1. Download Tank Trap  
-    a. Download the game from the Homebrew App Store  
-    b. Download the latest **.zip version** from the [releases page](https://github.com/Crementif/UntitledSandGame/release) and extract it to the root of the SD card
+    a. Download it by searching Tank Trap in the Homebrew App Store on your Wii U or by visiting [hb-app.store/wiiu/TankTrap](https://hb-app.store/wiiu/TankTrap).  
+    b. Download the `sand.wuhb` from the [releases page](https://github.com/Crementif/UntitledSandGame/release), and put the file on your SD card in the `sd:/wiiu/apps` folder.  
  2. Launch Tank Trap from your home screen or homebrew launcher.
 
 #### For Cemu (2.0 only!):
- 1. Download the latest **.wua version** from the [releases page](https://github.com/Crementif/UntitledSandGame/release) and move it to your PC's Wii U games folder
- 2. Refresh Cemu's game list and it should appear! You can also load the .wua file file through the File->Load File menu option
+ 1. Download the latest `sand.wua` or `sand.wuhb` from the [releases page](https://github.com/Crementif/UntitledSandGame/release) and put it alongside your other Cemu games.
+ 2. Refresh Cemu's game list and it should appear! You can also load the .wua or .wuhb file file through the `File->Load File` menu option.
 
 ## How To Play
  - Use the left stick to move your tank
