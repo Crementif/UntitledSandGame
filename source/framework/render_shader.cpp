@@ -40,12 +40,12 @@ GX2ShaderSet::GX2ShaderSet(const std::string_view name)
     std::string psSource = _LoadShaderSource(name, ".ps");
 
     char outputBuff[1024];
-    GX2VertexShader* vs = GLSL_CompileVertexShader(vsSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
+    GX2VertexShader* vs = CompileVertexShader(vsSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
     if (!vs) {
         WHBLogPrintf("Failed to compile vertex shader: %s", outputBuff);
         return;
     }
-    GX2PixelShader* ps = GLSL_CompilePixelShader(psSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
+    GX2PixelShader* ps = CompilePixelShader(psSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
     if (!ps) {
         WHBLogPrintf("Failed to compile pixel shader: %s", outputBuff);
         FreeVertexShader(vs);

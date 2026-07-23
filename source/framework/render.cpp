@@ -220,9 +220,8 @@ void _InitShaderCompiler()
 {
     if(!s_compilerInitialized)
     {
-        if (GLSL_Init())
-            s_compilerInitialized = true;
-        // static CafeGLSL is linked in, so no runtime RPL lookup is needed here.
+        InitGLSLCompiler();
+        s_compilerInitialized = true;
     }
 }
 
@@ -276,7 +275,7 @@ void Render::Shutdown()
     sft_freefont(s_fontFace.font);
 
     if (s_compilerInitialized) {
-        GLSL_Shutdown();
+        DestroyGLSLCompiler();
         s_compilerInitialized = false;
     }
 
