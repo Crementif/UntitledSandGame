@@ -68,7 +68,7 @@ LIBS		:=	-lcafeglsl -lwut
 # list of directories containing libraries, this must be the top level
 # containing include and lib
 #-------------------------------------------------------------------------------
-LIBDIRS	:= $(TOPDIR)/external/cafeglsl $(PORTLIBS) $(WUT_ROOT)
+LIBDIRS	:= $(TOPDIR)/external $(PORTLIBS) $(WUT_ROOT)
 
 #-------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -195,7 +195,7 @@ $(OUTPUT).wua: $(OUTPUT).rpx
 	@$(TOPDIR)/dist/zarchive_static.elf $(TOPDIR)/dist/wua $(OUTPUT).wua
 	@echo built ... sand.wua
 $(OUTPUT).rpx: $(OUTPUT).elf $(CONTENT_DEPENDS)
-$(OUTPUT).elf: $(OFILES) $(TOPDIR)/external/cafeglsl/lib/libcafeglsl.a
+$(OUTPUT).elf: $(OFILES) $(TOPDIR)/external/lib/libcafeglsl.a
 
 $(OFILES_SRC): $(HFILES_BIN)
 

@@ -58,14 +58,18 @@ alignas(256) u32 s_mapDrawUFPixel[4] =
     // [0]: time, 0, 0, 0
 };
 
-alignas(256) u32 s_envBlurUFPixelHorizontal[4] =
+// blurParams is the shader's only loose uniform, so it occupies components 0..3.
+constexpr u32 ENV_BLUR_UNIFORM_REGISTER_OFFSET = 0;
+constexpr u32 ENV_BLUR_UNIFORM_REGISTER_WORDS = 4;
+
+alignas(16) f32 s_envBlurUFPixelHorizontal[ENV_BLUR_UNIFORM_REGISTER_WORDS] =
 {
-    // [0]: pixelSizeX, pixelSizeY, isVertical, 0
+    // Pixel uniform registers 0..3: pixelSizeX, pixelSizeY, isVertical, 0
 };
 
-alignas(256) u32 s_envBlurUFPixelVertical[4] =
+alignas(16) f32 s_envBlurUFPixelVertical[ENV_BLUR_UNIFORM_REGISTER_WORDS] =
 {
-    // [0]: pixelSizeX, pixelSizeY, isVertical, 0
+    // Pixel uniform registers 0..3: pixelSizeX, pixelSizeY, isVertical, 0
 };
 
 inline u32 EndianSwap_F32(f32 v)
@@ -224,6 +228,7 @@ public:
 
         // do environment blur/bloom-like pass to create a glow effect around lava pixels and blur solids (light obstructions) to create ambient occlusion
         s_shaderEnvironmentPass.Activate();
+        RenderState::SetShaderMode(GX2_SHADER_MODE_UNIFORM_REGISTER);
 
         // horizontal pass
         s_environmentTempMap->Apply();
@@ -232,10 +237,10 @@ public:
         GX2SetPixelTexture(s_environmentPrepass->GetColorBufferTexture(0), 0);
         GX2SetPixelSampler(&sRenderBaseSampler1_linear, 0);
 
-        s_envBlurUFPixelHorizontal[0] = EndianSwap_F32(1.0f / s_environmentPrepass->GetColorBufferTexture(0)->surface.width);
-        s_envBlurUFPixelHorizontal[1] = EndianSwap_F32(1.0f / s_environmentPrepass->GetColorBufferTexture(0)->surface.height);
-        s_envBlurUFPixelHorizontal[2] = 0;
-        GX2SetPixelUniformBlock(0, sizeof(s_envBlurUFPixelHorizontal), s_envBlurUFPixelHorizontal);
+        s_envBlurUFPixelHorizontal[0] = 1.0f / s_environmentPrepass->GetColorBufferTexture(0)->surface.width;
+        s_envBlurUFPixelHorizontal[1] = 1.0f / s_environmentPrepass->GetColorBufferTexture(0)->surface.height;
+        s_envBlurUFPixelHorizontal[2] = 0.0f;
+        GX2SetPixelUniformReg(ENV_BLUR_UNIFORM_REGISTER_OFFSET, ENV_BLUR_UNIFORM_REGISTER_WORDS, s_envBlurUFPixelHorizontal);
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, s_idx_data, 0, 1); // environment_pass.ps
         DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::HorizontalPass::DrawQuad");
 
@@ -246,10 +251,10 @@ public:
         GX2SetPixelTexture(s_environmentTempMap->GetColorBufferTexture(0), 0);
         GX2SetPixelSampler(&sRenderBaseSampler1_linear, 0);
 
-        s_envBlurUFPixelVertical[0] = EndianSwap_F32(1.0f / s_environmentTempMap->GetColorBufferTexture(0)->surface.width);
-        s_envBlurUFPixelVertical[1] = EndianSwap_F32(1.0f / s_environmentTempMap->GetColorBufferTexture(0)->surface.height);
-        s_envBlurUFPixelVertical[2] = 1;
-        GX2SetPixelUniformBlock(0, sizeof(s_envBlurUFPixelVertical), s_envBlurUFPixelVertical);
+        s_envBlurUFPixelVertical[0] = 1.0f / s_environmentTempMap->GetColorBufferTexture(0)->surface.width;
+        s_envBlurUFPixelVertical[1] = 1.0f / s_environmentTempMap->GetColorBufferTexture(0)->surface.height;
+        s_envBlurUFPixelVertical[2] = 1.0f;
+        GX2SetPixelUniformReg(ENV_BLUR_UNIFORM_REGISTER_OFFSET, ENV_BLUR_UNIFORM_REGISTER_WORDS, s_envBlurUFPixelVertical);
         GX2DrawIndexedEx(GX2_PRIMITIVE_MODE_TRIANGLES, 6, GX2_INDEX_TYPE_U16, s_idx_data, 0, 1); // environment_pass.ps
         DebugWaitAndMeasureGPUDone("[GPU] Map::DoEnvironmentPass::VerticalPass::DrawQuad");
     }

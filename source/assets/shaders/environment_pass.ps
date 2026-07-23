@@ -3,10 +3,7 @@
 // inputs
 layout(location = 0) in vec2 attr_uv;
 layout(binding = 0) uniform sampler2D tex_pixelMap;
-layout(binding = 0) uniform uf_data {
-	vec2 pixelSize;
-	uint isVertical;
-};
+uniform vec4 blurParams; // xy: inverse texture size, z: vertical-pass flag
 
 // outputs
 layout(location = 0) out vec2 out_pixel0;
@@ -20,7 +17,9 @@ void main()
 	out_pixel0 = texture(tex_pixelMap, attr_uv).rg * Weights[0];
 	for (int i = 1; i < Quality; i++)
 	{
-		vec2 currentSamplePos = isVertical == 0 ? vec2(pixelSize.x * i, 0.0) : vec2(0.0, pixelSize.y * i);
+		vec2 currentSamplePos = blurParams.z == 0.0
+			? vec2(blurParams.x * i, 0.0)
+			: vec2(0.0, blurParams.y * i);
 		out_pixel0 += texture(tex_pixelMap, attr_uv + currentSamplePos).rg * Weights[i];
 		out_pixel0 += texture(tex_pixelMap, attr_uv - currentSamplePos).rg * Weights[i];
 	}
