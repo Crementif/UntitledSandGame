@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <memory>
 #include <chrono>
+#include <mutex>
 
 #include <coreinit/memdefaultheap.h>
 #include <coreinit/memfrmheap.h>
@@ -80,6 +81,29 @@ extern "C" {
 [[noreturn]]
 void CriticalErrorHandler(const char* msg, ...);
 
+inline std::wstring WidenAscii(const std::string& text)
+{
+    std::wstring result;
+    result.reserve(text.size());
+    for (unsigned char c : text) {
+        result.push_back(static_cast<wchar_t>(c));
+    }
+    return result;
+}
+
+inline std::string NarrowAscii(const char16_t* text)
+{
+    std::string result;
+    if (!text) {
+        return result;
+    }
+
+    for (const char16_t* p = text; *p != u'\0'; ++p) {
+        result.push_back(static_cast<char>(*p));
+    }
+    return result;
+}
+
 inline std::vector<u8> LoadFileToMem(const std::string path)
 {
     std::ifstream fs(("fs:/vol/content/"+path).c_str(), std::ios::in | std::ios::binary);
@@ -137,6 +161,6 @@ constexpr unsigned long long constexpr_CalcHashString(const char* str, unsigned 
     return *str ? constexpr_CalcHashString(str + 1, hash * 33 + static_cast<unsigned char>(*str)) : hash;
 }
 
-constexpr std::uint64_t operator"" _hash(const char* str, std::size_t size) {
+constexpr std::uint64_t operator""_hash(const char* str, std::size_t size) {
     return constexpr_CalcHashString(str, size);
 }

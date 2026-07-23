@@ -22,7 +22,7 @@ GameSceneMenu::GameSceneMenu(MenuScoreboard scoreboard): GameScene(), m_scoreboa
     m_join_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+175+90+90, 500, 75}, s_buttonSize, s_buttonColor, L"Join");
     m_crt_btn = new TextButton(this, AABB{1920.0f/2, 1080.0f/2+175+90+90+90, 500, 75}, s_buttonSize, s_buttonColor, s_settings.showCrtFilter ? L"Filter: ON" : L"Filter: OFF");
 
-    std::wstring ipAddress = std::wstring_convert<std::codecvt_utf8<wchar_t>>().from_bytes(GameServer::GetLocalIPAddress());
+    std::wstring ipAddress = WidenAscii(GameServer::GetLocalIPAddress());
     m_localIpAddress = Render::RenderTextSprite(24, 0xFFFFFFFF, (L"Your IP address is "+ipAddress).c_str());
 
     m_fsClient = (FSClient*)MEMAllocFromDefaultHeap(sizeof(FSClient));
@@ -138,7 +138,7 @@ void GameSceneMenu::HandleInput() {
     // handle keyboard actions
     if (nn::swkbd::GetStateInputForm() == nn::swkbd::State::Visible) {
         if (nn::swkbd::IsDecideOkButton(nullptr)) {
-            auto ipAddress = std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>().to_bytes(nn::swkbd::GetInputFormString());
+            auto ipAddress = NarrowAscii(nn::swkbd::GetInputFormString());
             m_gameClient = std::make_unique<GameClient>(ipAddress);
 
             nn::swkbd::DisappearInputForm();

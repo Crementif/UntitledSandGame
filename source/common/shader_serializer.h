@@ -410,7 +410,7 @@ GX2PixelShader* DeserializePixelShader(const std::vector<uint8_t>& data) {
 void CompareVertexShader(GX2VertexShader* a, GX2VertexShader* b) {
     const auto compareValues = [](const char* name, auto a, auto b) {
         if (a != b) {
-            WHBLogPrintf("Vertex shader %s differs: %d != %d", name, a, b);
+            WHBLogPrintf("Vertex shader %s differs: %.9g != %.9g", name, static_cast<double>(a), static_cast<double>(b));
         }
     };
     const auto compareStrings = [](const char* name, const char* a, const char* b) {
@@ -515,7 +515,7 @@ void CompareVertexShader(GX2VertexShader* a, GX2VertexShader* b) {
 void ComparePixelShader(GX2PixelShader* a, GX2PixelShader* b) {
     const auto compareValues = [](const char* name, auto a, auto b) {
         if (a != b) {
-            WHBLogPrintf("Pixel shader %s differs: %d != %d", name, a, b);
+            WHBLogPrintf("Pixel shader %s differs: %.9g != %.9g", name, static_cast<double>(a), static_cast<double>(b));
         }
     };
     const auto compareStrings = [](const char* name, const char* a, const char* b) {
