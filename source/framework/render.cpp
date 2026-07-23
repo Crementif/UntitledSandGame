@@ -222,10 +222,7 @@ void _InitShaderCompiler()
     {
         if (GLSL_Init())
             s_compilerInitialized = true;
-        // else
-        // {
-        //     OSFatal("Error: Place the glslcompiler.rpl in the /wiiu/libs/ folder on your SD card.");
-        // }
+        // static CafeGLSL is linked in, so no runtime RPL lookup is needed here.
     }
 }
 

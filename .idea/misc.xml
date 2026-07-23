@@ -5,6 +5,9 @@
       <file path="$PROJECT_DIR$/include" />
       <file path="$PROJECT_DIR$/source" />
     </sourceRoots>
+    <libraryRoots>
+      <file path="$PROJECT_DIR$/external" />
+    </libraryRoots>
     <excludeRoots>
       <file path="$PROJECT_DIR$/build_debug" />
       <file path="$PROJECT_DIR$/build_release" />

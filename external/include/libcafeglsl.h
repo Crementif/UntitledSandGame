@@ -1,0 +1,56 @@
+#pragma once
+
+#include <stdbool.h>
+#include <stdint.h>
+
+#if defined(__WUT__) || defined(__WIIU__)
+#include <gx2/shaders.h>
+#else
+#include "cafe_gx2.h"
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef enum GLSL_COMPILER_FLAG {
+   GLSL_COMPILER_FLAG_NONE = 0,
+   GLSL_COMPILER_FLAG_GENERATE_DISASSEMBLY = 1 << 0,
+   GLSL_COMPILER_FLAG_PRINT_DISASSEMBLY_TO_STDERR = 1 << 0,
+} GLSL_COMPILER_FLAG;
+
+void InitGLSLCompiler(void);
+void DestroyGLSLCompiler(void);
+const char *GetGLSLCompilerVersion(void);
+
+GX2VertexShader *CompileVertexShader(const char *shaderSource,
+                                    char *infoLogOut,
+                                    int infoLogMaxLength,
+                                    GLSL_COMPILER_FLAG flags);
+GX2PixelShader *CompilePixelShader(const char *shaderSource,
+                                  char *infoLogOut,
+                                  int infoLogMaxLength,
+                                  GLSL_COMPILER_FLAG flags);
+void FreeVertexShader(GX2VertexShader *shader);
+void FreePixelShader(GX2PixelShader *shader);
+
+inline GX2VertexShader* (*GLSL_CompileVertexShader)(const char* shaderSource, char* infoLogOut, int infoLogMaxLength, GLSL_COMPILER_FLAG flags) = nullptr;
+inline GX2PixelShader* (*GLSL_CompilePixelShader)(const char* shaderSource, char* infoLogOut, int infoLogMaxLength, GLSL_COMPILER_FLAG flags) = nullptr;
+
+static inline bool GLSL_Init(void)
+{
+   InitGLSLCompiler();
+   GLSL_CompileVertexShader = CompileVertexShader;
+   GLSL_CompilePixelShader = CompilePixelShader;
+   return true;
+}
+
+static inline bool GLSL_Shutdown(void)
+{
+   DestroyGLSLCompiler();
+   return true;
+}
+
+#ifdef __cplusplus
+}
+#endif

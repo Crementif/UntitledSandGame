@@ -51,19 +51,24 @@ public:
     static void End(const HashedString&& segmentName) {
         // iterate in reverse to allow the same segment to be more properly timed when nested
         auto startedTime = std::find_if(startTimes.rbegin(), startTimes.rend(), [&segmentName](const auto& pair) { return pair.first == segmentName.hash; });
+        if (startedTime == startTimes.rend())
+            return;
+
+        auto startedTimeForward = startedTime.base();
+        --startedTimeForward;
 
         // create a TimedSegment object to store the duration or append to an existing one
         for (auto& [_, orig, duration] : durations) {
             if (orig == segmentName.orig) {
                 duration = OSGetTick() - startedTime->second;
-                startTimes.erase(startedTime.base());
+                startTimes.erase(startedTimeForward);
                 return;
             }
         }
 
         // didn't find an existing segment, so create a new one
         durations.emplace_back(segmentName, OSGetTick() - startedTime->second);
-        startTimes.erase(startedTime.base());
+        startTimes.erase(startedTimeForward);
     }
 
     static void Print() {

@@ -18,7 +18,6 @@ APP_SHORTNAME	:=	Tank Trap
 APP_AUTHOR		:=	I made this :)
 
 include $(DEVKITPRO)/wut/share/wut_rules
-export GLSLCOMPILER	:=	$(TOPDIR)/dist/glslcompiler.elf
 
 #-------------------------------------------------------------------------------
 # TARGET is the name of the output
@@ -41,9 +40,8 @@ endif
 
 SOURCES		:=	source/common source/framework source/framework/physics source/framework/noise source/framework/fileformat source/framework/multiplayer source/framework/audio source/game
 DATA		:=	data
-INCLUDES	:=	include
+INCLUDES	:=
 CONTENT		:=	source/assets
-SHADERS		:=	source/assets/shaders
 ICON		:=	dist/icon.png
 TV_SPLASH	:=	dist/tv-splash.png
 DRC_SPLASH	:=	dist/drc-splash.png
@@ -64,13 +62,13 @@ CXXFLAGS	:=	$(CFLAGS) -std=gnu++23
 ASFLAGS		:=	-g $(ARCH)
 LDFLAGS		=	-g $(ARCH) $(RPXSPECS) -Wl,-Map,$(notdir $*.map)
 
-LIBS		:=	-lwut
+LIBS		:=	-lcafeglsl -lwut
 
 #-------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level
 # containing include and lib
 #-------------------------------------------------------------------------------
-LIBDIRS	:= $(PORTLIBS) $(WUT_ROOT)
+LIBDIRS	:= $(TOPDIR)/external/cafeglsl $(PORTLIBS) $(WUT_ROOT)
 
 #-------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -110,9 +108,6 @@ export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
 export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
 export OFILES 		:=	$(OFILES_BIN) $(OFILES_SRC)
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
-export GLSLFILES	:=	$(foreach dir,$(SHADERS),/$(wildcard $(TOPDIR)/$(dir)/*.vs)) \
-						$(foreach dir,$(SHADERS),/$(wildcard $(TOPDIR)/$(dir)/*.ps))
-
 export INCLUDE	:=	$(foreach dir,$(INCLUDES),-I$(CURDIR)/$(dir)) \
 					$(foreach dir,$(LIBDIRS),-I$(dir)/include) \
 					-I$(CURDIR)/$(BUILD)
@@ -182,7 +177,6 @@ else
 
 DEPENDS			:=	$(OFILES:.o=.d)
 CONTENT_DEPENDS	:=	$(shell find $(APP_CONTENT) -type f) $(APP_ICON) $(APP_TV_SPLASH) $(APP_DRC_SPLASH)
-SHADER_DEPENDS	:=  $(GLSLFILES:%=%.gsh)
 
 #-------------------------------------------------------------------------------
 # main targets
@@ -200,8 +194,8 @@ $(OUTPUT).wua: $(OUTPUT).rpx
 	@# If you are trying to run this makefile on Windows, you need to swap zarchive_static.elf with zarchive.exe.
 	@$(TOPDIR)/dist/zarchive_static.elf $(TOPDIR)/dist/wua $(OUTPUT).wua
 	@echo built ... sand.wua
-$(OUTPUT).rpx: $(OUTPUT).elf $(SHADER_DEPENDS) $(CONTENT_DEPENDS)
-$(OUTPUT).elf: $(OFILES)
+$(OUTPUT).rpx: $(OUTPUT).elf $(CONTENT_DEPENDS)
+$(OUTPUT).elf: $(OFILES) $(TOPDIR)/external/cafeglsl/lib/libcafeglsl.a
 
 $(OFILES_SRC): $(HFILES_BIN)
 
@@ -211,14 +205,6 @@ $(OFILES_SRC): $(HFILES_BIN)
 %.bin.o	%_bin.h: %.bin
 	@echo $(notdir $<)
 	@$(bin2o)
-
-%.vs.gsh: %.vs
-	@echo "compiling $(notdir $<)..."
-	@$(GLSLCOMPILER) -vs $< -o $@ 2>&1 >&-
-
-%.ps.gsh: %.ps
-	@echo "compiling $(notdir $<)..."
-	@$(GLSLCOMPILER) -ps $< -o $@ 2>&1 >&-
 
 -include $(DEPENDS)
 
