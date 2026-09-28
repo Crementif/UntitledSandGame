@@ -27,9 +27,10 @@ public:
 
 private:
     bool compiledSuccessfully = false;
-    GX2FetchShader* fetchShader;
-    GX2VertexShader* vertexShader;
-    GX2PixelShader* fragmentShader;
+    GX2FetchShader* fetchShader = nullptr;
+    GX2VertexShader* vertexShader = nullptr;
+    GX2PixelShader* fragmentShader = nullptr;
+    GX2ShaderMode shaderMode = GLSL_SHADER_MODE_ERROR;
 
     // static fetch shader data
 public:

@@ -39,18 +39,18 @@ GX2ShaderSet::GX2ShaderSet(const std::string_view name)
     std::string vsSource = _LoadShaderSource(name, ".vs");
     std::string psSource = _LoadShaderSource(name, ".ps");
 
-    char outputBuff[1024];
-    GX2VertexShader* vs = CompileVertexShader(vsSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
-    if (!vs) {
-        WHBLogPrintf("Failed to compile vertex shader: %s", outputBuff);
+    char outputBuff[1024] = {};
+    GX2VertexShader* vs = nullptr;
+    GX2PixelShader* ps = nullptr;
+    this->shaderMode = CompileShaderPair(vsSource.c_str(), psSource.c_str(),
+                                         GLSL_COMPILE_AUTO, &vs, &ps,
+                                         outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
+    if (this->shaderMode == GLSL_SHADER_MODE_ERROR) {
+        WHBLogPrintf("Failed to compile shader %s: %s", name.data(), outputBuff);
         return;
     }
-    GX2PixelShader* ps = CompilePixelShader(psSource.c_str(), outputBuff, sizeof(outputBuff), GLSL_COMPILER_FLAG_NONE);
-    if (!ps) {
-        WHBLogPrintf("Failed to compile pixel shader: %s", outputBuff);
-        FreeVertexShader(vs);
-        return;
-    }
+    if (outputBuff[0])
+        WHBLogPrintf("Shader %s: %s", name.data(), outputBuff);
 
     this->vertexShader = vs;
     this->fragmentShader = ps;
@@ -80,9 +80,10 @@ void GX2ShaderSet::Prepare() const
 
 void GX2ShaderSet::Activate() const
 {
-    GX2SetFetchShader(fetchShader);
-    GX2SetVertexShader(vertexShader);
-    GX2SetPixelShader(fragmentShader);
+    RenderState::SetShaderMode(this->shaderMode);
+    GX2SetFetchShader(this->fetchShader);
+    GX2SetVertexShader(this->vertexShader);
+    GX2SetPixelShader(this->fragmentShader);
 }
 
 GX2FetchShader GX2ShaderSet::s_defaultFetchShader;

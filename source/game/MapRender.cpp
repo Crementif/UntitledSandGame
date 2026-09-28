@@ -228,7 +228,6 @@ public:
 
         // do environment blur/bloom-like pass to create a glow effect around lava pixels and blur solids (light obstructions) to create ambient occlusion
         s_shaderEnvironmentPass.Activate();
-        RenderState::SetShaderMode(GX2_SHADER_MODE_UNIFORM_REGISTER);
 
         // horizontal pass
         s_environmentTempMap->Apply();
@@ -296,7 +295,6 @@ public:
 
         UpdateMapDrawUniform(gridOffsetX, gridOffsetY, cameraBounds, (f32)map->GetPixelWidth() * MAP_PIXEL_ZOOM, (f32)map->GetPixelHeight() * MAP_PIXEL_ZOOM);
 
-        RenderState::SetShaderMode(GX2_SHADER_MODE_UNIFORM_BLOCK);
         RenderState::SetTransparencyMode(RenderState::E_TRANSPARENCY_MODE::ADDITIVE);
 
         GX2SetVertexUniformBlock(0, sizeof(s_mapDrawUFVertex), s_mapDrawUFVertex);

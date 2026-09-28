@@ -54,7 +54,7 @@
 #include <coreinit/memdefaultheap.h>
 #include <nn/swkbd.h>
 
-#include "libcafeglsl.h"
+#include <cafeglsl/CafeGLSLCompiler.h>
 
 #include "types.h"
 

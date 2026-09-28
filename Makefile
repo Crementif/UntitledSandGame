@@ -50,7 +50,7 @@ DRC_SPLASH	:=	dist/drc-splash.png
 # options for code generation
 #-------------------------------------------------------------------------------
 ifneq ($(BUILD_DEBUG),1)
-CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O3 -fno-math-errno -ffast-math -funsafe-math-optimizations -ftree-vectorize $(MACHDEP)
+CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O3 -fno-math-errno -ffast-math -funsafe-math-optimizations -ftree-vectorize -ffunction-sections -fdata-sections $(MACHDEP)
 CFLAGS		+=	$(INCLUDE) -DNDEBUG -D__WIIU__ -D__WUT__
 else
 CFLAGS		:=	-g -Wall -Werror -Wno-unused-variable -Wno-unused-but-set-variable -Wno-unused-function -Wno-strict-aliasing -O0 -ffunction-sections -fdata-sections $(MACHDEP)
@@ -68,7 +68,7 @@ LIBS		:=	-lcafeglsl -lwut
 # list of directories containing libraries, this must be the top level
 # containing include and lib
 #-------------------------------------------------------------------------------
-LIBDIRS	:= $(TOPDIR)/external $(PORTLIBS) $(WUT_ROOT)
+LIBDIRS	:= $(PORTLIBS) $(WUT_ROOT)
 
 #-------------------------------------------------------------------------------
 # no real need to edit anything past this point unless you need to add additional
@@ -195,7 +195,7 @@ $(OUTPUT).wua: $(OUTPUT).rpx
 	@$(TOPDIR)/dist/zarchive_static.elf $(TOPDIR)/dist/wua $(OUTPUT).wua
 	@echo built ... sand.wua
 $(OUTPUT).rpx: $(OUTPUT).elf $(CONTENT_DEPENDS)
-$(OUTPUT).elf: $(OFILES) $(TOPDIR)/external/lib/libcafeglsl.a
+$(OUTPUT).elf: $(OFILES)
 
 $(OFILES_SRC): $(HFILES_BIN)
 

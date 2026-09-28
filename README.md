@@ -44,6 +44,7 @@ A sandbox mode is also available for solo play.
 
  - Install [devkitPRO](https://devkitpro.org/wiki/Getting_Started)
  - Install devkitPPC and wut through devkitPro's pacman by using `pacman -S wiiu-dev`
+ - Install the [CafeGLSL v1.0.0-rc1 Wii U portlib](https://github.com/Exzap/CafeGLSL/releases/tag/v1.0.0-rc1) into the Wii U portlibs directory (`$DEVKITPRO/portlibs/wiiu`)
  - Run `make` in the root of the project directory
 
 ### Credits
